@@ -131,3 +131,21 @@ type ListUserOrgsResponse struct {
 		Offset int `json:"offset"`
 	} `json:"pagination"`
 }
+
+// DeviceWebAuthStartRequest represents the request payload for starting device web auth
+type DeviceWebAuthStartRequest struct {
+	ApplicationName string `json:"applicationName"`
+	DeviceName      string `json:"deviceName,omitempty"`
+}
+
+// DeviceWebAuthStartResponse represents the response from starting device web auth
+type DeviceWebAuthStartResponse struct {
+	Code      string `json:"code"`
+	ExpiresAt int64  `json:"expiresAt"` // Unix timestamp in milliseconds
+}
+
+// DeviceWebAuthPollResponse represents the response from polling device web auth
+type DeviceWebAuthPollResponse struct {
+	Verified bool   `json:"verified"`
+	Token    string `json:"token,omitempty"` // Only present when verified is true
+}

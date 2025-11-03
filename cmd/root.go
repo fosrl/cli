@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"github.com/fosrl/cli/cmd/auth"
+	"github.com/fosrl/cli/cmd/auth/login"
+	"github.com/fosrl/cli/cmd/auth/logout"
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/utils"
@@ -34,6 +36,10 @@ func init() {
 	// Register verb commands
 	rootCmd.AddCommand(auth.AuthCmd)
 	rootCmd.AddCommand(selectcmd.SelectCmd)
+	
+	// Add login and logout as top-level aliases
+	rootCmd.AddCommand(login.LoginCmd)
+	rootCmd.AddCommand(logout.LogoutCmd)
 }
 
 func initConfig() {

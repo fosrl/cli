@@ -1,9 +1,13 @@
 package login
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
@@ -126,9 +130,140 @@ func loginWithCredentials(hostname string) (string, error) {
 	return sessionToken, nil
 }
 
+// openBrowser opens the specified URL in the default browser
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+	return cmd.Run()
+}
+
+// getDeviceName returns a human-readable device name
+func getDeviceName() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "Unknown Device"
+	}
+	return hostname
+}
+
 func loginWithWeb(hostname string) (string, error) {
-	// TODO: Implement web login
-	return "", fmt.Errorf("web login is not yet implemented. Please use credentials login for now")
+	// Build base URL for login (use hostname as-is, StartDeviceWebAuth will add /api/v1)
+	baseURL := hostname
+
+	// Create a temporary API client for login (without auth)
+	loginClient, err := api.NewClient(api.ClientConfig{
+		BaseURL:           baseURL,
+		AgentName:         "pangolin-cli",
+		SessionCookieName: "p_session_token",
+		CSRFToken:         "x-csrf-protection",
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	// Get device name
+	deviceName := getDeviceName()
+
+	// Request device code
+	startReq := api.DeviceWebAuthStartRequest{
+		ApplicationName: "Pangolin CLI",
+		DeviceName:      deviceName,
+	}
+
+	startResp, err := api.StartDeviceWebAuth(loginClient, startReq)
+	if err != nil {
+		return "", fmt.Errorf("failed to start device web auth: %w", err)
+	}
+
+	code := startResp.Code
+	expiresAt := startResp.ExpiresAt
+
+	// Build the login URL
+	loginURL := strings.TrimSuffix(hostname, "/") + "/auth/login/device"
+
+	// Display code and instructions (similar to GH CLI format)
+	utils.Info("First copy your one-time code: %s", code)
+	utils.Info("Press Enter to open %s in your browser...", loginURL)
+
+	// Wait for user to press Enter
+	reader := bufio.NewReader(os.Stdin)
+	_, err = reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("failed to read input: %w", err)
+	}
+
+	// Open browser
+	if err := openBrowser(loginURL); err != nil {
+		// Don't fail if browser can't be opened, just warn
+		utils.Warning("Failed to open browser automatically: %v", err)
+		utils.Info("Please manually visit: %s", loginURL)
+	}
+
+	// Poll for verification
+	pollInterval := 3 * time.Second // Poll every 2 seconds
+	startTime := time.Now()
+	maxPollDuration := 5 * time.Minute // Maximum polling duration (5 minutes)
+
+	var token string
+
+	for {
+		// Check if code has expired
+		now := time.Now().UnixMilli()
+		if now >= expiresAt {
+			return "", fmt.Errorf("code expired. Please try again")
+		}
+
+		// Check if we've exceeded max polling duration
+		if time.Since(startTime) > maxPollDuration {
+			return "", fmt.Errorf("polling timeout. Please try again")
+		}
+
+		// Poll for verification status
+		pollResp, message, err := api.PollDeviceWebAuth(loginClient, code)
+		if err != nil {
+			// Check if it's a rate limit error (429)
+			if errorResp, ok := err.(*api.ErrorResponse); ok && errorResp.Status == 429 {
+				// Rate limited - wait a bit longer before retrying
+				utils.Debug("Rate limited, waiting before retry...")
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			// Check if it's an IP mismatch error (403)
+			if errorResp, ok := err.(*api.ErrorResponse); ok && errorResp.Status == 403 {
+				return "", fmt.Errorf("IP address mismatch. Your IP address may have changed. Please try again")
+			}
+
+			// For other errors, return them
+			return "", fmt.Errorf("failed to poll device web auth: %w", err)
+		}
+
+		// Check verification status
+		if pollResp.Verified {
+			token = pollResp.Token
+			if token == "" {
+				return "", fmt.Errorf("verification succeeded but no token received")
+			}
+			return token, nil
+		}
+
+		// Check for expired or not found messages
+		if message == "Code expired" || message == "Code not found" {
+			return "", fmt.Errorf("code expired or not found. Please try again")
+		}
+
+		// Wait before next poll
+		time.Sleep(pollInterval)
+	}
 }
 
 var LoginCmd = &cobra.Command{
@@ -256,6 +391,9 @@ var LoginCmd = &cobra.Command{
 		api.GlobalClient.SetBaseURL(apiBaseURL)
 		api.GlobalClient.SetToken(sessionToken)
 
+		utils.Success("Device authorized")
+		fmt.Println()
+
 		// Get user information
 		var user *api.User
 		user, err = api.GlobalClient.GetUser()
@@ -277,6 +415,15 @@ var LoginCmd = &cobra.Command{
 			}
 		}
 
-		utils.Success("Login successful!")
+		// Print logged in message after all setup is complete
+		if user != nil {
+			displayName := user.Email
+			if displayName == "" && user.Username != "" {
+				displayName = user.Username
+			}
+			if displayName != "" {
+				utils.Success("Logged in as %s", displayName)
+			}
+		}
 	},
 }

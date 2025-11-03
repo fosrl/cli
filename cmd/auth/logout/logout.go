@@ -20,6 +20,19 @@ var LogoutCmd = &cobra.Command{
 			return
 		}
 
+		// Get user info before clearing config
+		accountName := viper.GetString("email")
+		if accountName == "" {
+			// Try to get username from API as fallback
+			if user, err := api.GlobalClient.GetUser(); err == nil {
+				if user.Username != "" {
+					accountName = user.Username
+				} else if user.Email != "" {
+					accountName = user.Email
+				}
+			}
+		}
+
 		// Try to logout from server (client is always initialized)
 		if err := api.GlobalClient.Logout(); err != nil {
 			// Ignore logout errors - we'll still clear local data
@@ -49,6 +62,11 @@ var LogoutCmd = &cobra.Command{
 			utils.Warning("Failed to re-initialize API client: %v", err)
 		}
 
-		utils.Success("Logout successful!")
+		// Print logout message with account name
+		if accountName != "" {
+			utils.Success("Logged out of Pangolin account %s", accountName)
+		} else {
+			utils.Success("Logged out of Pangolin account")
+		}
 	},
 }

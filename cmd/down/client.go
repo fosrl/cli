@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
@@ -36,8 +35,6 @@ var clientDownCmd = &cobra.Command{
 		}
 
 		// Show log preview until process stops
-		statusIconStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(utils.ColorSuccess))
 		completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
 			LogFile: logFile,
 			Header:  "Shutting down client...",
@@ -50,8 +47,7 @@ var clientDownCmd = &cobra.Command{
 			},
 			StatusFormatter: func(isRunning bool, status *olm.StatusResponse) string {
 				if !isRunning {
-					icon := statusIconStyle.Render("✓")
-					return fmt.Sprintf("%s Stopped", icon)
+					return fmt.Sprintf("Stopped")
 				}
 				return "Stopping..."
 			},

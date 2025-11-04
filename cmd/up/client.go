@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
@@ -42,7 +41,7 @@ var (
 	flagHolepunch     bool
 	flagTlsClientCert string
 	flagVersion       string
-	flagDetached      bool
+	flagAttached      bool
 	flagLogFile       string
 )
 
@@ -51,14 +50,6 @@ var clientCmd = &cobra.Command{
 	Short: "Start a client connection",
 	Long:  "Bring up a client tunneled connection",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Check if running with elevated permissions (sudo)
-		if runtime.GOOS != "windows" {
-			if os.Geteuid() != 0 {
-				utils.Error("This command requires elevated permissions.")
-				os.Exit(1)
-			}
-		}
-
 		// Check if a client is already running
 		olmClient := olm.NewClient("")
 		if olmClient.IsRunning() {
@@ -155,30 +146,42 @@ var clientCmd = &cobra.Command{
 
 		// Handle log file setup - if detached mode, always use log file
 		logFile := flagLogFile
-		if flagDetached && logFile == "" {
+		if !flagAttached && logFile == "" {
 			logFile = utils.GetDefaultLogPath()
 		}
 
-		// Handle detached mode - subprocess self without -d flag
-		if flagDetached {
+		// Handle detached mode - subprocess self without --attach flag
+		// Skip detached mode if already running as root (we're a subprocess spawned by sudo)
+		isRunningAsRoot := runtime.GOOS != "windows" && os.Geteuid() == 0
+		if !flagAttached && !isRunningAsRoot {
 			executable, err := os.Executable()
 			if err != nil {
 				utils.Error("Error: failed to get executable path: %v", err)
 				os.Exit(1)
 			}
 
-			// Build command arguments, excluding -d flag
+			// Build command arguments, excluding --attach flag
 			cmdArgs := []string{"up", "client"}
 
-			// Add all flags that were set (except -d)
+			// Add orgId flag (required for subprocess, which runs as root and won't have user's config)
+			cmdArgs = append(cmdArgs, "--orgId", orgID)
+
+			// Add all flags that were set (except --attach)
 			// OLM credentials are always included (from flags, keyring, or newly created)
 			cmdArgs = append(cmdArgs, "--id", olmID)
 			cmdArgs = append(cmdArgs, "--secret", olmSecret)
 
-			// Optional flags - only include if they were explicitly set
-			if cmd.Flags().Changed("endpoint") {
-				cmdArgs = append(cmdArgs, "--endpoint", flagEndpoint)
+			// Always pass endpoint to subprocess (required, subprocess won't have user's config)
+			// Get endpoint from flag or hostname config (same logic as attached mode)
+			endpoint := flagEndpoint
+			if endpoint == "" {
+				endpoint = viper.GetString("hostname")
 			}
+			if endpoint != "" {
+				cmdArgs = append(cmdArgs, "--endpoint", endpoint)
+			}
+
+			// Optional flags - only include if they were explicitly set
 			if cmd.Flags().Changed("mtu") {
 				cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", flagMTU))
 			}
@@ -227,18 +230,33 @@ var clientCmd = &cobra.Command{
 			// Add positional args if any
 			cmdArgs = append(cmdArgs, args...)
 
-			// Create command
-			procCmd := exec.Command(executable, cmdArgs...)
-			procCmd.Stdin = nil
-			procCmd.Stdout = nil
-			procCmd.Stderr = nil
-
-			// Set process group for proper detachment (Unix-like systems)
+			// Create command - subprocess should run with elevated permissions
+			var procCmd *exec.Cmd
 			if runtime.GOOS != "windows" {
-				procCmd.SysProcAttr = &syscall.SysProcAttr{
-					Setpgid: true,
-					Pgid:    0,
+				// Use sudo with a shell wrapper to background the subprocess
+				// This allows sudo to exit immediately after starting the subprocess
+				// The subprocess needs root access for network interface creation
+				// Build shell command with proper quoting using printf %q
+				var shellArgs []string
+				shellArgs = append(shellArgs, executable)
+				shellArgs = append(shellArgs, cmdArgs...)
+				// Build command: nohup executable args >/dev/null 2>&1 &
+				shellCmd := "nohup"
+				for _, arg := range shellArgs {
+					shellCmd += " " + fmt.Sprintf("%q", arg)
 				}
+				shellCmd += " >/dev/null 2>&1 &"
+				procCmd = exec.Command("sudo", "sh", "-c", shellCmd)
+				// Connect stdin/stderr so sudo can prompt for password interactively
+				procCmd.Stdin = os.Stdin
+				procCmd.Stdout = nil
+				procCmd.Stderr = os.Stderr
+			} else {
+				// Windows - use executable directly (may need different elevation mechanism)
+				procCmd = exec.Command(executable, cmdArgs...)
+				procCmd.Stdin = nil
+				procCmd.Stdout = nil
+				procCmd.Stderr = nil
 			}
 
 			// Start the process
@@ -247,11 +265,14 @@ var clientCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
+			// Wait for sudo to complete (password prompt + subprocess start)
+			// The shell wrapper backgrounds the subprocess, so sudo exits immediately
+			if err := procCmd.Wait(); err != nil {
+				utils.Error("Error: failed to start subprocess: %v", err)
+				os.Exit(1)
+			}
+
 			// Show live log preview and status
-			statusIconStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color(utils.ColorSuccess))
-			statusStartingIconStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color(utils.ColorWarning))
 			completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
 				LogFile: logFile,
 				Header:  "Starting up client...",
@@ -270,14 +291,11 @@ var clientCmd = &cobra.Command{
 				},
 				StatusFormatter: func(isRunning bool, status *olm.StatusResponse) string {
 					if !isRunning || status == nil {
-						icon := statusStartingIconStyle.Render("○")
-						return fmt.Sprintf("%s Starting", icon)
+						return fmt.Sprintf("Starting")
 					} else if status.Registered {
-						icon := statusIconStyle.Render("✓")
-						return fmt.Sprintf("%s Registered", icon)
+						return fmt.Sprintf("Registered")
 					}
-					icon := statusStartingIconStyle.Render("○")
-					return fmt.Sprintf("%s Starting", icon)
+					return fmt.Sprintf("Starting")
 				},
 			})
 			if err != nil {
@@ -406,6 +424,16 @@ var clientCmd = &cobra.Command{
 			Version:              version,
 		}
 
+		// Check if running with elevated permissions (required for network interface creation)
+		// This check is only for attached mode; in detached mode, the subprocess runs elevated
+		if runtime.GOOS != "windows" {
+			if os.Geteuid() != 0 {
+				utils.Error("This command requires elevated permissions for network interface creation.")
+				utils.Info("Please run with sudo or use detached mode (default) to run the subprocess elevated.")
+				os.Exit(1)
+			}
+		}
+
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 
@@ -441,8 +469,8 @@ func init() {
 	clientCmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, "Enable holepunching (default: false)")
 	clientCmd.Flags().StringVar(&flagTlsClientCert, "tls-client-cert", "", "TLS client certificate path")
 	clientCmd.Flags().StringVar(&flagVersion, "version", "", "Version (default: 1)")
-	clientCmd.Flags().BoolVarP(&flagDetached, "detached", "d", false, "Run in detached mode (background)")
-	clientCmd.Flags().StringVar(&flagLogFile, "log-file", "", "Path to log file (required when using -d)")
+	clientCmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
+	clientCmd.Flags().StringVar(&flagLogFile, "log-file", "", "Path to log file (defaults to standard log location when detached)")
 
 	UpCmd.AddCommand(clientCmd)
 }

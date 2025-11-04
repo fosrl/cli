@@ -148,15 +148,12 @@ func (m *logPreviewModel) View() string {
 	var sb strings.Builder
 
 	// Styles
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color(utils.ColorDarkGray))
 	logStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(utils.ColorLightGray))
 
 	// Header
-	sb.WriteString(headerStyle.Render(m.config.Header))
-	sb.WriteString("\n\n")
+	sb.WriteString(m.config.Header)
+	sb.WriteString("\n")
 
 	// Log lines (last 5, always show 5 lines)
 	for i := 0; i < 5; i++ {
@@ -172,7 +169,7 @@ func (m *logPreviewModel) View() string {
 	}
 
 	// Status line
-	sb.WriteString("\nStatus: ")
+	sb.WriteString("Status: ")
 	sb.WriteString(m.config.StatusFormatter(m.olmClient.IsRunning(), m.status))
 
 	return sb.String()

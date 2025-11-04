@@ -39,7 +39,6 @@ var ClientCmd = &cobra.Command{
 // printStatusTable prints the status information in a table format
 func printStatusTable(status *olm.StatusResponse) {
 	// Print connection status
-	fmt.Println("Client Status:")
 	headers := []string{"STATUS", "INTERFACE CREATED", "TUNNEL IP", "VERSION"}
 	rows := [][]string{
 		{
@@ -53,7 +52,7 @@ func printStatusTable(status *olm.StatusResponse) {
 
 	// Print peers if there are any
 	if len(status.Peers) > 0 {
-		fmt.Println("\nPeers:")
+		fmt.Println("\n")
 		peerHeaders := []string{"SITE ID", "ENDPOINT", "STATUS", "RTT", "LAST SEEN", "RELAY"}
 		peerRows := [][]string{}
 

@@ -271,6 +271,18 @@ var LoginCmd = &cobra.Command{
 	Short: "Login to Pangolin",
 	Long:  "Interactive login to select your hosting option and configure access.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Check if user is already logged in
+		if err := utils.EnsureLoggedIn(); err == nil {
+			// User is logged in, show error with account info
+			email := viper.GetString("email")
+			var accountInfo string
+			if email != "" {
+				accountInfo = fmt.Sprintf(" (%s)", email)
+			}
+			utils.Error("You are already logged in%s. Please logout first using 'pangolin logout'", accountInfo)
+			return
+		}
+
 		var hostingOption HostingOption
 		var hostname string
 		var loginMethod LoginMethod

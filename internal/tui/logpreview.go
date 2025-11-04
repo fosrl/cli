@@ -24,23 +24,23 @@ type StatusFormatter func(isRunning bool, status *olm.StatusResponse) string
 
 // LogPreviewConfig configures the log preview TUI
 type LogPreviewConfig struct {
-	LogFile        string
-	Header         string
-	ExitCondition  ExitCondition
-	OnEarlyExit    func(client *olm.Client) // Called when user exits early (Ctrl+C)
+	LogFile         string
+	Header          string
+	ExitCondition   ExitCondition
+	OnEarlyExit     func(client *olm.Client) // Called when user exits early (Ctrl+C)
 	StatusFormatter StatusFormatter          // Status formatter (required)
 }
 
 // logPreviewModel is the bubbletea model for the live log preview
 type logPreviewModel struct {
-	config          LogPreviewConfig
-	olmClient       *olm.Client
-	logLines        []string
-	status          *olm.StatusResponse
-	lastLogPos      int64
-	completedTime   *time.Time
-	completed       bool
-	width           int
+	config        LogPreviewConfig
+	olmClient     *olm.Client
+	logLines      []string
+	status        *olm.StatusResponse
+	lastLogPos    int64
+	completedTime *time.Time
+	completed     bool
+	width         int
 }
 
 // NewLogPreview creates and runs a new log preview TUI
@@ -106,7 +106,7 @@ func (m *logPreviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statusUpdateMsg:
 		// Update status
 		isRunning := m.olmClient.IsRunning()
-		
+
 		if isRunning {
 			status, err := m.olmClient.GetStatus()
 			if err == nil {
@@ -234,4 +234,3 @@ func getLastLogLines(logPath string, n int, lastPos int64) ([]string, int64) {
 
 	return lines, fileSize
 }
-

@@ -149,3 +149,14 @@ type DeviceWebAuthPollResponse struct {
 	Verified bool   `json:"verified"`
 	Token    string `json:"token,omitempty"` // Only present when verified is true
 }
+
+// CreateOlmRequest represents the request payload for creating an OLM
+type CreateOlmRequest struct {
+	Name string `json:"name"`
+}
+
+// CreateOlmResponse represents the response from creating an OLM
+type CreateOlmResponse struct {
+	OlmID  string `json:"olmId"`
+	Secret string `json:"secret"`
+}

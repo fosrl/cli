@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -13,12 +14,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/fosrl/newt/logger"
 	olmpkg "github.com/fosrl/olm/olm"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -48,6 +51,14 @@ var clientCmd = &cobra.Command{
 	Short: "Start a client connection",
 	Long:  "Bring up a client tunneled connection",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Check if running with elevated permissions (sudo)
+		if runtime.GOOS != "windows" {
+			if os.Geteuid() != 0 {
+				utils.Error("This command requires elevated permissions.")
+				os.Exit(1)
+			}
+		}
+
 		// Check if a client is already running
 		olmClient := olm.NewClient("")
 		if olmClient.IsRunning() {
@@ -62,14 +73,84 @@ var clientCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Validate required flags before detached mode check
-		if flagID == "" {
-			utils.Error("--id is required")
+		// Get orgId from viper (required for OLM config)
+		orgID := viper.GetString("orgId")
+		if orgID == "" {
+			utils.Error("OrgId is required. Please select an organization first")
 			os.Exit(1)
 		}
-		if flagSecret == "" {
-			utils.Error("--secret is required")
+
+		// Get OLM credentials: from flags, or keyring, or create new
+		var olmID, olmSecret string
+		if flagID != "" && flagSecret != "" {
+			// Use provided flags
+			olmID = flagID
+			olmSecret = flagSecret
+		} else if flagID != "" || flagSecret != "" {
+			// If only one flag is provided, require both
+			utils.Error("Both --id and --secret must be provided together, or neither (to use keyring or create new)")
 			os.Exit(1)
+		} else {
+			// Ensure user is logged in before getting/creating OLM credentials
+			if err := utils.EnsureLoggedIn(); err != nil {
+				utils.Error("%v", err)
+				os.Exit(1)
+			}
+
+			// Get userId from viper (required for OLM credentials keyring lookup)
+			userID := viper.GetString("userId")
+			if userID == "" {
+				utils.Error("UserId is required. Please log in first")
+				os.Exit(1)
+			}
+
+			// Try to get from keyring
+			var err error
+			olmID, olmSecret, err = api.GetOlmCredentials(userID)
+			if err != nil {
+				// Not found in keyring, create new OLM
+				deviceName := getDeviceName()
+				randomNum := rand.Intn(10000) // 0-9999
+				defaultOlmName := fmt.Sprintf("%s %04d", deviceName, randomNum)
+
+				// Prompt user to edit the name with pre-filled default
+				olmName := defaultOlmName
+				nameForm := huh.NewForm(
+					huh.NewGroup(
+						huh.NewInput().
+							Title("Client name").
+							Description("Enter a name for this client (press Enter to use default)").
+							Value(&olmName),
+					),
+				)
+
+				if err := nameForm.Run(); err != nil {
+					utils.Error("Error: failed to collect client name: %v", err)
+					os.Exit(1)
+				}
+
+				// Use default if user cleared the name
+				if strings.TrimSpace(olmName) == "" {
+					olmName = defaultOlmName
+				} else {
+					olmName = strings.TrimSpace(olmName)
+				}
+
+				response, err := api.GlobalClient.CreateOlm(olmName)
+				if err != nil {
+					utils.Error("Failed to create OLM: %v", err)
+					os.Exit(1)
+				}
+
+				// Save to keyring
+				if err := api.SaveOlmCredentials(userID, response.OlmID, response.Secret); err != nil {
+					utils.Warning("Failed to save OLM credentials to keyring: %v", err)
+				}
+
+				olmID = response.OlmID
+				olmSecret = response.Secret
+				utils.Success("Created and saved OLM credentials")
+			}
 		}
 
 		// Handle log file setup - if detached mode, always use log file
@@ -90,9 +171,9 @@ var clientCmd = &cobra.Command{
 			cmdArgs := []string{"up", "client"}
 
 			// Add all flags that were set (except -d)
-			// Required flags are always included
-			cmdArgs = append(cmdArgs, "--id", flagID)
-			cmdArgs = append(cmdArgs, "--secret", flagSecret)
+			// OLM credentials are always included (from flags, keyring, or newly created)
+			cmdArgs = append(cmdArgs, "--id", olmID)
+			cmdArgs = append(cmdArgs, "--secret", olmSecret)
 
 			// Optional flags - only include if they were explicitly set
 			if cmd.Flags().Changed("endpoint") {
@@ -306,8 +387,9 @@ var clientCmd = &cobra.Command{
 
 		olmConfig := olmpkg.Config{
 			Endpoint:             endpoint,
-			ID:                   flagID,
-			Secret:               flagSecret,
+			ID:                   olmID,
+			Secret:               olmSecret,
+			OrgID:                orgID,
 			MTU:                  mtu,
 			DNS:                  dns,
 			InterfaceName:        interfaceName,
@@ -331,10 +413,19 @@ var clientCmd = &cobra.Command{
 	},
 }
 
+// getDeviceName returns a human-readable device name
+func getDeviceName() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "Unknown Device"
+	}
+	return hostname
+}
+
 func init() {
-	// Required flags
-	clientCmd.Flags().StringVar(&flagID, "id", "", "Client ID (required)")
-	clientCmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (required)")
+	// Optional flags - if not provided, will use keyring or create new OLM
+	clientCmd.Flags().StringVar(&flagID, "id", "", "Client ID (optional, will use keyring or create new if not provided)")
+	clientCmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use keyring or create new if not provided)")
 
 	// Optional flags
 	clientCmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (defaults to hostname from config)")
@@ -441,4 +532,3 @@ func cleanupOldLogFiles(logDir string, daysToKeep int) {
 		}
 	}
 }
-

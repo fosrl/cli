@@ -16,13 +16,13 @@ func EnsureLoggedIn() error {
 	// Check for userId in config
 	userID := viper.GetString("userId")
 	if userID == "" {
-		return errors.New("no user ID found in config. Please login first")
+		return errors.New("No user ID found in config. Please login first")
 	}
 
 	// Check for session token in keyring
 	_, err := api.GetSessionToken()
 	if err != nil {
-		return fmt.Errorf("no session found in key store. Please login first")
+		return fmt.Errorf("No session found in key store. Please login first")
 	}
 
 	return nil

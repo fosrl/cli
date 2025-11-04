@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/olm"
 	"github.com/spf13/viper"
 )
 
@@ -28,6 +29,7 @@ func SelectOrg(userID string) (string, error) {
 		if err := viper.WriteConfig(); err != nil {
 			return "", fmt.Errorf("failed to save organization to config: %w", err)
 		}
+		switchActiveClientOrg(selectedOrg.OrgID)
 		return selectedOrg.OrgID, nil
 	}
 
@@ -65,5 +67,40 @@ func SelectOrg(userID string) (string, error) {
 		return "", fmt.Errorf("failed to save organization to config: %w", err)
 	}
 
+	switchActiveClientOrg(selectedOrgOption.OrgID)
+
 	return selectedOrgOption.OrgID, nil
+}
+
+// switchActiveClientOrg checks if the OLM client is running and switches to the new org if so
+// It returns true if a switch was attempted (regardless of success)
+func switchActiveClientOrg(orgID string) bool {
+	client := olm.NewClient("")
+	if !client.IsRunning() {
+		// Client is not running, nothing to do
+		return false
+	}
+
+	// Get current status to check current orgId
+	currentStatus, err := client.GetStatus()
+	if err != nil {
+		Warning("Failed to get current status: %v", err)
+		return false
+	}
+
+	// If already on the target org, no need to switch
+	if currentStatus != nil && currentStatus.OrgID == orgID {
+		return false
+	}
+
+	// Client is running, try to switch org
+	_, err = client.SwitchOrg(orgID)
+	if err != nil {
+		Warning("Failed to switch organization in active client: %v", err)
+		Warning("The organization has been saved to config, but the active client may still be using the previous organization.")
+		return false
+	}
+
+	// Switch was sent successfully
+	return true
 }

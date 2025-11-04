@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/fosrl/newt v0.0.0-20250929233849-71c5bf7e65f7
-	github.com/fosrl/olm v0.0.0-20251103232918-352ac8def6ff
+	github.com/fosrl/olm v0.0.0-20251104045455-da1e4911bdf6
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	github.com/zalando/go-keyring v0.2.6

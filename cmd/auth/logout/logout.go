@@ -1,7 +1,11 @@
 package logout
 
 import (
+	"time"
+
+	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -12,6 +16,49 @@ var LogoutCmd = &cobra.Command{
 	Short: "Logout from Pangolin",
 	Long:  "Logout and clear your session",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Check if client is running before logout
+		olmClient := olm.NewClient("")
+		if olmClient.IsRunning() {
+			// Prompt user to confirm they want to disconnect the client
+			var confirm bool
+			confirmForm := huh.NewForm(
+				huh.NewGroup(
+					huh.NewConfirm().
+						Title("A client is currently running. Logging out will disconnect it.").
+						Description("Do you want to continue?").
+						Value(&confirm),
+				),
+			)
+
+			if err := confirmForm.Run(); err != nil {
+				utils.Error("Error: %v", err)
+				return
+			}
+
+			if !confirm {
+				utils.Info("Logout cancelled")
+				return
+			}
+
+			// Kill the client without showing TUI
+			_, err := olmClient.Exit()
+			if err != nil {
+				utils.Warning("Failed to send exit signal to client: %v", err)
+			} else {
+				// Wait for client to stop (poll until socket is gone)
+				maxWait := 10 * time.Second
+				pollInterval := 200 * time.Millisecond
+				elapsed := time.Duration(0)
+				for olmClient.IsRunning() && elapsed < maxWait {
+					time.Sleep(pollInterval)
+					elapsed += pollInterval
+				}
+				if olmClient.IsRunning() {
+					utils.Warning("Client did not stop within timeout")
+				}
+			}
+		}
+
 		// Check if there's an active session in the key store
 		_, err := api.GetSessionToken()
 		if err != nil {

@@ -56,6 +56,12 @@ github.com/fosrl/newt v0.0.0-20250929233849-71c5bf7e65f7 h1:6bSU8Efyhx1SR53iSw1W
 github.com/fosrl/newt v0.0.0-20250929233849-71c5bf7e65f7/go.mod h1:Ac0k2FmAMC+hu21rAK+p7EnnEGrqKO/QZuGTVHA/XDM=
 github.com/fosrl/olm v0.0.0-20251103232918-352ac8def6ff h1:aqhgr6at6y2HpLDfXPNMRYx+I9g6s4REqM+ekWM92W8=
 github.com/fosrl/olm v0.0.0-20251103232918-352ac8def6ff/go.mod h1:CGZWEGZyvhOcYETALbJxCviupeILXzPODXbaIkjp/nU=
+github.com/fosrl/olm v0.0.0-20251104010823-456ca806be8b h1:pYjuO+EEHwpVIVeht/9u/acaaVpj9u/qsqHwMlngX7c=
+github.com/fosrl/olm v0.0.0-20251104010823-456ca806be8b/go.mod h1:CGZWEGZyvhOcYETALbJxCviupeILXzPODXbaIkjp/nU=
+github.com/fosrl/olm v0.0.0-20251104043306-690b133c7b44 h1:379irklpiI0BIpWK310M/W3aDKIfrun/YZWqaCpef2A=
+github.com/fosrl/olm v0.0.0-20251104043306-690b133c7b44/go.mod h1:CGZWEGZyvhOcYETALbJxCviupeILXzPODXbaIkjp/nU=
+github.com/fosrl/olm v0.0.0-20251104045455-da1e4911bdf6 h1:3LeWuWAdtNVvyelgV58uE2l2yu87Z/9vqROCCyBp3oQ=
+github.com/fosrl/olm v0.0.0-20251104045455-da1e4911bdf6/go.mod h1:CGZWEGZyvhOcYETALbJxCviupeILXzPODXbaIkjp/nU=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=

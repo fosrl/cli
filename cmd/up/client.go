@@ -101,8 +101,7 @@ var clientCmd = &cobra.Command{
 			if err != nil {
 				// Not found in keyring, create new OLM
 				deviceName := getDeviceName()
-				randomNum := rand.Intn(10000) // 0-9999
-				defaultOlmName := fmt.Sprintf("%s %04d", deviceName, randomNum)
+				defaultOlmName := fmt.Sprintf("%s", deviceName)
 
 				// Prompt user to edit the name with pre-filled default
 				olmName := defaultOlmName

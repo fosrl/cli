@@ -216,6 +216,8 @@ func loginWithWeb(hostname string) (string, error) {
 	var token string
 
 	for {
+		//print
+		utils.Debug("Polling for device web auth verification...")
 		// Check if code has expired
 		now := time.Now().UnixMilli()
 		if now >= expiresAt {
@@ -229,6 +231,8 @@ func loginWithWeb(hostname string) (string, error) {
 
 		// Poll for verification status
 		pollResp, message, err := api.PollDeviceWebAuth(loginClient, code)
+		// print debug info
+		utils.Debug("Polling response: %+v, message: %s, err: %v", pollResp, message, err)
 		if err != nil {
 			// Check if it's a rate limit error (429)
 			if errorResp, ok := err.(*api.ErrorResponse); ok && errorResp.Status == 429 {
@@ -417,6 +421,47 @@ var LoginCmd = &cobra.Command{
 			viper.Set("email", user.Email)
 			if err := viper.WriteConfig(); err != nil {
 				utils.Warning("Failed to save user information to config: %v", err)
+			}
+
+			// Get or create OLM credentials
+			userID := user.UserID
+			_, _, err := api.GetOlmCredentials(userID)
+			if err != nil {
+				// Not found in keyring, create new OLM
+				deviceName := getDeviceName()
+				defaultOlmName := fmt.Sprintf("%s", deviceName)
+
+				// Prompt user to edit the name with pre-filled default
+				olmName := defaultOlmName
+				nameForm := huh.NewForm(
+					huh.NewGroup(
+						huh.NewInput().
+							Title("Client name").
+							Description("Enter a name for this client (press Enter to use default)").
+							Value(&olmName),
+					),
+				)
+
+				if err := nameForm.Run(); err != nil {
+					utils.Warning("Failed to collect client name: %v", err)
+				} else {
+					// Use default if user cleared the name
+					if strings.TrimSpace(olmName) == "" {
+						olmName = defaultOlmName
+					} else {
+						olmName = strings.TrimSpace(olmName)
+					}
+
+					response, err := api.GlobalClient.CreateOlm(olmName, userID)
+					if err != nil {
+						utils.Warning("Failed to create OLM: %v", err)
+					} else {
+						// Save to keyring
+						if err := api.SaveOlmCredentials(userID, response.OlmID, response.Secret); err != nil {
+							utils.Warning("Failed to save OLM credentials to keyring: %v", err)
+						}
+					}
+				}
 			}
 		}
 

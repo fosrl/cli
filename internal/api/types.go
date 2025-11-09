@@ -112,7 +112,7 @@ type User struct {
 	EmailVerified    bool    `json:"emailVerified"`
 	ServerAdmin      bool    `json:"serverAdmin"`
 	IDPName          *string `json:"idpName"`
-	IDPID            *string `json:"idpId"`
+	IDPID            *int `json:"idpId"`
 }
 
 // Org represents an organization

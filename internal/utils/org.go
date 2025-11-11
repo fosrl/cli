@@ -29,7 +29,7 @@ func SelectOrg(userID string) (string, error) {
 		if err := viper.WriteConfig(); err != nil {
 			return "", fmt.Errorf("failed to save organization to config: %w", err)
 		}
-		switchActiveClientOrg(selectedOrg.OrgID)
+		SwitchActiveClientOrg(selectedOrg.OrgID)
 		return selectedOrg.OrgID, nil
 	}
 
@@ -67,14 +67,14 @@ func SelectOrg(userID string) (string, error) {
 		return "", fmt.Errorf("failed to save organization to config: %w", err)
 	}
 
-	switchActiveClientOrg(selectedOrgOption.OrgID)
+	SwitchActiveClientOrg(selectedOrgOption.OrgID)
 
 	return selectedOrgOption.OrgID, nil
 }
 
-// switchActiveClientOrg checks if the OLM client is running and switches to the new org if so
+// SwitchActiveClientOrg checks if the OLM client is running and switches to the new org if so
 // It returns true if a switch was attempted (regardless of success)
-func switchActiveClientOrg(orgID string) bool {
+func SwitchActiveClientOrg(orgID string) bool {
 	client := olm.NewClient("")
 	if !client.IsRunning() {
 		// Client is not running, nothing to do

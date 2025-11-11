@@ -3,6 +3,7 @@ package selectcmd
 import (
 	"fmt"
 
+	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
@@ -24,11 +25,55 @@ var orgCmd = &cobra.Command{
 		// Get userId from config
 		userID := viper.GetString("userId")
 
-		// Select organization
-		orgID, err := utils.SelectOrg(userID)
-		if err != nil {
-			utils.Error("%v", err)
-			return
+		var orgID string
+		var err error
+
+		// Check if --orgId flag is provided (check persistent flags from root)
+		flagOrgID := ""
+		if cmd.Root().PersistentFlags().Changed("orgId") {
+			flagOrgID, _ = cmd.Root().PersistentFlags().GetString("orgId")
+		}
+		if flagOrgID != "" {
+			// Validate that the org exists
+			orgsResp, err := api.GlobalClient.ListUserOrgs(userID)
+			if err != nil {
+				utils.Error("Failed to list organizations: %v", err)
+				return
+			}
+
+			// Check if the provided orgId exists in the user's organizations
+			orgExists := false
+			for _, org := range orgsResp.Orgs {
+				if org.OrgID == flagOrgID {
+					orgExists = true
+					break
+				}
+			}
+
+			if !orgExists {
+				utils.Error("Organization '%s' not found or you don't have access to it", flagOrgID)
+				return
+			}
+
+			// Org exists, use it
+			orgID = flagOrgID
+
+			// Save to config
+			viper.Set("orgId", orgID)
+			if err := viper.WriteConfig(); err != nil {
+				utils.Error("Failed to save organization to config: %v", err)
+				return
+			}
+
+			// Switch active client if running
+			utils.SwitchActiveClientOrg(orgID)
+		} else {
+			// No flag provided, use GUI selection
+			orgID, err = utils.SelectOrg(userID)
+			if err != nil {
+				utils.Error("%v", err)
+				return
+			}
 		}
 
 		// Check if client is running and if we need to monitor a switch

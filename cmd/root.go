@@ -48,11 +48,11 @@ func init() {
 	rootCmd.AddCommand(down.DownCmd)
 	rootCmd.AddCommand(logs.LogsCmd)
 	rootCmd.AddCommand(status.StatusCmd)
-	
+
 	// Add login and logout as top-level aliases
 	rootCmd.AddCommand(login.LoginCmd)
 	rootCmd.AddCommand(logout.LogoutCmd)
-	
+
 	// Hide the completion command
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 }

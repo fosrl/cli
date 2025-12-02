@@ -23,113 +23,6 @@ const (
 	HostingOptionSelfHosted HostingOption = "self-hosted"
 )
 
-type LoginMethod string
-
-const (
-	LoginMethodCredentials LoginMethod = "credentials"
-	LoginMethodWeb         LoginMethod = "web"
-)
-
-func loginWithCredentials(hostname string) (string, error) {
-	// Build base URL for login (use hostname as-is, LoginWithCookie will add /api/v1/auth/login)
-	baseURL := hostname
-
-	// Create a temporary API client for login (without auth)
-	loginClient, err := api.NewClient(api.ClientConfig{
-		BaseURL:           baseURL,
-		AgentName:         "pangolin-cli",
-		SessionCookieName: "p_session_token",
-		CSRFToken:         "x-csrf-protection",
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	// Prompt for email and password
-	var email, password string
-	credentialsForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Email").
-				Placeholder("your.email@example.com").
-				Value(&email),
-			huh.NewInput().
-				Title("Password").
-				Placeholder("Enter your password").
-				EchoMode(huh.EchoModePassword).
-				Value(&password),
-		),
-	)
-
-	if err := credentialsForm.Run(); err != nil {
-		return "", fmt.Errorf("error collecting credentials: %w", err)
-	}
-
-	// Perform login
-	loginReq := api.LoginRequest{
-		Email:    email,
-		Password: password,
-	}
-
-	loginResp, sessionToken, err := api.LoginWithCookie(loginClient, loginReq)
-	if err != nil {
-		return "", err
-	}
-
-	// Handle nil response (shouldn't happen, but be safe)
-	if loginResp == nil {
-		if sessionToken != "" {
-			// If we got a token, consider it successful
-			return sessionToken, nil
-		}
-		return "", fmt.Errorf("login failed - no response received")
-	}
-
-	// Handle different response scenarios
-	if loginResp.TwoFactorSetupRequired {
-		return "", fmt.Errorf("two-factor authentication setup is required. Please complete setup in the web interface")
-	}
-
-	if loginResp.UseSecurityKey {
-		return "", fmt.Errorf("security key authentication is required. This is not yet supported in the CLI")
-	}
-
-	if loginResp.CodeRequested {
-		// Prompt for 2FA code
-		var code string
-		codeForm := huh.NewForm(
-			huh.NewGroup(
-				huh.NewInput().
-					Title("Two-factor authentication code").
-					Placeholder("Enter your 2FA code").
-					Value(&code),
-			),
-		)
-
-		if err := codeForm.Run(); err != nil {
-			return "", fmt.Errorf("error collecting 2FA code: %w", err)
-		}
-
-		// Retry login with code
-		loginReq.Code = code
-		loginResp, sessionToken, err = api.LoginWithCookie(loginClient, loginReq)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	if loginResp.EmailVerificationRequired {
-		utils.Info("Email verification is required. Please check your email and verify your account.")
-		// Still save the token if we got one
-		if sessionToken != "" {
-			return sessionToken, nil
-		}
-		return "", fmt.Errorf("email verification required but no session token received")
-	}
-
-	return sessionToken, nil
-}
-
 // openBrowser opens the specified URL in the default browser
 func openBrowser(url string) error {
 	var cmd *exec.Cmd
@@ -185,10 +78,11 @@ func loginWithWeb(hostname string) (string, error) {
 	}
 
 	code := startResp.Code
-	expiresAt := startResp.ExpiresAt
+	// Calculate expiry time from relative seconds
+	expiresAt := time.Now().Add(time.Duration(startResp.ExpiresInSeconds) * time.Second)
 
-	// Build the login URL
-	loginURL := strings.TrimSuffix(hostname, "/") + "/auth/login/device"
+	// Build the login URL with code as query parameter
+	loginURL := fmt.Sprintf("%s/auth/login/device?code=%s", strings.TrimSuffix(hostname, "/"), code)
 
 	// Display code and instructions (similar to GH CLI format)
 	utils.Info("First copy your one-time code: %s", code)
@@ -219,8 +113,7 @@ func loginWithWeb(hostname string) (string, error) {
 		//print
 		utils.Debug("Polling for device web auth verification...")
 		// Check if code has expired
-		now := time.Now().UnixMilli()
-		if now >= expiresAt {
+		if time.Now().After(expiresAt) {
 			return "", fmt.Errorf("code expired. Please try again")
 		}
 
@@ -270,10 +163,6 @@ func loginWithWeb(hostname string) (string, error) {
 	}
 }
 
-var (
-	flagCred bool
-)
-
 var LoginCmd = &cobra.Command{
 	Use:   "login [hostname]",
 	Short: "Login to Pangolin",
@@ -294,24 +183,10 @@ var LoginCmd = &cobra.Command{
 
 		var hostingOption HostingOption
 		var hostname string
-		var loginMethod LoginMethod
 
 		// Check if hostname was provided as positional argument
-		hostnameProvided := len(args) > 0
-		if hostnameProvided {
+		if len(args) > 0 {
 			hostname = args[0]
-		}
-
-		// If hostname is provided, default to web authentication unless --cred is specified
-		if hostnameProvided {
-			if flagCred {
-				loginMethod = LoginMethodCredentials
-			} else {
-				loginMethod = LoginMethodWeb
-			}
-		} else if flagCred {
-			// If no hostname but --cred is set, use credentials (will prompt for hostname)
-			loginMethod = LoginMethodCredentials
 		}
 
 		// If hostname was provided, skip hosting option selection
@@ -383,35 +258,8 @@ var LoginCmd = &cobra.Command{
 			}
 		}
 
-		// Select login method if not already set by flags
-		if loginMethod == "" {
-			loginMethodForm := huh.NewForm(
-				huh.NewGroup(
-					huh.NewSelect[LoginMethod]().
-						Title("Select login method").
-						Options(
-							huh.NewOption("Login with web (recommended)", LoginMethodWeb),
-							huh.NewOption("Login with credentials", LoginMethodCredentials),
-						).
-						Value(&loginMethod),
-				),
-			)
-
-			if err := loginMethodForm.Run(); err != nil {
-				utils.Error("Error: %v", err)
-				return
-			}
-		}
-
-		// Branch based on login method
-		var sessionToken string
-		var err error
-
-		if loginMethod == LoginMethodWeb {
-			sessionToken, err = loginWithWeb(hostname)
-		} else {
-			sessionToken, err = loginWithCredentials(hostname)
-		}
+		// Perform web login
+		sessionToken, err := loginWithWeb(hostname)
 
 		if err != nil {
 			utils.Error("%v", err)
@@ -511,8 +359,4 @@ var LoginCmd = &cobra.Command{
 			}
 		}
 	},
-}
-
-func init() {
-	LoginCmd.Flags().BoolVar(&flagCred, "cred", false, "Login using credentials (email/password) instead of web authentication")
 }

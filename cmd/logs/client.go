@@ -214,4 +214,3 @@ func watchLogFile(logPath string, numLines int) error {
 		}
 	}
 }
-

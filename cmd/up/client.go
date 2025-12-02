@@ -45,7 +45,7 @@ var (
 	flagUserToken     string
 )
 
-var clientCmd = &cobra.Command{
+var ClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Start a client connection",
 	Long:  "Bring up a client tunneled connection",
@@ -489,28 +489,28 @@ func getDeviceName() string {
 
 func init() {
 	// Optional flags - if not provided, will use keyring or create new OLM
-	clientCmd.Flags().StringVar(&flagID, "id", "", "Client ID (optional, will use keyring or create new if not provided)")
-	clientCmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use keyring or create new if not provided)")
+	ClientCmd.Flags().StringVar(&flagID, "id", "", "Client ID (optional, will use keyring or create new if not provided)")
+	ClientCmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use keyring or create new if not provided)")
 
 	// Optional flags
-	clientCmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (defaults to hostname from config)")
-	clientCmd.Flags().IntVar(&flagMTU, "mtu", 0, "MTU (default: 1280)")
-	clientCmd.Flags().StringVar(&flagDNS, "dns", "", "DNS server (default: 8.8.8.8)")
-	clientCmd.Flags().StringVar(&flagInterfaceName, "interface-name", "", "Interface name (default: olm)")
-	clientCmd.Flags().StringVar(&flagLogLevel, "log-level", "", "Log level (default: info)")
-	clientCmd.Flags().BoolVar(&flagEnableAPI, "enable-api", false, "Enable API (default: true)")
-	clientCmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address")
-	clientCmd.Flags().StringVar(&flagSocketPath, "socket-path", "", "Socket path (default: /var/run/olm.sock)")
-	clientCmd.Flags().StringVar(&flagPingInterval, "ping-interval", "", "Ping interval (default: 5s)")
-	clientCmd.Flags().StringVar(&flagPingTimeout, "ping-timeout", "", "Ping timeout (default: 5s)")
-	clientCmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, "Enable holepunching (default: false)")
-	clientCmd.Flags().StringVar(&flagTlsClientCert, "tls-client-cert", "", "TLS client certificate path")
-	clientCmd.Flags().StringVar(&flagVersion, "version", "", "Version (default: 1)")
-	clientCmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
-	clientCmd.Flags().StringVar(&flagLogFile, "log-file", "", "Path to log file (defaults to standard log location when detached)")
-	clientCmd.Flags().StringVar(&flagUserToken, "user-token", "", "User session token (internal use, passed from parent process)")
+	ClientCmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (defaults to hostname from config)")
+	ClientCmd.Flags().IntVar(&flagMTU, "mtu", 0, "MTU (default: 1280)")
+	ClientCmd.Flags().StringVar(&flagDNS, "dns", "", "DNS server (default: 8.8.8.8)")
+	ClientCmd.Flags().StringVar(&flagInterfaceName, "interface-name", "", "Interface name (default: olm)")
+	ClientCmd.Flags().StringVar(&flagLogLevel, "log-level", "", "Log level (default: info)")
+	ClientCmd.Flags().BoolVar(&flagEnableAPI, "enable-api", false, "Enable API (default: true)")
+	ClientCmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address")
+	ClientCmd.Flags().StringVar(&flagSocketPath, "socket-path", "", "Socket path (default: /var/run/olm.sock)")
+	ClientCmd.Flags().StringVar(&flagPingInterval, "ping-interval", "", "Ping interval (default: 5s)")
+	ClientCmd.Flags().StringVar(&flagPingTimeout, "ping-timeout", "", "Ping timeout (default: 5s)")
+	ClientCmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, "Enable holepunching (default: false)")
+	ClientCmd.Flags().StringVar(&flagTlsClientCert, "tls-client-cert", "", "TLS client certificate path")
+	ClientCmd.Flags().StringVar(&flagVersion, "version", "", "Version (default: 1)")
+	ClientCmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
+	ClientCmd.Flags().StringVar(&flagLogFile, "log-file", "", "Path to log file (defaults to standard log location when detached)")
+	ClientCmd.Flags().StringVar(&flagUserToken, "user-token", "", "User session token (internal use, passed from parent process)")
 
-	UpCmd.AddCommand(clientCmd)
+	UpCmd.AddCommand(ClientCmd)
 }
 
 // setupLogFile sets up file logging with rotation

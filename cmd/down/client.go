@@ -1,7 +1,6 @@
 package down
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/fosrl/cli/internal/olm"
@@ -10,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var clientDownCmd = &cobra.Command{
+var ClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Stop the client connection",
 	Long:  "Stop the currently running client connection",
@@ -47,7 +46,7 @@ var clientDownCmd = &cobra.Command{
 			},
 			StatusFormatter: func(isRunning bool, status *olm.StatusResponse) string {
 				if !isRunning {
-					return fmt.Sprintf("Stopped")
+					return "Stopped"
 				}
 				return "Stopping..."
 			},
@@ -66,6 +65,5 @@ var clientDownCmd = &cobra.Command{
 }
 
 func init() {
-	DownCmd.AddCommand(clientDownCmd)
+	DownCmd.AddCommand(ClientCmd)
 }
-

@@ -39,27 +39,25 @@ var ClientCmd = &cobra.Command{
 // printStatusTable prints the status information in a table format
 func printStatusTable(status *olm.StatusResponse) {
 	// Print connection status
-	headers := []string{"STATUS", "REGISTERED", "ORG ID", "TUNNEL IP", "VERSION"}
+	headers := []string{"CONNECTED", "REGISTERED", "ORG ID"}
 	rows := [][]string{
 		{
-			formatStatus(status.Status, status.Connected),
+			fmt.Sprintf("%t", status.Connected),
 			fmt.Sprintf("%t", status.Registered),
 			status.OrgID,
-			status.TunnelIP,
-			status.Version,
 		},
 	}
 	utils.PrintTable(headers, rows)
 
 	// Print peers if there are any
-	if len(status.Peers) > 0 {
-		fmt.Println("\n")
+	if len(status.PeerStatuses) > 0 {
+		fmt.Println("")
 		peerHeaders := []string{"SITE ID", "ENDPOINT", "STATUS", "RTT", "LAST SEEN", "RELAY"}
 		peerRows := [][]string{}
 
-		for _, peer := range status.Peers {
-			rtt := formatRTT(peer.RTT)
-			lastSeen := formatLastSeen(peer.LastSeen)
+		for _, peer := range status.PeerStatuses {
+			rtt := formatRTT(int64(peer.RTT))
+			lastSeen := formatLastSeen(peer.LastSeen.Format(time.RFC3339))
 
 			peerRows = append(peerRows, []string{
 				fmt.Sprintf("%d", peer.SiteID),
@@ -69,8 +67,8 @@ func printStatusTable(status *olm.StatusResponse) {
 				lastSeen,
 				fmt.Sprintf("%t", peer.IsRelay),
 			})
-		}
 
+		}
 		utils.PrintTable(peerHeaders, peerRows)
 	} else {
 		fmt.Println("\nNo peers connected")
@@ -131,4 +129,3 @@ func formatLastSeen(lastSeenStr string) string {
 		return t.Format("2006-01-02 15:04:05")
 	}
 }
-

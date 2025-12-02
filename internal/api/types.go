@@ -140,8 +140,8 @@ type DeviceWebAuthStartRequest struct {
 
 // DeviceWebAuthStartResponse represents the response from starting device web auth
 type DeviceWebAuthStartResponse struct {
-	Code      string `json:"code"`
-	ExpiresAt int64  `json:"expiresAt"` // Unix timestamp in milliseconds
+	Code             string `json:"code"`
+	ExpiresInSeconds int64  `json:"expiresInSeconds"` // Relative seconds until expiry
 }
 
 // DeviceWebAuthPollResponse represents the response from polling device web auth

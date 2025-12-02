@@ -24,25 +24,26 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// StatusResponse represents the status response from OLM
+// OLMStatusResponse represents the status response from OLM API
 type StatusResponse struct {
-	Status     string          `json:"status"`
-	Connected  bool            `json:"connected"`
-	TunnelIP   string          `json:"tunnelIP"`
-	Version    string          `json:"version"`
-	Peers      map[string]Peer `json:"peers"`
-	Registered bool            `json:"registered"` // whether the wireguard interface is created
-	OrgID      string          `json:"orgId"`
+	Connected       bool                   `json:"connected"`
+	Registered      bool                   `json:"registered"`
+	Terminated      bool                   `json:"terminated"`
+	Version         string                 `json:"version,omitempty"`
+	OrgID           string                 `json:"orgId,omitempty"`
+	PeerStatuses    map[int]*OLMPeerStatus `json:"peers,omitempty"`
+	NetworkSettings map[string]interface{} `json:"networkSettings,omitempty"`
 }
 
-// Peer represents a peer in the status response
-type Peer struct {
-	SiteID    int    `json:"siteId"`
-	Connected bool   `json:"connected"`
-	RTT       int64  `json:"rtt"` // nanoseconds
-	LastSeen  string `json:"lastSeen"`
-	Endpoint  string `json:"endpoint"`
-	IsRelay   bool   `json:"isRelay"`
+// OLMPeerStatus represents the status of a peer connection
+type OLMPeerStatus struct {
+	SiteID    int           `json:"siteId"`
+	Connected bool          `json:"connected"`
+	RTT       time.Duration `json:"rtt"`
+	LastSeen  time.Time     `json:"lastSeen"`
+	Endpoint  string        `json:"endpoint,omitempty"`
+	IsRelay   bool          `json:"isRelay"`
+	PeerIP    string        `json:"peerAddress,omitempty"`
 }
 
 // ExitResponse represents the exit/shutdown response

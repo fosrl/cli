@@ -494,6 +494,14 @@ var ClientCmd = &cobra.Command{
 			SocketPath: socketPath,
 			HTTPAddr:   httpAddr,
 			Version:    version,
+			OnTerminated: func() {
+				utils.Info("Client process terminated")
+				os.Exit(0)
+			},
+			OnAuthError: func(statusCode int, message string) {
+				utils.Error("Authentication error: %d %s", statusCode, message)
+				os.Exit(1)
+			},
 		}
 
 		olmConfig := olmpkg.TunnelConfig{

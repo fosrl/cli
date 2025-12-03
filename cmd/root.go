@@ -12,6 +12,7 @@ import (
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/status"
 	"github.com/fosrl/cli/cmd/up"
+	"github.com/fosrl/cli/cmd/version"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
@@ -49,6 +50,7 @@ func init() {
 	rootCmd.AddCommand(down.DownCmd)
 	rootCmd.AddCommand(logs.LogsCmd)
 	rootCmd.AddCommand(status.StatusCmd)
+	rootCmd.AddCommand(version.VersionCmd)
 
 	// Add login and logout as top-level aliases
 	rootCmd.AddCommand(login.LoginCmd)

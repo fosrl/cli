@@ -13,7 +13,6 @@ import (
 const (
 	keyringService = "Pangolin: pangolin-cli"
 	keyringUser    = "session-token"
-	keyringOlmUser = "olm-credentials"
 )
 
 var GlobalClient *Client
@@ -136,17 +135,20 @@ func DeleteSessionToken() error {
 	return err
 }
 
-// SaveOlmCredentials saves OLM credentials (olmId.secret) to the OS keyring
+// SaveOlmCredentials saves OLM credentials to the OS keyring
 // The userId is used as part of the keyring key to allow multiple users on the same machine
 func SaveOlmCredentials(userID, olmID, secret string) error {
 	if userID == "" {
 		return fmt.Errorf("userId is required to save OLM credentials")
 	}
-	credentials := olmID + "." + secret
-	keyringKey := keyringOlmUser + "$" + userID
+	idKey := fmt.Sprintf("olm-id-%s", userID)
+	secretKey := fmt.Sprintf("olm-secret-%s", userID)
 	var err error
 	withOriginalUserHome(func() error {
-		err = keyring.Set(keyringService, keyringKey, credentials)
+		if err = keyring.Set(keyringService, idKey, olmID); err != nil {
+			return err
+		}
+		err = keyring.Set(keyringService, secretKey, secret)
 		return err
 	})
 	return err
@@ -159,24 +161,23 @@ func GetOlmCredentials(userID string) (string, string, error) {
 	if userID == "" {
 		return "", "", fmt.Errorf("userId is required to get OLM credentials")
 	}
-	keyringKey := keyringOlmUser + "$" + userID
-	var credentials string
+	idKey := fmt.Sprintf("olm-id-%s", userID)
+	secretKey := fmt.Sprintf("olm-secret-%s", userID)
+	var olmID, secret string
 	var err error
 	withOriginalUserHome(func() error {
-		credentials, err = keyring.Get(keyringService, keyringKey)
+		olmID, err = keyring.Get(keyringService, idKey)
+		if err != nil {
+			return err
+		}
+		secret, err = keyring.Get(keyringService, secretKey)
 		return err
 	})
 	if err != nil {
 		return "", "", err
 	}
 
-	// Split on the first dot (in case secret contains dots)
-	parts := strings.SplitN(credentials, ".", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid credentials format")
-	}
-
-	return parts[0], parts[1], nil
+	return olmID, secret, nil
 }
 
 // DeleteOlmCredentials deletes OLM credentials from the OS keyring
@@ -185,10 +186,17 @@ func DeleteOlmCredentials(userID string) error {
 	if userID == "" {
 		return fmt.Errorf("userId is required to delete OLM credentials")
 	}
-	keyringKey := keyringOlmUser + "$" + userID
+	idKey := fmt.Sprintf("olm-id-%s", userID)
+	secretKey := fmt.Sprintf("olm-secret-%s", userID)
 	var err error
 	withOriginalUserHome(func() error {
-		err = keyring.Delete(keyringService, keyringKey)
+		// Try to delete both entries, continue even if one doesn't exist
+		if delErr := keyring.Delete(keyringService, idKey); delErr != nil && err == nil {
+			err = delErr
+		}
+		if delErr := keyring.Delete(keyringService, secretKey); delErr != nil && err == nil {
+			err = delErr
+		}
 		return err
 	})
 	return err

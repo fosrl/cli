@@ -227,6 +227,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("skip-user-token") {
 				if flagSkipUserToken {
 					cmdArgs = append(cmdArgs, "--skip-user-token")
+				} else {
+					cmdArgs = append(cmdArgs, "--skip-user-token=false")
 				}
 			}
 
@@ -246,6 +248,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("enable-api") {
 				if flagEnableAPI {
 					cmdArgs = append(cmdArgs, "--enable-api")
+				} else {
+					cmdArgs = append(cmdArgs, "--enable-api=false")
 				}
 			}
 			if cmd.Flags().Changed("http-addr") {
@@ -263,6 +267,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("holepunch") {
 				if flagHolepunch {
 					cmdArgs = append(cmdArgs, "--holepunch")
+				} else {
+					cmdArgs = append(cmdArgs, "--holepunch=false")
 				}
 			}
 			if cmd.Flags().Changed("tls-client-cert") {
@@ -274,6 +280,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("override-dns") {
 				if flagOverrideDNS {
 					cmdArgs = append(cmdArgs, "--override-dns")
+				} else {
+					cmdArgs = append(cmdArgs, "--override-dns=false")
 				}
 			}
 			if cmd.Flags().Changed("upstream-dns") {
@@ -536,6 +544,7 @@ var ClientCmd = &cobra.Command{
 		}
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer olmpkg.StopTunnel()
 		defer stop()
 
 		olmpkg.Init(ctx, olmInitConfig)

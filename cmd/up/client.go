@@ -17,6 +17,7 @@ import (
 	"github.com/fosrl/cli/internal/secrets"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
+	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/fosrl/newt/logger"
 	olmpkg "github.com/fosrl/olm/olm"
 	"github.com/spf13/cobra"
@@ -408,7 +409,7 @@ var ClientCmd = &cobra.Command{
 		pingTimeout := getString(flagPingTimeout, "ping-timeout", "ping_timeout", defaultPingTimeout)
 		holepunch := getBool(flagHolepunch, "holepunch", "holepunch", defaultHolepunch)
 		tlsClientCert := getString(flagTlsClientCert, "tls-client-cert", "tls_client_cert", "")
-		version := defaultVersion
+		version := versionpkg.Version
 		overrideDNS := getBool(flagOverrideDNS, "override-dns", "override_dns", defaultOverrideDNS)
 		upstreamDNS := getStringSlice(flagUpstreamDNS, "upstream-dns", "upstream_dns", []string{defaultDNS})
 
@@ -472,6 +473,7 @@ var ClientCmd = &cobra.Command{
 			SocketPath: socketPath,
 			HTTPAddr:   httpAddr,
 			Version:    version,
+			Agent:      "Pangolin CLI",
 			OnTerminated: func() {
 				utils.Info("Client process terminated")
 				stop()

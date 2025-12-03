@@ -150,10 +150,12 @@ func Warning(format string, args ...interface{}) {
 
 // GetDefaultLogPath returns the default log file path for client logs
 func GetDefaultLogPath() string {
-	homeDir, err := os.UserHomeDir()
+	pangolinDir, err := GetPangolinDir()
 	if err != nil {
 		return "/tmp/olm.log"
 	}
-	// Use filepath for cross-platform compatibility
-	return filepath.Join(homeDir, ".pangolin", "logs", "client.log")
+	// Ensure logs subdirectory exists
+	logsDir := filepath.Join(pangolinDir, "logs")
+	os.MkdirAll(logsDir, 0755)
+	return filepath.Join(logsDir, "client.log")
 }

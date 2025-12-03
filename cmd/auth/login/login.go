@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -230,11 +231,11 @@ var LoginCmd = &cobra.Command{
 		// Ensure config type is set and file path is correct
 		if viper.ConfigFileUsed() == "" {
 			// Config file doesn't exist yet, set the full path
-			// Use original user's home directory (works with and without sudo)
-			homeDir, err := utils.GetOriginalUserHomeDir()
+			// Get .pangolin directory and ensure it exists
+			pangolinDir, err := utils.GetPangolinDir()
 			if err == nil {
-				viper.SetConfigFile(homeDir + "/.pangolin.yaml")
-				viper.SetConfigType("yaml")
+				viper.SetConfigFile(filepath.Join(pangolinDir, "pangolin.json"))
+				viper.SetConfigType("json")
 			}
 		}
 

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -12,9 +13,11 @@ import (
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/status"
 	"github.com/fosrl/cli/cmd/up"
+	"github.com/fosrl/cli/cmd/update"
 	"github.com/fosrl/cli/cmd/version"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/utils"
+	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,6 +27,25 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "pangolin",
 	Short: "Pangolin CLI",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Skip update check for version and update commands
+		// Check both the command name and if it's one of these specific commands
+		cmdName := cmd.Name()
+		if cmdName == "version" || cmdName == "update" {
+			return
+		}
+		// Also check if this is the version or update command object
+		if cmd == version.VersionCmd || cmd == update.UpdateCmd {
+			return
+		}
+
+		// Check for updates asynchronously
+		versionpkg.CheckForUpdateAsync(func(release *versionpkg.GitHubRelease) {
+			utils.Warning("A new version is available: %s (current: %s)", release.TagName, versionpkg.Version)
+			utils.Info("Run 'pangolin update' to update to the latest version")
+			fmt.Println()
+		})
+	},
 }
 
 // Execute is called by main.go
@@ -50,6 +72,7 @@ func init() {
 	rootCmd.AddCommand(down.DownCmd)
 	rootCmd.AddCommand(logs.LogsCmd)
 	rootCmd.AddCommand(status.StatusCmd)
+	rootCmd.AddCommand(update.UpdateCmd)
 	rootCmd.AddCommand(version.VersionCmd)
 
 	// Add login and logout as top-level aliases
@@ -64,17 +87,16 @@ func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Get original user's home directory (works with and without sudo)
-		homeDir, err := utils.GetOriginalUserHomeDir()
+		// Get .pangolin directory and ensure it exists
+		pangolinDir, err := utils.GetPangolinDir()
 		if err != nil {
-			// Fallback to $HOME if we can't determine original user
-			viper.AddConfigPath("$HOME")
+			// Fallback to $HOME/.pangolin if we can't determine original user
+			viper.AddConfigPath("$HOME/.pangolin")
 		} else {
-			// Use original user's home directory for config
-			viper.AddConfigPath(homeDir)
+			viper.AddConfigPath(pangolinDir)
 		}
-		viper.SetConfigName(".pangolin")
-		viper.SetConfigType("yaml")
+		viper.SetConfigName("pangolin")
+		viper.SetConfigType("json")
 	}
 	viper.AutomaticEnv() // read env variables
 

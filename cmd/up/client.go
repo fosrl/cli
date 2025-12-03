@@ -46,15 +46,12 @@ var (
 	flagDNS           string
 	flagInterfaceName string
 	flagLogLevel      string
-	flagEnableAPI     bool
 	flagHTTPAddr      string
-	flagSocketPath    string
 	flagPingInterval  string
 	flagPingTimeout   string
 	flagHolepunch     bool
 	flagTlsClientCert string
 	flagAttached      bool
-	flagLogFile       string
 	flagSilent        bool
 	flagOverrideDNS   bool
 	flagUpstreamDNS   []string
@@ -138,8 +135,8 @@ var ClientCmd = &cobra.Command{
 		}
 
 		// Handle log file setup - if detached mode, always use log file
-		logFile := flagLogFile
-		if !flagAttached && logFile == "" {
+		var logFile string
+		if !flagAttached {
 			logFile = utils.GetDefaultLogPath()
 		}
 
@@ -192,18 +189,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("log-level") {
 				cmdArgs = append(cmdArgs, "--log-level", flagLogLevel)
 			}
-			if cmd.Flags().Changed("enable-api") {
-				if flagEnableAPI {
-					cmdArgs = append(cmdArgs, "--enable-api")
-				} else {
-					cmdArgs = append(cmdArgs, "--enable-api=false")
-				}
-			}
 			if cmd.Flags().Changed("http-addr") {
 				cmdArgs = append(cmdArgs, "--http-addr", flagHTTPAddr)
-			}
-			if cmd.Flags().Changed("socket-path") {
-				cmdArgs = append(cmdArgs, "--socket-path", flagSocketPath)
 			}
 			if cmd.Flags().Changed("ping-interval") {
 				cmdArgs = append(cmdArgs, "--ping-interval", flagPingInterval)
@@ -235,8 +222,6 @@ var ClientCmd = &cobra.Command{
 					cmdArgs = append(cmdArgs, "--upstream-dns", dns)
 				}
 			}
-			// Always add log-file when detached (use default if not explicitly set)
-			cmdArgs = append(cmdArgs, "--log-file", logFile)
 
 			// Add positional args if any
 			cmdArgs = append(cmdArgs, args...)
@@ -396,7 +381,7 @@ var ClientCmd = &cobra.Command{
 		dns := getString(flagDNS, "dns", "dns", defaultDNS)
 		interfaceName := getString(flagInterfaceName, "interface-name", "interface_name", defaultInterfaceName)
 		logLevel := getString(flagLogLevel, "log-level", "log_level", defaultLogLevel)
-		enableAPI := getBool(flagEnableAPI, "enable-api", "enable_api", defaultEnableAPI)
+		enableAPI := defaultEnableAPI
 
 		// In detached mode, API cannot be disabled (required for status/control)
 		if !flagAttached && !enableAPI {
@@ -404,7 +389,7 @@ var ClientCmd = &cobra.Command{
 		}
 
 		httpAddr := getString(flagHTTPAddr, "http-addr", "http_addr", "")
-		socketPath := getString(flagSocketPath, "socket-path", "socket_path", defaultSocketPath)
+		socketPath := defaultSocketPath
 		pingInterval := getString(flagPingInterval, "ping-interval", "ping_interval", defaultPingInterval)
 		pingTimeout := getString(flagPingTimeout, "ping-timeout", "ping_timeout", defaultPingTimeout)
 		holepunch := getBool(flagHolepunch, "holepunch", "holepunch", defaultHolepunch)
@@ -473,7 +458,6 @@ var ClientCmd = &cobra.Command{
 			SocketPath: socketPath,
 			HTTPAddr:   httpAddr,
 			Version:    version,
-			Agent:      "Pangolin CLI",
 			OnTerminated: func() {
 				utils.Info("Client process terminated")
 				stop()
@@ -541,9 +525,7 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flagDNS, "dns", "", fmt.Sprintf("DNS server (default: %s)", defaultDNS))
 	cmd.Flags().StringVar(&flagInterfaceName, "interface-name", "", fmt.Sprintf("Interface name (default: %s)", defaultInterfaceName))
 	cmd.Flags().StringVar(&flagLogLevel, "log-level", "", fmt.Sprintf("Log level (default: %s)", defaultLogLevel))
-	cmd.Flags().BoolVar(&flagEnableAPI, "enable-api", false, fmt.Sprintf("Enable API (default: %v)", defaultEnableAPI))
 	cmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address")
-	cmd.Flags().StringVar(&flagSocketPath, "socket-path", "", fmt.Sprintf("Socket path (default: %s)", defaultSocketPath))
 	cmd.Flags().StringVar(&flagPingInterval, "ping-interval", "", fmt.Sprintf("Ping interval (default: %s)", defaultPingInterval))
 	cmd.Flags().StringVar(&flagPingTimeout, "ping-timeout", "", fmt.Sprintf("Ping timeout (default: %s)", defaultPingTimeout))
 	cmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, fmt.Sprintf("Enable holepunching (default: %v)", defaultHolepunch))
@@ -551,7 +533,6 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flagOverrideDNS, "override-dns", defaultOverrideDNS, fmt.Sprintf("Override system DNS for resolving internal resource alias (default: %v)", defaultOverrideDNS))
 	cmd.Flags().StringSliceVar(&flagUpstreamDNS, "upstream-dns", nil, fmt.Sprintf("List of DNS servers to use for external DNS resolution if overriding system DNS (default: %s)", defaultDNS))
 	cmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
-	cmd.Flags().StringVar(&flagLogFile, "log-file", "", "Path to log file (defaults to standard log location when detached)")
 	cmd.Flags().BoolVar(&flagSilent, "silent", false, "Disable TUI and run silently (only applies to detached mode)")
 }
 

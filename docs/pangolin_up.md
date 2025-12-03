@@ -15,14 +15,12 @@ pangolin up [flags]
 ```
       --attach                   Run in attached mode (foreground, default is detached)
       --dns string               DNS server (default: 8.8.8.8)
-      --enable-api               Enable API (default: true)
       --endpoint string          Client endpoint (required if not logged in)
   -h, --help                     help for up
       --holepunch                Enable holepunching (default: false)
       --http-addr string         HTTP address
       --id string                Client ID (optional, will use user info if not provided)
       --interface-name string    Interface name (default: Pangolin)
-      --log-file string          Path to log file (defaults to standard log location when detached)
       --log-level string         Log level (default: info)
       --mtu int                  MTU (default: 1280)
       --override-dns             Override system DNS for resolving internal resource alias (default: true) (default true)
@@ -30,7 +28,6 @@ pangolin up [flags]
       --ping-timeout string      Ping timeout (default: 5s)
       --secret string            Client secret (optional, will use user info if not provided)
       --silent                   Disable TUI and run silently (only applies to detached mode)
-      --socket-path string       Socket path (default: /var/run/olm.sock)
       --tls-client-cert string   TLS client certificate path
       --upstream-dns strings     List of DNS servers to use for external DNS resolution if overriding system DNS (default: 8.8.8.8)
 ```

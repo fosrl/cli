@@ -1,10 +1,10 @@
 ## pangolin up
 
-Start a client or site
+Start a client
 
 ### Synopsis
 
-Bring up a client or site tunneled connection
+Bring up a client connection
 
 ```
 pangolin up [flags]

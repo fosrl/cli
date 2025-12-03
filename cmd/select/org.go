@@ -64,9 +64,6 @@ var orgCmd = &cobra.Command{
 				utils.Error("Failed to save organization to config: %v", err)
 				return
 			}
-
-			// Switch active client if running
-			utils.SwitchActiveClientOrg(orgID)
 		} else {
 			// No flag provided, use GUI selection
 			orgID, err = utils.SelectOrg(userID)
@@ -75,6 +72,9 @@ var orgCmd = &cobra.Command{
 				return
 			}
 		}
+
+		// Switch active client if running
+		utils.SwitchActiveClientOrg(orgID)
 
 		// Check if client is running and if we need to monitor a switch
 		client := olm.NewClient("")

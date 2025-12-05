@@ -134,6 +134,6 @@ func monitorOrgSwitch(orgID string) {
 }
 
 func init() {
-	orgCmd.Flags().StringVar(&flagOrgID, "org-id", "", "Organization ID to select")
+	orgCmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID to select")
 	SelectCmd.AddCommand(orgCmd)
 }

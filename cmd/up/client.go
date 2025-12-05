@@ -126,7 +126,7 @@ var ClientCmd = &cobra.Command{
 			orgID = viper.GetString("orgId")
 		}
 		if orgID == "" {
-			utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org-id to the command")
+			utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org [id] to the command")
 			os.Exit(1)
 		}
 

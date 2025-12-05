@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var flagOrgID string
+
 var orgCmd = &cobra.Command{
 	Use:   "org",
 	Short: "Select an organization",
@@ -28,11 +30,7 @@ var orgCmd = &cobra.Command{
 		var orgID string
 		var err error
 
-		// Check if --orgId flag is provided (check persistent flags from root)
-		flagOrgID := ""
-		if cmd.Root().PersistentFlags().Changed("orgId") {
-			flagOrgID, _ = cmd.Root().PersistentFlags().GetString("orgId")
-		}
+		// Check if --org-id flag is provided
 		if flagOrgID != "" {
 			// Validate that the org exists
 			orgsResp, err := api.GlobalClient.ListUserOrgs(userID)
@@ -136,5 +134,6 @@ func monitorOrgSwitch(orgID string) {
 }
 
 func init() {
+	orgCmd.Flags().StringVar(&flagOrgID, "org-id", "", "Organization ID to select")
 	SelectCmd.AddCommand(orgCmd)
 }

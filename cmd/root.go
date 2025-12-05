@@ -62,8 +62,6 @@ func GetRootCmd() *cobra.Command {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().String("orgId", "", "Organization ID")
-	viper.BindPFlag("orgId", rootCmd.PersistentFlags().Lookup("orgId"))
 
 	// Register verb commands
 	rootCmd.AddCommand(auth.AuthCmd)

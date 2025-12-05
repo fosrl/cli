@@ -42,6 +42,7 @@ var (
 	flagID            string
 	flagSecret        string
 	flagEndpoint      string
+	flagOrgID         string
 	flagMTU           int
 	flagDNS           string
 	flagInterfaceName string
@@ -119,10 +120,13 @@ var ClientCmd = &cobra.Command{
 			credentialsFromKeyring = true
 		}
 
-		// Get orgId from viper (required for OLM config)
-		orgID := viper.GetString("orgId")
+		// Get orgId from flag or viper (required for OLM config)
+		orgID := flagOrgID
 		if orgID == "" {
-			utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --orgId to the command")
+			orgID = viper.GetString("orgId")
+		}
+		if orgID == "" {
+			utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org-id to the command")
 			os.Exit(1)
 		}
 
@@ -154,7 +158,12 @@ var ClientCmd = &cobra.Command{
 			cmdArgs := []string{"up", "client"}
 
 			// Add orgId flag (required for subprocess, which runs as root and won't have user's config)
-			cmdArgs = append(cmdArgs, "--orgId", orgID)
+			// Use flag value if provided, otherwise use the resolved orgID
+			if flagOrgID != "" {
+				cmdArgs = append(cmdArgs, "--org-id", flagOrgID)
+			} else {
+				cmdArgs = append(cmdArgs, "--org-id", orgID)
+			}
 
 			// Add all flags that were set (except --attach)
 			// OLM credentials are always included (from flags, config, or newly created)
@@ -521,6 +530,7 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use user info if not provided)")
 
 	// Optional flags
+	cmd.Flags().StringVar(&flagOrgID, "org-id", "", "Organization ID (optional, will use selected org if not provided)")
 	cmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (required if not logged in)")
 	cmd.Flags().IntVar(&flagMTU, "mtu", 0, fmt.Sprintf("MTU (default: %d)", defaultMTU))
 	cmd.Flags().StringVar(&flagDNS, "dns", "", fmt.Sprintf("DNS server (default: %s)", defaultDNS))

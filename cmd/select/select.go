@@ -6,6 +6,6 @@ import (
 
 var SelectCmd = &cobra.Command{
 	Use:   "select",
-	Short: "Select resources",
-	Long:  "Select resources such as organizations",
+	Short: "Select organization",
+	Long:  "Select an organization to work with",
 }

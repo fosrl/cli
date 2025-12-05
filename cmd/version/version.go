@@ -11,7 +11,7 @@ import (
 var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number",
-	Long:  "Print the version number of Pangolin CLI",
+	Long:  "Print the version number and check for updates",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(versionpkg.Version)
 

@@ -19,7 +19,7 @@ func InitGlobalClient() error {
 		hostname = "app.pangolin.net"
 	}
 
-	// Get session token from keyring (ignore errors - just use empty token if not found)
+	// Get session token from config (ignore errors - just use empty token if not found)
 	token, _ := secrets.GetSessionToken()
 
 	// Build base URL (hostname should already include protocol from login)

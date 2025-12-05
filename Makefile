@@ -4,6 +4,8 @@ BINARY_NAME=pangolin
 OUTPUT_DIR=bin
 LDFLAGS=-ldflags="-s -w"
 
+# GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/pangolin .
+
 all: clean build
 
 build:

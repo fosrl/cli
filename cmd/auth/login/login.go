@@ -75,24 +75,24 @@ func loginWithWeb(hostname string) (string, error) {
 	utils.Info("First copy your one-time code: %s", code)
 	utils.Info("Press Enter to open %s in your browser...", baseLoginURL)
 
-	// Wait for user to press Enter
-	reader := bufio.NewReader(os.Stdin)
-	_, err = reader.ReadString('\n')
-	if err != nil {
-		return "", fmt.Errorf("failed to read input: %w", err)
-	}
+	// Wait for Enter in a goroutine (non-blocking) and open browser when pressed
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		_, err := reader.ReadString('\n')
+		if err == nil {
+			// User pressed Enter, open browser
+			if err := browser.OpenURL(loginURL); err != nil {
+				// Don't fail if browser can't be opened, just warn
+				utils.Warning("Failed to open browser automatically")
+				utils.Info("Please manually visit: %s", baseLoginURL)
+			}
+		}
+	}()
 
-	// Open browser
-	if err := browser.OpenURL(loginURL); err != nil {
-		// Don't fail if browser can't be opened, just warn
-		utils.Warning("Failed to open browser automatically: %v", err)
-		utils.Info("Please manually visit: %s", baseLoginURL)
-	}
-
-	// Poll for verification
-	pollInterval := 3 * time.Second // Poll every 2 seconds
+	// Poll for verification (starts immediately, doesn't wait for Enter)
+	pollInterval := 1 * time.Second
 	startTime := time.Now()
-	maxPollDuration := 5 * time.Minute // Maximum polling duration (5 minutes)
+	maxPollDuration := 5 * time.Minute
 
 	var token string
 
@@ -101,11 +101,13 @@ func loginWithWeb(hostname string) (string, error) {
 		utils.Debug("Polling for device web auth verification...")
 		// Check if code has expired
 		if time.Now().After(expiresAt) {
+			utils.Error("Device web auth code has expired")
 			return "", fmt.Errorf("code expired. Please try again")
 		}
 
 		// Check if we've exceeded max polling duration
 		if time.Since(startTime) > maxPollDuration {
+			utils.Error("Polling timed out after %v", maxPollDuration)
 			return "", fmt.Errorf("polling timeout. Please try again")
 		}
 
@@ -114,20 +116,7 @@ func loginWithWeb(hostname string) (string, error) {
 		// print debug info
 		utils.Debug("Polling response: %+v, message: %s, err: %v", pollResp, message, err)
 		if err != nil {
-			// Check if it's a rate limit error (429)
-			if errorResp, ok := err.(*api.ErrorResponse); ok && errorResp.Status == 429 {
-				// Rate limited - wait a bit longer before retrying
-				utils.Debug("Rate limited, waiting before retry...")
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			// Check if it's an IP mismatch error (403)
-			if errorResp, ok := err.(*api.ErrorResponse); ok && errorResp.Status == 403 {
-				return "", fmt.Errorf("IP address mismatch. Your IP address may have changed. Please try again")
-			}
-
-			// For other errors, return them
+			utils.Error("Error polling device web auth: %v", err)
 			return "", fmt.Errorf("failed to poll device web auth: %w", err)
 		}
 
@@ -135,6 +124,7 @@ func loginWithWeb(hostname string) (string, error) {
 		if pollResp.Verified {
 			token = pollResp.Token
 			if token == "" {
+				utils.Error("Verification succeeded but no token received")
 				return "", fmt.Errorf("verification succeeded but no token received")
 			}
 			return token, nil
@@ -142,6 +132,7 @@ func loginWithWeb(hostname string) (string, error) {
 
 		// Check for expired or not found messages
 		if message == "Code expired" || message == "Code not found" {
+			utils.Error("Device web auth code has expired or not found")
 			return "", fmt.Errorf("code expired or not found. Please try again")
 		}
 
@@ -259,7 +250,7 @@ var LoginCmd = &cobra.Command{
 			return
 		}
 
-		// Save session token to keyring
+		// Save session token to config
 		if err := secrets.SaveSessionToken(sessionToken); err != nil {
 			utils.Error("Failed to save session token: %v", err)
 			return

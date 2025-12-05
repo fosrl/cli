@@ -89,14 +89,14 @@ var ClientCmd = &cobra.Command{
 			utils.Error("Both --id and --secret must be provided together")
 			os.Exit(1)
 		} else {
-			// No flags provided - assume user is logged in and use credentials from keyring
+			// No flags provided - assume user is logged in and use credentials from config
 			// Ensure user is logged in (this also verifies user exists via API)
 			if err := utils.EnsureLoggedIn(); err != nil {
 				utils.Error("%v", err)
 				os.Exit(1)
 			}
 
-			// Get userId from viper (required for OLM credentials keyring lookup)
+			// Get userId from viper (required for OLM credentials lookup)
 			userID = viper.GetString("userId")
 			if userID == "" {
 				utils.Error("Please log in first. Run `pangolin login` to login")
@@ -110,7 +110,7 @@ var ClientCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			// Get OLM credentials from keyring (they should exist after EnsureOlmCredentials)
+			// Get OLM credentials from config (they should exist after EnsureOlmCredentials)
 			olmID, olmSecret, err = secrets.GetOlmCredentials(userID)
 			if err != nil {
 				utils.Error("Failed to get OLM credentials: %v", err)
@@ -157,7 +157,7 @@ var ClientCmd = &cobra.Command{
 			cmdArgs = append(cmdArgs, "--orgId", orgID)
 
 			// Add all flags that were set (except --attach)
-			// OLM credentials are always included (from flags, keyring, or newly created)
+			// OLM credentials are always included (from flags, config, or newly created)
 			cmdArgs = append(cmdArgs, "--id", olmID)
 			cmdArgs = append(cmdArgs, "--secret", olmSecret)
 
@@ -236,8 +236,8 @@ var ClientCmd = &cobra.Command{
 				var shellArgs []string
 				shellArgs = append(shellArgs, executable)
 				shellArgs = append(shellArgs, cmdArgs...)
-				// Export environment variable to indicate credentials came from keyring
-				// This allows subprocess to distinguish between user-provided credentials and keyring credentials
+				// Export environment variable to indicate credentials came from config
+				// This allows subprocess to distinguish between user-provided credentials and stored credentials
 				shellCmd := ""
 				if credentialsFromKeyring {
 					shellCmd = "export PANGOLIN_CREDENTIALS_FROM_KEYRING=1 && "
@@ -430,14 +430,14 @@ var ClientCmd = &cobra.Command{
 			}
 		}
 
-		// Get UserToken from keyring if credentials came from keyring
+		// Get UserToken from config if credentials came from config
 		// Check environment variable to distinguish between:
-		// - Parent process passing id/secret from keyring (should fetch userToken)
+		// - Parent process passing id/secret from config (should fetch userToken)
 		// - User directly passing id/secret (should NOT fetch userToken)
 		var userToken string
 		credentialsFromKeyringEnv := os.Getenv("PANGOLIN_CREDENTIALS_FROM_KEYRING")
 		if credentialsFromKeyringEnv == "1" || credentialsFromKeyring {
-			// Credentials came from keyring, fetch userToken from secrets
+			// Credentials came from config, fetch userToken from secrets
 			token, err := secrets.GetSessionToken()
 			if err != nil {
 				utils.Warning("Failed to get session token: %v", err)
@@ -491,7 +491,7 @@ var ClientCmd = &cobra.Command{
 			UpstreamDNS:          processedUpstreamDNS,
 		}
 
-		// Add UserToken if we have it (from flag or keyring)
+		// Add UserToken if we have it (from flag or config)
 		if userToken != "" {
 			olmConfig.UserToken = userToken
 		}
@@ -516,7 +516,7 @@ var ClientCmd = &cobra.Command{
 
 // addClientFlags adds all client flags to the given command
 func addClientFlags(cmd *cobra.Command) {
-	// Optional flags - if not provided, will use keyring or create new OLM
+	// Optional flags - if not provided, will use config or create new OLM
 	cmd.Flags().StringVar(&flagID, "id", "", "Client ID (optional, will use user info if not provided)")
 	cmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use user info if not provided)")
 

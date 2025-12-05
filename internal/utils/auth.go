@@ -13,7 +13,7 @@ import (
 
 // GetOriginalUserHomeDir returns the home directory of the original user
 // (the user who invoked the command, not the effective user when running with sudo).
-// This ensures that config files and keyring access work both with and without sudo.
+// This ensures that config files work both with and without sudo.
 func GetOriginalUserHomeDir() (string, error) {
 	// Check if we're running under sudo - SUDO_USER contains the original user
 	sudoUser := os.Getenv("SUDO_USER")
@@ -38,7 +38,7 @@ func EnsureLoggedIn() error {
 		return errors.New("Please log in first. Run `pangolin login` to login")
 	}
 
-	// Check for session token in keyring
+	// Check for session token in config
 	_, err := secrets.GetSessionToken()
 	if err != nil {
 		return fmt.Errorf("Please log in first. Run `pangolin login` to login")

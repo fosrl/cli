@@ -96,7 +96,7 @@ var LogoutCmd = &cobra.Command{
 			utils.Debug("Failed to logout from server: %v", err)
 		}
 
-		// Clear session token from keyring
+		// Clear session token from config
 		if err := secrets.DeleteSessionToken(); err != nil {
 			// Ignore error if token doesn't exist (already logged out)
 			utils.Error("Failed to delete session token: %v", err)

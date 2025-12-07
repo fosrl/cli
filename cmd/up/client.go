@@ -82,6 +82,11 @@ var ClientCmd = &cobra.Command{
 
 		if flagID != "" && flagSecret != "" {
 			// Use provided flags - no user session needed, continue even if not logged in
+			// Org cannot be set when passing id and secret directly
+			if flagOrgID != "" {
+				utils.Error("--org cannot be set when passing --id and --secret directly")
+				os.Exit(1)
+			}
 			olmID = flagID
 			olmSecret = flagSecret
 			credentialsFromKeyring = false
@@ -120,14 +125,25 @@ var ClientCmd = &cobra.Command{
 			credentialsFromKeyring = true
 		}
 
-		// Get orgId from flag or viper (required for OLM config)
-		orgID := flagOrgID
-		if orgID == "" {
-			orgID = viper.GetString("orgId")
-		}
-		if orgID == "" {
-			utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org [id] to the command")
-			os.Exit(1)
+		// Get orgId from flag or viper (required for OLM config when using logged-in user)
+		var orgID string
+		if credentialsFromKeyring {
+			// When using credentials from keyring, orgID is required
+			orgID = flagOrgID
+			if orgID == "" {
+				orgID = viper.GetString("orgId")
+			}
+			if orgID == "" {
+				utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org [id] to the command")
+				os.Exit(1)
+			}
+		} else {
+			// When using id/secret directly, orgID is optional (may come from credentials)
+			orgID = flagOrgID
+			if orgID == "" {
+				orgID = viper.GetString("orgId")
+			}
+			// orgID is optional when using direct credentials
 		}
 
 		// Ensure org access (only when using logged-in user, not when credentials come from flags)
@@ -157,12 +173,15 @@ var ClientCmd = &cobra.Command{
 			// Build command arguments, excluding --attach flag
 			cmdArgs := []string{"up", "client"}
 
-			// Add orgId flag (required for subprocess, which runs as root and won't have user's config)
+			// Add org flag (required for subprocess, which runs as root and won't have user's config)
 			// Use flag value if provided, otherwise use the resolved orgID
-			if flagOrgID != "" {
-				cmdArgs = append(cmdArgs, "--org-id", flagOrgID)
-			} else {
-				cmdArgs = append(cmdArgs, "--org-id", orgID)
+			// Only add org flag if credentials came from keyring (not when id/secret are provided directly)
+			if credentialsFromKeyring {
+				if flagOrgID != "" {
+					cmdArgs = append(cmdArgs, "--org", flagOrgID)
+				} else {
+					cmdArgs = append(cmdArgs, "--org", orgID)
+				}
 			}
 
 			// Add all flags that were set (except --attach)
@@ -530,7 +549,7 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use user info if not provided)")
 
 	// Optional flags
-	cmd.Flags().StringVar(&flagOrgID, "org-id", "", "Organization ID (optional, will use selected org if not provided)")
+	cmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID (optional, will use selected org if not provided)")
 	cmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (required if not logged in)")
 	cmd.Flags().IntVar(&flagMTU, "mtu", 0, fmt.Sprintf("MTU (default: %d)", defaultMTU))
 	cmd.Flags().StringVar(&flagDNS, "dns", "", fmt.Sprintf("DNS server (default: %s)", defaultDNS))

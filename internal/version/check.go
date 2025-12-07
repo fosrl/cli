@@ -14,9 +14,9 @@ import (
 
 const (
 	// GitHubRepoOwner is the GitHub repository owner
-	GitHubRepoOwner = "miloschwartz"
+	GitHubRepoOwner = "fosrl"
 	// GitHubRepoName is the GitHub repository name
-	GitHubRepoName = "sparkleupdatetest"
+	GitHubRepoName = "cli"
 	// GitHubAPIBaseURL is the base URL for GitHub API
 	GitHubAPIBaseURL = "https://api.github.com"
 )

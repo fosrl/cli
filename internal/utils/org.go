@@ -6,13 +6,12 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/olm"
-	"github.com/spf13/viper"
 )
 
-// SelectOrg lists organizations for a user and prompts them to select one.
+// SelectOrgForm lists organizations for a user and prompts them to select one.
 // It returns the selected org ID and any error.
 // If the user has only one organization, it's automatically selected.
-func SelectOrg(userID string) (string, error) {
+func SelectOrgForm(userID string) (string, error) {
 	orgsResp, err := api.GlobalClient.ListUserOrgs(userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to list organizations: %w", err)
@@ -25,11 +24,6 @@ func SelectOrg(userID string) (string, error) {
 	if len(orgsResp.Orgs) == 1 {
 		// Auto-select if only one org
 		selectedOrg := orgsResp.Orgs[0]
-		viper.Set("orgId", selectedOrg.OrgID)
-		if err := viper.WriteConfig(); err != nil {
-			return "", fmt.Errorf("failed to save organization to config: %w", err)
-		}
-		SwitchActiveClientOrg(selectedOrg.OrgID)
 		return selectedOrg.OrgID, nil
 	}
 
@@ -61,13 +55,6 @@ func SelectOrg(userID string) (string, error) {
 	if err := orgSelectForm.Run(); err != nil {
 		return "", fmt.Errorf("error selecting organization: %w", err)
 	}
-
-	viper.Set("orgId", selectedOrgOption.OrgID)
-	if err := viper.WriteConfig(); err != nil {
-		return "", fmt.Errorf("failed to save organization to config: %w", err)
-	}
-
-	SwitchActiveClientOrg(selectedOrgOption.OrgID)
 
 	return selectedOrgOption.OrgID, nil
 }

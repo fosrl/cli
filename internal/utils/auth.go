@@ -53,8 +53,8 @@ func EnsureLoggedIn() error {
 	return nil
 }
 
-// getDeviceName returns a human-readable device name
-func getDeviceName() string {
+// GetDeviceName returns a human-readable device name
+func GetDeviceName() string {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return "Unknown Device"
@@ -100,7 +100,7 @@ func EnsureOlmCredentials(userID string) error {
 	_, _, err = secrets.GetOlmCredentials(userID)
 	if err != nil {
 		// Get friendly device name
-		deviceName := getDeviceName()
+		deviceName := GetDeviceName()
 
 		olmResponse, err := api.GlobalClient.CreateOlm(userID, deviceName)
 		if err != nil {

@@ -4,17 +4,15 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/fosrl/cli/internal/accounts"
 	"github.com/fosrl/cli/internal/api"
-	"github.com/fosrl/cli/internal/secrets"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type HostingOption string
@@ -97,7 +95,7 @@ func loginWithWeb(hostname string) (string, error) {
 	var token string
 
 	for {
-		//print
+		// print
 		utils.Debug("Polling for device web auth verification...")
 		// Check if code has expired
 		if time.Now().After(expiresAt) {
@@ -147,15 +145,9 @@ var LoginCmd = &cobra.Command{
 	Long:  "Interactive login to select your hosting option and configure access.",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Check if user is already logged in
-		if err := utils.EnsureLoggedIn(); err == nil {
-			// User is logged in, show error with account info
-			email := viper.GetString("email")
-			var accountInfo string
-			if email != "" {
-				accountInfo = fmt.Sprintf(" (%s)", email)
-			}
-			utils.Error("You are already logged in%s. Please logout first using 'pangolin logout'", accountInfo)
+		accountStore, err := accounts.LoadAccountStore()
+		if err != nil {
+			utils.Error("Failed to access accounts store: %v", err)
 			return
 		}
 
@@ -216,30 +208,8 @@ var LoginCmd = &cobra.Command{
 			hostname = "https://" + hostname
 		}
 
-		// Store hostname in viper config (with protocol)
-		viper.Set("hostname", hostname)
-
-		// Ensure config type is set and file path is correct
-		if viper.ConfigFileUsed() == "" {
-			// Config file doesn't exist yet, set the full path
-			// Get .pangolin directory and ensure it exists
-			pangolinDir, err := utils.GetPangolinDir()
-			if err == nil {
-				viper.SetConfigFile(filepath.Join(pangolinDir, "pangolin.json"))
-				viper.SetConfigType("json")
-			}
-		}
-
-		if err := viper.WriteConfig(); err != nil {
-			// If config file doesn't exist, create it
-			if err := viper.SafeWriteConfig(); err != nil {
-				utils.Warning("Failed to save hostname to config: %v", err)
-			}
-		}
-
 		// Perform web login
 		sessionToken, err := loginWithWeb(hostname)
-
 		if err != nil {
 			utils.Error("%v", err)
 			return
@@ -247,12 +217,6 @@ var LoginCmd = &cobra.Command{
 
 		if sessionToken == "" {
 			utils.Error("Login appeared successful but no session token was received.")
-			return
-		}
-
-		// Save session token to config
-		if err := secrets.SaveSessionToken(sessionToken); err != nil {
-			utils.Error("Failed to save session token: %v", err)
 			return
 		}
 
@@ -269,25 +233,55 @@ var LoginCmd = &cobra.Command{
 		var user *api.User
 		user, err = api.GlobalClient.GetUser()
 		if err != nil {
-			utils.Warning("Failed to get user information: %v", err)
-		} else {
-			// Store userId and email in viper config
-			viper.Set("userId", user.UserID)
-			viper.Set("email", user.Email)
-			if err := viper.WriteConfig(); err != nil {
-				utils.Warning("Failed to save user information to config: %v", err)
-			}
+			utils.Error("Failed to get user information: %v", err)
+			return // TODO: make this fatal, handle errors properly with exit codes!
+		}
 
-			// Ensure OLM credentials exist and are valid
-			userID := user.UserID
-			if err := utils.EnsureOlmCredentials(userID); err != nil {
-				utils.Warning("Failed to ensure OLM credentials: %v", err)
-			}
+		if _, exists := accountStore.Accounts[user.UserID]; exists {
+			utils.Warning("Already logged in as this user; no action needed")
+			return
+		}
+
+		// Ensure OLM credentials exist and are valid
+		userID := user.UserID
+
+		orgID, err := utils.SelectOrgForm(userID)
+		if err != nil {
+			utils.Error("Failed to select organization: %v", err)
+			return
+		}
+
+		newOlmCreds, err := api.GlobalClient.CreateOlm(userID, utils.GetDeviceName())
+		if err != nil {
+			utils.Error("Failed to obtain olm credentials: %v", err)
+			return
+		}
+
+		newAccount := accounts.Account{
+			UserID:       userID,
+			Host:         hostname,
+			Email:        user.Email,
+			SessionToken: sessionToken,
+			OrgID:        orgID,
+			OlmCredentials: &accounts.OlmCredentials{
+				ID:     newOlmCreds.OlmID,
+				Secret: newOlmCreds.Secret,
+			},
+		}
+
+		accountStore.Accounts[user.UserID] = newAccount
+		accountStore.ActiveUserID = userID
+
+		err = accountStore.Save()
+		if err != nil {
+			utils.Error("Failed to save account store: %s", err)
+			utils.Warning("You may not be able to login properly until this is saved.")
+			return
 		}
 
 		// List and select organization
 		if user != nil {
-			if _, err := utils.SelectOrg(user.UserID); err != nil {
+			if _, err := utils.SelectOrgForm(user.UserID); err != nil {
 				utils.Warning("%v", err)
 			}
 		}

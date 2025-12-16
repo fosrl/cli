@@ -64,7 +64,7 @@ var orgCmd = &cobra.Command{
 			}
 		} else {
 			// No flag provided, use GUI selection
-			orgID, err = utils.SelectOrg(userID)
+			orgID, err = utils.SelectOrgForm(userID)
 			if err != nil {
 				utils.Error("%v", err)
 				return

@@ -1,4 +1,4 @@
-package selectcmd
+package org
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 
 var flagOrgID string
 
-var orgCmd = &cobra.Command{
+var OrgCmd = &cobra.Command{
 	Use:   "org",
 	Short: "Select an organization",
 	Long:  "List your organizations and select one to use",
@@ -25,8 +25,8 @@ var orgCmd = &cobra.Command{
 		if err != nil {
 			utils.Error("%v", err)
 			return
-		}
 
+		}
 		userID := activeAccount.UserID
 
 		var selectedOrgID string
@@ -134,6 +134,5 @@ func monitorOrgSwitch(orgID string) {
 }
 
 func init() {
-	orgCmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID to select")
-	SelectCmd.AddCommand(orgCmd)
+	OrgCmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID to select")
 }

@@ -1,11 +1,16 @@
 package selectcmd
 
 import (
+	"github.com/fosrl/cli/cmd/select/org"
 	"github.com/spf13/cobra"
 )
 
 var SelectCmd = &cobra.Command{
 	Use:   "select",
-	Short: "Select organization",
-	Long:  "Select an organization to work with",
+	Short: "Select objects to work with",
+	Long:  "Select objects to work with",
+}
+
+func init() {
+	SelectCmd.AddCommand(org.OrgCmd)
 }

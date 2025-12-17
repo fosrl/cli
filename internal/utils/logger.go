@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/fosrl/cli/internal/config"
 	"github.com/spf13/viper"
 )
 
@@ -150,12 +151,12 @@ func Warning(format string, args ...interface{}) {
 
 // GetDefaultLogPath returns the default log file path for client logs
 func GetDefaultLogPath() string {
-	pangolinDir, err := GetPangolinDir()
+	pangolinDir, err := config.GetPangolinConfigDir()
 	if err != nil {
 		return "/tmp/olm.log"
 	}
 	// Ensure logs subdirectory exists
 	logsDir := filepath.Join(pangolinDir, "logs")
-	os.MkdirAll(logsDir, 0755)
+	os.MkdirAll(logsDir, 0o755)
 	return filepath.Join(logsDir, "client.log")
 }

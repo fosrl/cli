@@ -1,11 +1,10 @@
-package accounts
+package config
 
 import (
 	"errors"
 	"os"
 	"path/filepath"
 
-	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/viper"
 )
 
@@ -35,7 +34,7 @@ type OlmCredentials struct {
 func newViper() (*viper.Viper, error) {
 	v := viper.New()
 
-	dir, err := utils.GetPangolinDir()
+	dir, err := GetPangolinConfigDir()
 	if err != nil {
 		return nil, err
 	}

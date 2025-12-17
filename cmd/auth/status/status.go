@@ -3,8 +3,8 @@ package status
 import (
 	"fmt"
 
-	"github.com/fosrl/cli/internal/accounts"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ var StatusCmd = &cobra.Command{
 	Long:  "Check if you are logged in and view your account information",
 	Run: func(cmd *cobra.Command, args []string) {
 		apiClient := api.FromContext(cmd.Context())
-		accountStore := accounts.FromContext(cmd.Context())
+		accountStore := config.AccountStoreFromContext(cmd.Context())
 
 		account, err := accountStore.ActiveAccount()
 		if err != nil {

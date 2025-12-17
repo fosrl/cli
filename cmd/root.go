@@ -15,8 +15,8 @@ import (
 	"github.com/fosrl/cli/cmd/up"
 	"github.com/fosrl/cli/cmd/update"
 	"github.com/fosrl/cli/cmd/version"
-	"github.com/fosrl/cli/internal/accounts"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/utils"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/spf13/cobra"
@@ -67,7 +67,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 		return cmd, nil
 	}
 
-	accountStore, err := accounts.LoadAccountStore()
+	accountStore, err := config.LoadAccountStore()
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 
 	ctx := context.Background()
 	ctx = api.WithAPIClient(ctx, client)
-	ctx = accounts.WithAccountStore(ctx, accountStore)
+	ctx = config.WithAccountStore(ctx, accountStore)
 
 	cmd.SetContext(ctx)
 

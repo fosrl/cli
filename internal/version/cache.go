@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/fosrl/cli/internal/utils"
+	"github.com/fosrl/cli/internal/config"
 )
 
 const (
@@ -26,7 +26,7 @@ type UpdateCheckCache struct {
 
 // getCacheFilePath returns the path to the update check cache file
 func getCacheFilePath() (string, error) {
-	pangolinDir, err := utils.GetPangolinDir()
+	pangolinDir, err := config.GetPangolinConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get .pangolin directory: %w", err)
 	}
@@ -69,7 +69,7 @@ func writeCache(cache *UpdateCheckCache) error {
 		return fmt.Errorf("failed to marshal cache: %w", err)
 	}
 
-	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+	if err := os.WriteFile(cachePath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write cache: %w", err)
 	}
 

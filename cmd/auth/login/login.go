@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
-	"github.com/fosrl/cli/internal/accounts"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
@@ -146,7 +146,7 @@ var LoginCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		apiClient := api.FromContext(cmd.Context())
-		accountStore := accounts.FromContext(cmd.Context())
+		accountStore := config.AccountStoreFromContext(cmd.Context())
 
 		var hostingOption HostingOption
 		var hostname string
@@ -254,13 +254,13 @@ var LoginCmd = &cobra.Command{
 			return
 		}
 
-		newAccount := accounts.Account{
+		newAccount := config.Account{
 			UserID:       userID,
 			Host:         hostname,
 			Email:        user.Email,
 			SessionToken: sessionToken,
 			OrgID:        orgID,
-			OlmCredentials: &accounts.OlmCredentials{
+			OlmCredentials: &config.OlmCredentials{
 				ID:     newOlmCreds.OlmID,
 				Secret: newOlmCreds.Secret,
 			},

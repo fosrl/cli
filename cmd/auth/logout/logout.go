@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
-	"github.com/fosrl/cli/internal/accounts"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
@@ -71,7 +71,7 @@ var LogoutCmd = &cobra.Command{
 		}
 
 		// Check if there's an active session in the key store
-		accountStore, err := accounts.LoadAccountStore()
+		accountStore, err := config.LoadAccountStore()
 		if err != nil {
 			utils.Error("Failed to load account store: %s", err)
 			return

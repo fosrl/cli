@@ -31,7 +31,7 @@ func GetOriginalUserHomeDir() (string, error) {
 }
 
 // Returns an error if the user is not logged in, nil otherwise.
-func EnsureLoggedIn() error {
+func EnsureLoggedIn(client *api.Client) error {
 	// Check for userId in config
 	userID := viper.GetString("userId")
 	if userID == "" {
@@ -45,7 +45,7 @@ func EnsureLoggedIn() error {
 	}
 
 	// Get user via API to ensure the user exists
-	_, err = api.GlobalClient.GetUser()
+	_, err = client.GetUser()
 	if err != nil {
 		return fmt.Errorf("failed to get user information: %w", err)
 	}
@@ -65,7 +65,7 @@ func GetDeviceName() string {
 // EnsureOlmCredentials ensures that OLM credentials exist and are valid.
 // It checks if OLM credentials exist locally, verifies them on the server,
 // and creates new ones if they don't exist or are invalid.
-func EnsureOlmCredentials(userID string) error {
+func EnsureOlmCredentials(client *api.Client, userID string) error {
 	if userID == "" {
 		return errors.New("userId is required")
 	}
@@ -74,7 +74,7 @@ func EnsureOlmCredentials(userID string) error {
 	olmID, _, err := secrets.GetOlmCredentials(userID)
 	if err == nil && olmID != "" {
 		// Verify OLM exists on server by getting the OLM directly
-		olm, err := api.GlobalClient.GetUserOlm(userID, olmID)
+		olm, err := client.GetUserOlm(userID, olmID)
 		if err == nil && olm != nil {
 			// Verify the olmID matches
 			if olm.OlmID == olmID {
@@ -102,7 +102,7 @@ func EnsureOlmCredentials(userID string) error {
 		// Get friendly device name
 		deviceName := GetDeviceName()
 
-		olmResponse, err := api.GlobalClient.CreateOlm(userID, deviceName)
+		olmResponse, err := client.CreateOlm(userID, deviceName)
 		if err != nil {
 			return fmt.Errorf("failed to create OLM: %w", err)
 		}
@@ -117,7 +117,7 @@ func EnsureOlmCredentials(userID string) error {
 }
 
 // EnsureOrgAccess ensures that the user has access to the organization
-func EnsureOrgAccess(orgID, userID string) error {
+func EnsureOrgAccess(client *api.Client, orgID string, userID string) error {
 	if orgID == "" {
 		return errors.New("orgId is required")
 	}
@@ -126,13 +126,13 @@ func EnsureOrgAccess(orgID, userID string) error {
 	}
 
 	// Get org via API to ensure it exists
-	_, err := api.GlobalClient.GetOrg(orgID)
+	_, err := client.GetOrg(orgID)
 	if err != nil {
 		return err
 	}
 
 	// Check org user access and policies
-	accessResponse, err := api.GlobalClient.CheckOrgUserAccess(orgID, userID)
+	accessResponse, err := client.CheckOrgUserAccess(orgID, userID)
 	if err != nil {
 		return err
 	}

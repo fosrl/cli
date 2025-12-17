@@ -2,7 +2,6 @@ package accounts
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -64,7 +63,6 @@ func LoadAccountStore() (*AccountStore, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return &store, nil
 		}
-		fmt.Println("bruh")
 		return nil, err
 	}
 
@@ -80,13 +78,12 @@ func (s *AccountStore) ActiveAccount() (*Account, error) {
 		return nil, errors.New("not logged in")
 	}
 
-	for _, a := range s.Accounts {
-		if a.UserID == s.ActiveUserID {
-			return &a, nil
-		}
+	activeAccount, exists := s.Accounts[s.ActiveUserID]
+	if !exists {
+		return nil, errors.New("active account missing")
 	}
 
-	return nil, errors.New("active account missing")
+	return &activeAccount, nil
 }
 
 func (s *AccountStore) Save() error {

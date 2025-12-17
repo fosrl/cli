@@ -145,11 +145,8 @@ var LoginCmd = &cobra.Command{
 	Long:  "Interactive login to select your hosting option and configure access.",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		accountStore, err := accounts.LoadAccountStore()
-		if err != nil {
-			utils.Error("Failed to access accounts store: %v", err)
-			return
-		}
+		apiClient := api.FromContext(cmd.Context())
+		accountStore := accounts.FromContext(cmd.Context())
 
 		var hostingOption HostingOption
 		var hostname string
@@ -223,15 +220,15 @@ var LoginCmd = &cobra.Command{
 		// Update the global API client (always initialized)
 		// Update base URL and token (hostname already includes protocol)
 		apiBaseURL := hostname + "/api/v1"
-		api.GlobalClient.SetBaseURL(apiBaseURL)
-		api.GlobalClient.SetToken(sessionToken)
+		apiClient.SetBaseURL(apiBaseURL)
+		apiClient.SetToken(sessionToken)
 
 		utils.Success("Device authorized")
 		fmt.Println()
 
 		// Get user information
 		var user *api.User
-		user, err = api.GlobalClient.GetUser()
+		user, err = apiClient.GetUser()
 		if err != nil {
 			utils.Error("Failed to get user information: %v", err)
 			return // TODO: make this fatal, handle errors properly with exit codes!
@@ -245,13 +242,13 @@ var LoginCmd = &cobra.Command{
 		// Ensure OLM credentials exist and are valid
 		userID := user.UserID
 
-		orgID, err := utils.SelectOrgForm(userID)
+		orgID, err := utils.SelectOrgForm(apiClient, userID)
 		if err != nil {
 			utils.Error("Failed to select organization: %v", err)
 			return
 		}
 
-		newOlmCreds, err := api.GlobalClient.CreateOlm(userID, utils.GetDeviceName())
+		newOlmCreds, err := apiClient.CreateOlm(userID, utils.GetDeviceName())
 		if err != nil {
 			utils.Error("Failed to obtain olm credentials: %v", err)
 			return
@@ -281,7 +278,7 @@ var LoginCmd = &cobra.Command{
 
 		// List and select organization
 		if user != nil {
-			if _, err := utils.SelectOrgForm(user.UserID); err != nil {
+			if _, err := utils.SelectOrgForm(apiClient, user.UserID); err != nil {
 				utils.Warning("%v", err)
 			}
 		}

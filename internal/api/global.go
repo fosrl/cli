@@ -3,25 +3,12 @@ package api
 import (
 	"fmt"
 	"strings"
-
-	"github.com/fosrl/cli/internal/secrets"
-	"github.com/spf13/viper"
 )
 
-var GlobalClient *Client
-
-// InitGlobalClient initializes the global API client with stored credentials.
-// The client will be created without authentication if no token is found.
-func InitGlobalClient() error {
-	// Get hostname from viper config
-	hostname := viper.GetString("hostname")
-	if hostname == "" {
-		hostname = "app.pangolin.net"
-	}
-
-	// Get session token from config (ignore errors - just use empty token if not found)
-	token, _ := secrets.GetSessionToken()
-
+// InitClient initializes a new API client with stored credentials and
+// a URL. The client will be created without authentication if no token
+// is found.
+func InitClient(hostname string, token string) (*Client, error) {
 	// Build base URL (hostname should already include protocol from login)
 	baseURL := hostname
 	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
@@ -39,9 +26,8 @@ func InitGlobalClient() error {
 		CSRFToken:         "x-csrf-protection",
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
+		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	GlobalClient = client
-	return nil
+	return client, nil
 }

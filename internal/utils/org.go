@@ -11,8 +11,8 @@ import (
 // SelectOrgForm lists organizations for a user and prompts them to select one.
 // It returns the selected org ID and any error.
 // If the user has only one organization, it's automatically selected.
-func SelectOrgForm(userID string) (string, error) {
-	orgsResp, err := api.GlobalClient.ListUserOrgs(userID)
+func SelectOrgForm(client *api.Client, userID string) (string, error) {
+	orgsResp, err := client.ListUserOrgs(userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to list organizations: %w", err)
 	}

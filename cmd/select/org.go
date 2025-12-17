@@ -18,8 +18,10 @@ var orgCmd = &cobra.Command{
 	Short: "Select an organization",
 	Long:  "List your organizations and select one to use",
 	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := api.FromContext(cmd.Context())
+
 		// Check if user is logged in
-		if err := utils.EnsureLoggedIn(); err != nil {
+		if err := utils.EnsureLoggedIn(apiClient); err != nil {
 			utils.Error("%v", err)
 			return
 		}
@@ -33,7 +35,7 @@ var orgCmd = &cobra.Command{
 		// Check if --org-id flag is provided
 		if flagOrgID != "" {
 			// Validate that the org exists
-			orgsResp, err := api.GlobalClient.ListUserOrgs(userID)
+			orgsResp, err := apiClient.ListUserOrgs(userID)
 			if err != nil {
 				utils.Error("Failed to list organizations: %v", err)
 				return
@@ -64,7 +66,7 @@ var orgCmd = &cobra.Command{
 			}
 		} else {
 			// No flag provided, use GUI selection
-			orgID, err = utils.SelectOrgForm(userID)
+			orgID, err = utils.SelectOrgForm(apiClient, userID)
 			if err != nil {
 				utils.Error("%v", err)
 				return
@@ -74,11 +76,11 @@ var orgCmd = &cobra.Command{
 		// Switch active client if running
 		utils.SwitchActiveClientOrg(orgID)
 
-		// Check if client is running and if we need to monitor a switch
-		client := olm.NewClient("")
-		if client.IsRunning() {
+		// Check if olmClient is running and if we need to monitor a switch
+		olmClient := olm.NewClient("")
+		if olmClient.IsRunning() {
 			// Get current status - if it doesn't match the new org, monitor the switch
-			currentStatus, err := client.GetStatus()
+			currentStatus, err := olmClient.GetStatus()
 			if err == nil && currentStatus != nil && currentStatus.OrgID != orgID {
 				// Switch was sent, monitor the switch process
 				monitorOrgSwitch(orgID)

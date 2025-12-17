@@ -25,19 +25,19 @@ url: %s
 
 func main() {
 	var (
-		outputDir    = flag.String("dir", "./docs", "Output directory for generated documentation")
+		outputDir       = flag.String("dir", "./docs", "Output directory for generated documentation")
 		withFrontMatter = flag.Bool("frontmatter", false, "Add Hugo front matter to generated files")
-		baseURL      = flag.String("baseurl", "/commands", "Base URL for command links (used with front matter)")
+		baseURL         = flag.String("baseurl", "/commands", "Base URL for command links (used with front matter)")
 	)
 	flag.Parse()
 
 	// Create output directory if it doesn't exist
-	if err := os.MkdirAll(*outputDir, 0755); err != nil {
+	if err := os.MkdirAll(*outputDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
 	// Get the root command
-	rootCmd := cmd.GetRootCmd()
+	rootCmd, _ := cmd.RootCommand(false)
 
 	var err error
 	if *withFrontMatter {
@@ -67,7 +67,7 @@ func main() {
 	}
 
 	log.Printf("Successfully generated markdown documentation in %s", *outputDir)
-	
+
 	// List generated files
 	files, err := filepath.Glob(filepath.Join(*outputDir, "*.md"))
 	if err == nil {
@@ -77,4 +77,3 @@ func main() {
 		}
 	}
 }
-

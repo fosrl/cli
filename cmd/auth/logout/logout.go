@@ -16,6 +16,8 @@ var LogoutCmd = &cobra.Command{
 	Short: "Logout from Pangolin",
 	Long:  "Logout and clear your session",
 	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := api.FromContext(cmd.Context())
+
 		// Check if client is running before logout
 		olmClient := olm.NewClient("")
 		if olmClient.IsRunning() {
@@ -81,7 +83,7 @@ var LogoutCmd = &cobra.Command{
 		}
 
 		// Try to logout from server (client is always initialized)
-		if err := api.GlobalClient.Logout(); err != nil {
+		if err := apiClient.Logout(); err != nil {
 			// Ignore logout errors - we'll still clear local data
 			utils.Debug("Failed to logout from server: %v", err)
 		}

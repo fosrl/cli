@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/secrets"
 	"github.com/fosrl/cli/internal/tui"
@@ -63,6 +64,7 @@ var ClientCmd = &cobra.Command{
 	Short: "Start a client connection",
 	Long:  "Bring up a client tunneled connection",
 	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := api.FromContext(cmd.Context())
 
 		if runtime.GOOS == "windows" {
 			utils.Error("Windows is not supported")
@@ -93,7 +95,7 @@ var ClientCmd = &cobra.Command{
 		} else {
 			// No flags provided - assume user is logged in and use credentials from config
 			// Ensure user is logged in (this also verifies user exists via API)
-			if err := utils.EnsureLoggedIn(); err != nil {
+			if err := utils.EnsureLoggedIn(apiClient); err != nil {
 				utils.Error("%v", err)
 				os.Exit(1)
 			}
@@ -107,7 +109,7 @@ var ClientCmd = &cobra.Command{
 
 			// Ensure OLM credentials exist and are valid
 			var err error
-			if err = utils.EnsureOlmCredentials(userID); err != nil {
+			if err = utils.EnsureOlmCredentials(apiClient, userID); err != nil {
 				utils.Error("Failed to ensure OLM credentials: %v", err)
 				os.Exit(1)
 			}
@@ -140,7 +142,7 @@ var ClientCmd = &cobra.Command{
 
 		// Ensure org access (only when using logged-in user, not when credentials come from flags)
 		if credentialsFromKeyring && userID != "" {
-			if err := utils.EnsureOrgAccess(orgID, userID); err != nil {
+			if err := utils.EnsureOrgAccess(apiClient, orgID, userID); err != nil {
 				utils.Error("%v", err)
 				os.Exit(1)
 			}
@@ -564,7 +566,7 @@ func init() {
 func setupLogFile(logPath string) error {
 	// Create log directory if it doesn't exist
 	logDir := filepath.Dir(logPath)
-	err := os.MkdirAll(logDir, 0755)
+	err := os.MkdirAll(logDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("failed to create log directory: %v", err)
 	}
@@ -577,7 +579,7 @@ func setupLogFile(logPath string) error {
 	}
 
 	// Open log file for appending
-	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %v", err)
 	}

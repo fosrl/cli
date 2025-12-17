@@ -200,8 +200,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("mtu") {
 				cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", flagMTU))
 			}
-			if cmd.Flags().Changed("dns") {
-				cmdArgs = append(cmdArgs, "--dns", flagDNS)
+			if cmd.Flags().Changed("netstack-dns") {
+				cmdArgs = append(cmdArgs, "--netstack-dns", flagDNS)
 			}
 			if cmd.Flags().Changed("interface-name") {
 				cmdArgs = append(cmdArgs, "--interface-name", flagInterfaceName)
@@ -395,7 +395,7 @@ var ClientCmd = &cobra.Command{
 		}
 
 		mtu := getInt(flagMTU, "mtu", "mtu", defaultMTU)
-		dns := getString(flagDNS, "dns", "dns", defaultDNS)
+		dns := getString(flagDNS, "netstack-dns", "netstack-dns", defaultDNS)
 		interfaceName := getString(flagInterfaceName, "interface-name", "interface_name", defaultInterfaceName)
 		logLevel := getString(flagLogLevel, "log-level", "log_level", defaultLogLevel)
 		enableAPI := defaultEnableAPI
@@ -541,7 +541,7 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID (optional, will use selected org if not provided)")
 	cmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (required if not logged in)")
 	cmd.Flags().IntVar(&flagMTU, "mtu", 0, fmt.Sprintf("MTU (default: %d)", defaultMTU))
-	cmd.Flags().StringVar(&flagDNS, "dns", "", fmt.Sprintf("DNS server (default: %s)", defaultDNS))
+	cmd.Flags().StringVar(&flagDNS, "netstack-dns", "", fmt.Sprintf("DNS server to use for Netstack (default: %s)", defaultDNS))
 	cmd.Flags().StringVar(&flagInterfaceName, "interface-name", "", fmt.Sprintf("Interface name (default: %s)", defaultInterfaceName))
 	cmd.Flags().StringVar(&flagLogLevel, "log-level", "", fmt.Sprintf("Log level (default: %s)", defaultLogLevel))
 	cmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address for API server (default: disabled)")

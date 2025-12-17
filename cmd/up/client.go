@@ -34,7 +34,7 @@ const (
 	defaultPingInterval  = "5s"
 	defaultPingTimeout   = "5s"
 	defaultHolepunch     = true
-	defaultVersion       = "Pangolin CLI"
+	defaultAgent         = "Pangolin CLI"
 	defaultOverrideDNS   = true
 )
 
@@ -200,8 +200,8 @@ var ClientCmd = &cobra.Command{
 			if cmd.Flags().Changed("mtu") {
 				cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", flagMTU))
 			}
-			if cmd.Flags().Changed("dns") {
-				cmdArgs = append(cmdArgs, "--dns", flagDNS)
+			if cmd.Flags().Changed("netstack-dns") {
+				cmdArgs = append(cmdArgs, "--netstack-dns", flagDNS)
 			}
 			if cmd.Flags().Changed("interface-name") {
 				cmdArgs = append(cmdArgs, "--interface-name", flagInterfaceName)
@@ -236,11 +236,8 @@ var ClientCmd = &cobra.Command{
 				}
 			}
 			if cmd.Flags().Changed("upstream-dns") {
-				// For string slice flags, we need to pass each value separately
-				// Cobra's StringSliceVar supports multiple --upstream-dns flags or comma-separated values
-				for _, dns := range flagUpstreamDNS {
-					cmdArgs = append(cmdArgs, "--upstream-dns", dns)
-				}
+				// Comma sep
+				cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(flagUpstreamDNS, ","))
 			}
 
 			// Add positional args if any
@@ -398,7 +395,7 @@ var ClientCmd = &cobra.Command{
 		}
 
 		mtu := getInt(flagMTU, "mtu", "mtu", defaultMTU)
-		dns := getString(flagDNS, "dns", "dns", defaultDNS)
+		dns := getString(flagDNS, "netstack-dns", "netstack-dns", defaultDNS)
 		interfaceName := getString(flagInterfaceName, "interface-name", "interface_name", defaultInterfaceName)
 		logLevel := getString(flagLogLevel, "log-level", "log_level", defaultLogLevel)
 		enableAPI := defaultEnableAPI
@@ -418,19 +415,19 @@ var ClientCmd = &cobra.Command{
 		overrideDNS := getBool(flagOverrideDNS, "override-dns", "override_dns", defaultOverrideDNS)
 		upstreamDNS := getStringSlice(flagUpstreamDNS, "upstream-dns", "upstream_dns", []string{defaultDNS})
 
-		// Process UpstreamDNS: append :53 to each DNS server if not already present
 		processedUpstreamDNS := make([]string, 0, len(upstreamDNS))
-		for _, dns := range upstreamDNS {
-			dns = strings.TrimSpace(dns)
-			if dns == "" {
+		for _, entry := range upstreamDNS {
+			entry = strings.TrimSpace(entry)
+			if entry == "" {
 				continue
 			}
-			// Append :53 if not already present
-			if !strings.Contains(dns, ":") {
-				dns = dns + ":53"
+
+			if !strings.Contains(entry, ":") {
+				entry = entry + ":53"
 			}
-			processedUpstreamDNS = append(processedUpstreamDNS, dns)
+			processedUpstreamDNS = append(processedUpstreamDNS, entry)
 		}
+
 		// If no DNS servers were provided, use default
 		if len(processedUpstreamDNS) == 0 {
 			processedUpstreamDNS = []string{defaultDNS + ":53"}
@@ -478,7 +475,7 @@ var ClientCmd = &cobra.Command{
 			SocketPath: socketPath,
 			HTTPAddr:   httpAddr,
 			Version:    version,
-			Agent:      defaultVersion,
+			Agent:      defaultAgent,
 			OnTerminated: func() {
 				utils.Info("Client process terminated")
 				stop()
@@ -544,16 +541,16 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID (optional, will use selected org if not provided)")
 	cmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (required if not logged in)")
 	cmd.Flags().IntVar(&flagMTU, "mtu", 0, fmt.Sprintf("MTU (default: %d)", defaultMTU))
-	cmd.Flags().StringVar(&flagDNS, "dns", "", fmt.Sprintf("DNS server (default: %s)", defaultDNS))
+	cmd.Flags().StringVar(&flagDNS, "netstack-dns", "", fmt.Sprintf("DNS server to use for Netstack (default: %s)", defaultDNS))
 	cmd.Flags().StringVar(&flagInterfaceName, "interface-name", "", fmt.Sprintf("Interface name (default: %s)", defaultInterfaceName))
 	cmd.Flags().StringVar(&flagLogLevel, "log-level", "", fmt.Sprintf("Log level (default: %s)", defaultLogLevel))
-	cmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address")
+	cmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address for API server (default: disabled)")
 	cmd.Flags().StringVar(&flagPingInterval, "ping-interval", "", fmt.Sprintf("Ping interval (default: %s)", defaultPingInterval))
 	cmd.Flags().StringVar(&flagPingTimeout, "ping-timeout", "", fmt.Sprintf("Ping timeout (default: %s)", defaultPingTimeout))
 	cmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, fmt.Sprintf("Enable holepunching (default: %v)", defaultHolepunch))
 	cmd.Flags().StringVar(&flagTlsClientCert, "tls-client-cert", "", "TLS client certificate path")
 	cmd.Flags().BoolVar(&flagOverrideDNS, "override-dns", defaultOverrideDNS, fmt.Sprintf("Override system DNS for resolving internal resource alias (default: %v)", defaultOverrideDNS))
-	cmd.Flags().StringSliceVar(&flagUpstreamDNS, "upstream-dns", nil, fmt.Sprintf("List of DNS servers to use for external DNS resolution if overriding system DNS (default: %s)", defaultDNS))
+	cmd.Flags().StringSliceVar(&flagUpstreamDNS, "upstream-dns", nil, fmt.Sprintf("Comma separated list of DNS servers to use for external DNS resolution if overriding system DNS (default: %s)", defaultDNS))
 	cmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
 	cmd.Flags().BoolVar(&flagSilent, "silent", false, "Disable TUI and run silently (only applies to detached mode)")
 }
@@ -588,7 +585,7 @@ func setupLogFile(logPath string) error {
 	// Set the logger output
 	logger.GetLogger().SetOutput(file)
 
-	log.Printf("Logging to file: %s", logPath)
+	// log.Printf("Logging to file: %s", logPath)
 	return nil
 }
 

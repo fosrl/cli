@@ -185,14 +185,14 @@ type OrgPolicies struct {
 type MaxSessionLength struct {
 	Compliant             bool `json:"compliant"`
 	MaxSessionLengthHours int  `json:"maxSessionLengthHours"`
-	SessionAgeHours       int  `json:"sessionAgeHours"`
+	SessionAgeHours       float64  `json:"sessionAgeHours"`
 }
 
 // PasswordAge represents password age policy
 type PasswordAge struct {
 	Compliant          bool `json:"compliant"`
 	MaxPasswordAgeDays int  `json:"maxPasswordAgeDays"`
-	PasswordAgeDays    int  `json:"passwordAgeDays"`
+	PasswordAgeDays    float64  `json:"passwordAgeDays"`
 }
 
 // GetClientResponse represents the response for getting a client

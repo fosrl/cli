@@ -5,7 +5,7 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
-	"github.com/fosrl/cli/internal/utils"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +19,8 @@ var StatusCmd = &cobra.Command{
 
 		account, err := accountStore.ActiveAccount()
 		if err != nil {
-			utils.Info("Status: %s", err)
-			utils.Info("Run 'pangolin login' to authenticate")
+			logger.Info("Status: %s", err)
+			logger.Info("Run 'pangolin login' to authenticate")
 			return
 		}
 
@@ -28,16 +28,16 @@ var StatusCmd = &cobra.Command{
 		user, err := apiClient.GetUser()
 		if err != nil {
 			// Unable to get user - consider logged out (previously logged in but now not)
-			utils.Info("Status: Logged out: %v", err)
-			utils.Info("Your session has expired or is invalid")
-			utils.Info("Run 'pangolin login' to authenticate again")
+			logger.Info("Status: Logged out: %v", err)
+			logger.Info("Your session has expired or is invalid")
+			logger.Info("Run 'pangolin login' to authenticate again")
 			return
 		}
 
 		// Successfully got user - logged in
-		utils.Success("Status: Logged in")
+		logger.Success("Status: Logged in")
 		// Show hostname if available
-		utils.Info("@ %s", account.Host)
+		logger.Info("@ %s", account.Host)
 		fmt.Println()
 
 		// Display user information
@@ -48,13 +48,13 @@ var StatusCmd = &cobra.Command{
 			displayName = *user.Name
 		}
 		if displayName != "" {
-			utils.Info("User: %s", displayName)
+			logger.Info("User: %s", displayName)
 		}
 		if user.UserID != "" {
-			utils.Info("User ID: %s", user.UserID)
+			logger.Info("User ID: %s", user.UserID)
 		}
 
 		// Display organization information
-		utils.Info("Org ID: %s", account.OrgID)
+		logger.Info("Org ID: %s", account.OrgID)
 	},
 }

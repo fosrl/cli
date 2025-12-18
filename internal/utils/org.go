@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 )
 
@@ -71,7 +72,7 @@ func SwitchActiveClientOrg(orgID string) bool {
 	// Get current status to check current orgId
 	currentStatus, err := client.GetStatus()
 	if err != nil {
-		Warning("Failed to get current status: %v", err)
+		logger.Warning("Failed to get current status: %v", err)
 		return false
 	}
 
@@ -83,8 +84,8 @@ func SwitchActiveClientOrg(orgID string) bool {
 	// Client is running, try to switch org
 	_, err = client.SwitchOrg(orgID)
 	if err != nil {
-		Warning("Failed to switch organization in active client: %v", err)
-		Warning("The organization has been saved to config, but the active client may still be using the previous organization.")
+		logger.Warning("Failed to switch organization in active client: %v", err)
+		logger.Warning("The organization has been saved to config, but the active client may still be using the previous organization.")
 		return false
 	}
 

@@ -3,7 +3,7 @@ package version
 import (
 	"fmt"
 
-	"github.com/fosrl/cli/internal/utils"
+	"github.com/fosrl/cli/internal/logger"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -23,12 +23,12 @@ var VersionCmd = &cobra.Command{
 		}
 
 		if latest != nil {
-			utils.Warning("\nA new version is available: %s (current: %s)", latest.TagName, versionpkg.Version)
+			logger.Warning("\nA new version is available: %s (current: %s)", latest.TagName, versionpkg.Version)
 			if latest.URL != "" {
-				utils.Info("Release: %s", latest.URL)
+				logger.Info("Release: %s", latest.URL)
 			}
 			fmt.Println()
-			utils.Info("Run 'pangolin update' to update to the latest version")
+			logger.Info("Run 'pangolin update' to update to the latest version")
 		}
 	},
 }

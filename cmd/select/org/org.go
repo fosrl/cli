@@ -5,6 +5,7 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
@@ -23,7 +24,7 @@ var OrgCmd = &cobra.Command{
 
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
-			utils.Error("%v", err)
+			logger.Error("%v", err)
 			return
 
 		}
@@ -36,7 +37,7 @@ var OrgCmd = &cobra.Command{
 			// Validate that the org exists
 			orgsResp, err := apiClient.ListUserOrgs(userID)
 			if err != nil {
-				utils.Error("Failed to list organizations: %v", err)
+				logger.Error("Failed to list organizations: %v", err)
 				return
 			}
 
@@ -50,7 +51,7 @@ var OrgCmd = &cobra.Command{
 			}
 
 			if !orgExists {
-				utils.Error("Organization '%s' not found or you don't have access to it", flagOrgID)
+				logger.Error("Organization '%s' not found or you don't have access to it", flagOrgID)
 				return
 			}
 
@@ -60,14 +61,14 @@ var OrgCmd = &cobra.Command{
 			// No flag provided, use GUI selection
 			selectedOrgID, err = utils.SelectOrgForm(apiClient, userID)
 			if err != nil {
-				utils.Error("%v", err)
+				logger.Error("%v", err)
 				return
 			}
 		}
 
 		activeAccount.OrgID = selectedOrgID
 		if err := accountStore.Save(); err != nil {
-			utils.Error("Failed to save account to store: %v", err)
+			logger.Error("Failed to save account to store: %v", err)
 			return
 		}
 
@@ -84,11 +85,11 @@ var OrgCmd = &cobra.Command{
 				monitorOrgSwitch(selectedOrgID)
 			} else {
 				// Already on the correct org or no status available
-				utils.Success("Successfully selected organization: %s", selectedOrgID)
+				logger.Success("Successfully selected organization: %s", selectedOrgID)
 			}
 		} else {
 			// Client not running, no switch needed
-			utils.Success("Successfully selected organization: %s", selectedOrgID)
+			logger.Success("Successfully selected organization: %s", selectedOrgID)
 		}
 	},
 }
@@ -96,7 +97,7 @@ var OrgCmd = &cobra.Command{
 // monitorOrgSwitch monitors the organization switch process with log preview
 func monitorOrgSwitch(orgID string) {
 	// Get log file path
-	logFile := utils.GetDefaultLogPath()
+	logFile := config.GetDefaultLogPath()
 
 	// Show live log preview and status during switch
 	completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
@@ -127,9 +128,9 @@ func monitorOrgSwitch(orgID string) {
 
 	// Clear the TUI lines after completion
 	if completed {
-		utils.Success("Successfully switched organization to: %s", orgID)
+		logger.Success("Successfully switched organization to: %s", orgID)
 	} else if err != nil {
-		utils.Warning("Failed to monitor organization switch: %v", err)
+		logger.Warning("Failed to monitor organization switch: %v", err)
 	}
 }
 

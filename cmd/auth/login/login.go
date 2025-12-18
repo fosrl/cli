@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
@@ -70,8 +71,8 @@ func loginWithWeb(hostname string) (string, error) {
 	loginURL := fmt.Sprintf("%s?code=%s", baseLoginURL, code)
 
 	// Display code and instructions (similar to GH CLI format)
-	utils.Info("First copy your one-time code: %s", code)
-	utils.Info("Press Enter to open %s in your browser...", baseLoginURL)
+	logger.Info("First copy your one-time code: %s", code)
+	logger.Info("Press Enter to open %s in your browser...", baseLoginURL)
 
 	// Wait for Enter in a goroutine (non-blocking) and open browser when pressed
 	go func() {
@@ -81,8 +82,8 @@ func loginWithWeb(hostname string) (string, error) {
 			// User pressed Enter, open browser
 			if err := browser.OpenURL(loginURL); err != nil {
 				// Don't fail if browser can't be opened, just warn
-				utils.Warning("Failed to open browser automatically")
-				utils.Info("Please manually visit: %s", baseLoginURL)
+				logger.Warning("Failed to open browser automatically")
+				logger.Info("Please manually visit: %s", baseLoginURL)
 			}
 		}
 	}()
@@ -96,25 +97,25 @@ func loginWithWeb(hostname string) (string, error) {
 
 	for {
 		// print
-		utils.Debug("Polling for device web auth verification...")
+		logger.Debug("Polling for device web auth verification...")
 		// Check if code has expired
 		if time.Now().After(expiresAt) {
-			utils.Error("Device web auth code has expired")
+			logger.Error("Device web auth code has expired")
 			return "", fmt.Errorf("code expired. Please try again")
 		}
 
 		// Check if we've exceeded max polling duration
 		if time.Since(startTime) > maxPollDuration {
-			utils.Error("Polling timed out after %v", maxPollDuration)
+			logger.Error("Polling timed out after %v", maxPollDuration)
 			return "", fmt.Errorf("polling timeout. Please try again")
 		}
 
 		// Poll for verification status
 		pollResp, message, err := api.PollDeviceWebAuth(loginClient, code)
 		// print debug info
-		utils.Debug("Polling response: %+v, message: %s, err: %v", pollResp, message, err)
+		logger.Debug("Polling response: %+v, message: %s, err: %v", pollResp, message, err)
 		if err != nil {
-			utils.Error("Error polling device web auth: %v", err)
+			logger.Error("Error polling device web auth: %v", err)
 			return "", fmt.Errorf("failed to poll device web auth: %w", err)
 		}
 
@@ -122,7 +123,7 @@ func loginWithWeb(hostname string) (string, error) {
 		if pollResp.Verified {
 			token = pollResp.Token
 			if token == "" {
-				utils.Error("Verification succeeded but no token received")
+				logger.Error("Verification succeeded but no token received")
 				return "", fmt.Errorf("verification succeeded but no token received")
 			}
 			return token, nil
@@ -130,7 +131,7 @@ func loginWithWeb(hostname string) (string, error) {
 
 		// Check for expired or not found messages
 		if message == "Code expired" || message == "Code not found" {
-			utils.Error("Device web auth code has expired or not found")
+			logger.Error("Device web auth code has expired or not found")
 			return "", fmt.Errorf("code expired or not found. Please try again")
 		}
 
@@ -172,7 +173,7 @@ var LoginCmd = &cobra.Command{
 			)
 
 			if err := form.Run(); err != nil {
-				utils.Error("Error: %v", err)
+				logger.Error("Error: %v", err)
 				return
 			}
 
@@ -188,7 +189,7 @@ var LoginCmd = &cobra.Command{
 				)
 
 				if err := hostnameForm.Run(); err != nil {
-					utils.Error("Error: %v", err)
+					logger.Error("Error: %v", err)
 					return
 				}
 			} else {
@@ -208,12 +209,12 @@ var LoginCmd = &cobra.Command{
 		// Perform web login
 		sessionToken, err := loginWithWeb(hostname)
 		if err != nil {
-			utils.Error("%v", err)
+			logger.Error("%v", err)
 			return
 		}
 
 		if sessionToken == "" {
-			utils.Error("Login appeared successful but no session token was received.")
+			logger.Error("Login appeared successful but no session token was received.")
 			return
 		}
 
@@ -223,19 +224,19 @@ var LoginCmd = &cobra.Command{
 		apiClient.SetBaseURL(apiBaseURL)
 		apiClient.SetToken(sessionToken)
 
-		utils.Success("Device authorized")
+		logger.Success("Device authorized")
 		fmt.Println()
 
 		// Get user information
 		var user *api.User
 		user, err = apiClient.GetUser()
 		if err != nil {
-			utils.Error("Failed to get user information: %v", err)
-			return // TODO: make this fatal, handle errors properly with exit codes!
+			logger.Error("Failed to get user information: %v", err)
+			return // FIXME: handle errors properly with exit codes!
 		}
 
 		if _, exists := accountStore.Accounts[user.UserID]; exists {
-			utils.Warning("Already logged in as this user; no action needed")
+			logger.Warning("Already logged in as this user; no action needed")
 			return
 		}
 
@@ -244,13 +245,13 @@ var LoginCmd = &cobra.Command{
 
 		orgID, err := utils.SelectOrgForm(apiClient, userID)
 		if err != nil {
-			utils.Error("Failed to select organization: %v", err)
+			logger.Error("Failed to select organization: %v", err)
 			return
 		}
 
 		newOlmCreds, err := apiClient.CreateOlm(userID, utils.GetDeviceName())
 		if err != nil {
-			utils.Error("Failed to obtain olm credentials: %v", err)
+			logger.Error("Failed to obtain olm credentials: %v", err)
 			return
 		}
 
@@ -271,15 +272,15 @@ var LoginCmd = &cobra.Command{
 
 		err = accountStore.Save()
 		if err != nil {
-			utils.Error("Failed to save account store: %s", err)
-			utils.Warning("You may not be able to login properly until this is saved.")
+			logger.Error("Failed to save account store: %s", err)
+			logger.Warning("You may not be able to login properly until this is saved.")
 			return
 		}
 
 		// List and select organization
 		if user != nil {
 			if _, err := utils.SelectOrgForm(apiClient, user.UserID); err != nil {
-				utils.Warning("%v", err)
+				logger.Warning("%v", err)
 			}
 		}
 
@@ -290,7 +291,7 @@ var LoginCmd = &cobra.Command{
 				displayName = *user.Username
 			}
 			if displayName != "" {
-				utils.Success("Logged in as %s", displayName)
+				logger.Success("Logged in as %s", displayName)
 			}
 		}
 	},

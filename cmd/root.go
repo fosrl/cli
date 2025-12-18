@@ -17,7 +17,7 @@ import (
 	"github.com/fosrl/cli/cmd/version"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
-	"github.com/fosrl/cli/internal/utils"
+	"github.com/fosrl/cli/internal/logger"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -45,8 +45,8 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 
 			// Check for updates asynchronously
 			versionpkg.CheckForUpdateAsync(func(release *versionpkg.GitHubRelease) {
-				utils.Warning("A new version is available: %s (current: %s)", release.TagName, versionpkg.Version)
-				utils.Info("Run 'pangolin update' to update to the latest version")
+				logger.Warning("A new version is available: %s (current: %s)", release.TagName, versionpkg.Version)
+				logger.Info("Run 'pangolin update' to update to the latest version")
 				fmt.Println()
 			})
 		},
@@ -101,7 +101,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 func Execute() {
 	cmd, err := RootCommand(true)
 	if err != nil {
-		utils.Error("%v", err)
+		logger.Error("%v", err)
 		os.Exit(1)
 	}
 

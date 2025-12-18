@@ -6,14 +6,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
-var (
-	flagJSON bool
-)
+var flagJSON bool
 
 var ClientCmd = &cobra.Command{
 	Use:   "client",
@@ -25,14 +24,14 @@ var ClientCmd = &cobra.Command{
 
 		// Check if client is running
 		if !client.IsRunning() {
-			utils.Info("No client is currently running")
+			logger.Info("No client is currently running")
 			return
 		}
 
 		// Get status
 		status, err := client.GetStatus()
 		if err != nil {
-			utils.Error("Error: %v", err)
+			logger.Error("Error: %v", err)
 			os.Exit(1)
 		}
 
@@ -58,7 +57,7 @@ func init() {
 func printJSON(status *olm.StatusResponse) {
 	jsonData, err := json.MarshalIndent(status, "", "  ")
 	if err != nil {
-		utils.Error("Error marshaling JSON: %v", err)
+		logger.Error("Error marshaling JSON: %v", err)
 		os.Exit(1)
 	}
 	fmt.Println(string(jsonData))

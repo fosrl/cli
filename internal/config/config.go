@@ -40,3 +40,16 @@ func GetOriginalUserHomeDir() (string, error) {
 	// Not running with sudo, use current user's home directory
 	return os.UserHomeDir()
 }
+
+// GetDefaultLogPath returns the default log file path for client logs
+// FIXME: remove this method in favor of the log level
+func GetDefaultLogPath() string {
+	pangolinDir, err := GetPangolinConfigDir()
+	if err != nil {
+		return "/tmp/olm.log"
+	}
+	// Ensure logs subdirectory exists
+	logsDir := filepath.Join(pangolinDir, "logs")
+	os.MkdirAll(logsDir, 0o755)
+	return filepath.Join(logsDir, "client.log")
+}

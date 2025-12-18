@@ -5,8 +5,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
-	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ var AccountCmd = &cobra.Command{
 		accountStore := config.AccountStoreFromContext(cmd.Context())
 
 		if len(accountStore.Accounts) == 0 {
-			utils.Warning("Not logged in.")
+			logger.Warning("Not logged in.")
 			return
 		}
 
@@ -44,14 +44,14 @@ var AccountCmd = &cobra.Command{
 			}
 
 			if selectedAccount == nil {
-				utils.Error("No accounts found that match the search terms")
+				logger.Error("No accounts found that match the search terms")
 				return
 			}
 		} else {
 			// No flag provided, use GUI selection if necessary
 			selected, err := selectAccountForm(accountStore.Accounts)
 			if err != nil {
-				utils.Error("Failed to select account: %v", err)
+				logger.Error("Failed to select account: %v", err)
 				return
 			}
 
@@ -60,22 +60,22 @@ var AccountCmd = &cobra.Command{
 
 		accountStore.ActiveUserID = selectedAccount.UserID
 		if err := accountStore.Save(); err != nil {
-			utils.Error("Failed to save account to store: %v", err)
+			logger.Error("Failed to save account to store: %v", err)
 			return
 		}
 
 		// Check if olmClient is running and if we need to shut it down
 		olmClient := olm.NewClient("")
 		if olmClient.IsRunning() {
-			utils.Info("Shutting down running OLM client")
+			logger.Info("Shutting down running OLM client")
 			_, err := olmClient.Exit()
 			if err != nil {
-				utils.Warning("Failed to shut down OLM client: %s; you may need to do so manually.", err)
+				logger.Warning("Failed to shut down OLM client: %s; you may need to do so manually.", err)
 			}
 		}
 
 		selectedAccountStr := fmt.Sprintf("%s @ %s", selectedAccount.Email, selectedAccount.Host)
-		utils.Success("Successfully selected account: %s", selectedAccountStr)
+		logger.Success("Successfully selected account: %s", selectedAccountStr)
 	},
 }
 

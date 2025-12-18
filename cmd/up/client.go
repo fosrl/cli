@@ -15,11 +15,12 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
 	versionpkg "github.com/fosrl/cli/internal/version"
-	"github.com/fosrl/newt/logger"
+	newtLogger "github.com/fosrl/newt/logger"
 	olmpkg "github.com/fosrl/olm/olm"
 	"github.com/spf13/cobra"
 )
@@ -67,14 +68,14 @@ var ClientCmd = &cobra.Command{
 		accountStore := config.AccountStoreFromContext(cmd.Context())
 
 		if runtime.GOOS == "windows" {
-			utils.Error("Windows is not supported")
+			logger.Error("Windows is not supported")
 			os.Exit(1)
 		}
 
 		// Check if a client is already running
 		olmClient := olm.NewClient("")
 		if olmClient.IsRunning() {
-			utils.Info("A client is already running")
+			logger.Info("A client is already running")
 			os.Exit(1)
 		}
 
@@ -89,26 +90,26 @@ var ClientCmd = &cobra.Command{
 			credentialsFromKeyring = false
 		} else if flagID != "" || flagSecret != "" {
 			// If only one flag is provided, require both
-			utils.Error("Both --id and --secret must be provided together")
+			logger.Error("Both --id and --secret must be provided together")
 			os.Exit(1)
 		} else {
 			activeAccount, err := accountStore.ActiveAccount()
 			if err != nil {
-				utils.Error("Error: %v. Run `pangolin login` to login", err)
+				logger.Error("Error: %v. Run `pangolin login` to login", err)
 				os.Exit(1)
 			}
 
 			// Ensure OLM credentials exist and are valid
 			newCredsGenerated, err := utils.EnsureOlmCredentials(apiClient, activeAccount)
 			if err != nil {
-				utils.Error("Failed to ensure OLM credentials: %v", err)
+				logger.Error("Failed to ensure OLM credentials: %v", err)
 				os.Exit(1)
 			}
 
 			if newCredsGenerated {
 				err := accountStore.Save()
 				if err != nil {
-					utils.Error("Failed to save accounts to store: %v", err)
+					logger.Error("Failed to save accounts to store: %v", err)
 					os.Exit(1)
 				}
 			}
@@ -117,7 +118,7 @@ var ClientCmd = &cobra.Command{
 			olmSecret = activeAccount.OlmCredentials.Secret
 
 			if err != nil {
-				utils.Error("Failed to get OLM credentials: %v", err)
+				logger.Error("Failed to get OLM credentials: %v", err)
 				os.Exit(1)
 			}
 			credentialsFromKeyring = true
@@ -135,12 +136,12 @@ var ClientCmd = &cobra.Command{
 			}
 
 			if orgID == "" {
-				utils.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org [id] to the command")
+				logger.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org [id] to the command")
 				os.Exit(1)
 			}
 
 			if err := utils.EnsureOrgAccess(apiClient, activeAccount); err != nil {
-				utils.Error("%v", err)
+				logger.Error("%v", err)
 				os.Exit(1)
 			}
 		}
@@ -148,7 +149,7 @@ var ClientCmd = &cobra.Command{
 		// Handle log file setup - if detached mode, always use log file
 		var logFile string
 		if !flagAttached {
-			logFile = utils.GetDefaultLogPath()
+			logFile = config.GetDefaultLogPath()
 		}
 
 		endpoint := flagEndpoint
@@ -165,7 +166,7 @@ var ClientCmd = &cobra.Command{
 		if !flagAttached && !isRunningAsRoot {
 			executable, err := os.Executable()
 			if err != nil {
-				utils.Error("Error: failed to get executable path: %v", err)
+				logger.Error("Error: failed to get executable path: %v", err)
 				os.Exit(1)
 			}
 
@@ -183,7 +184,7 @@ var ClientCmd = &cobra.Command{
 			// Always pass endpoint to subprocess (required, subprocess won't have user's config)
 			// Get endpoint from flag or hostname config (same logic as attached mode)
 			if endpoint == "" {
-				utils.Error("Endpoint is required. Please login with a host or provide --endpoint flag")
+				logger.Error("Endpoint is required. Please login with a host or provide --endpoint flag")
 				os.Exit(1)
 			}
 			cmdArgs = append(cmdArgs, "--endpoint", endpoint)
@@ -263,20 +264,20 @@ var ClientCmd = &cobra.Command{
 				procCmd.Stdout = nil
 				procCmd.Stderr = os.Stderr
 			} else {
-				utils.Error("Windows is not supported for detached mode")
+				logger.Error("Windows is not supported for detached mode")
 				os.Exit(1)
 			}
 
 			// Start the process
 			if err := procCmd.Start(); err != nil {
-				utils.Error("Error: failed to start detached process: %v", err)
+				logger.Error("Error: failed to start detached process: %v", err)
 				os.Exit(1)
 			}
 
 			// Wait for sudo to complete (password prompt + subprocess start)
 			// The shell wrapper backgrounds the subprocess, so sudo exits immediately
 			if err := procCmd.Wait(); err != nil {
-				utils.Error("Error: failed to start subprocess: %v", err)
+				logger.Error("Error: failed to start subprocess: %v", err)
 				os.Exit(1)
 			}
 
@@ -312,17 +313,17 @@ var ClientCmd = &cobra.Command{
 				},
 			})
 			if err != nil {
-				utils.Error("Error: %v", err)
+				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}
 
 			// Check if the process completed successfully or was killed
 			if !completed {
 				// User exited early - subprocess was killed
-				utils.Info("Client process killed")
+				logger.Info("Client process killed")
 			} else {
 				// Completed successfully
-				utils.Success("Client interface created successfully")
+				logger.Success("Client interface created successfully")
 			}
 			os.Exit(0)
 		}
@@ -367,14 +368,14 @@ var ClientCmd = &cobra.Command{
 			}
 			d, err := time.ParseDuration(durationStr)
 			if err != nil {
-				utils.Warning("Invalid duration format '%s', using default: %v", durationStr, defaultDuration)
+				logger.Warning("Invalid duration format '%s', using default: %v", durationStr, defaultDuration)
 				return defaultDuration
 			}
 			return d
 		}
 
 		if endpoint == "" {
-			utils.Error("Endpoint is required. Please provide --endpoint flag or set hostname in config")
+			logger.Error("Endpoint is required. Please provide --endpoint flag or set hostname in config")
 			os.Exit(1)
 		}
 
@@ -426,7 +427,7 @@ var ClientCmd = &cobra.Command{
 		// Setup log file if specified
 		if logFile != "" {
 			if err := setupLogFile(logFile); err != nil {
-				utils.Error("Error: failed to setup log file: %v", err)
+				logger.Error("Error: failed to setup log file: %v", err)
 				os.Exit(1)
 			}
 		}
@@ -441,7 +442,7 @@ var ClientCmd = &cobra.Command{
 			// Credentials came from config, fetch userToken from secrets
 			activeAccount, err := accountStore.ActiveAccount()
 			if err != nil {
-				utils.Error("Failed to get session token: %v", err)
+				logger.Error("Failed to get session token: %v", err)
 				return
 			}
 
@@ -462,17 +463,17 @@ var ClientCmd = &cobra.Command{
 			Version:    version,
 			Agent:      defaultAgent,
 			OnTerminated: func() {
-				utils.Info("Client process terminated")
+				logger.Info("Client process terminated")
 				stop()
 				os.Exit(0)
 			},
 			OnAuthError: func(statusCode int, message string) {
-				utils.Error("Authentication error: %d %s", statusCode, message)
+				logger.Error("Authentication error: %d %s", statusCode, message)
 				stop()
 				os.Exit(1)
 			},
 			OnExit: func() {
-				utils.Info("Client process exiting")
+				logger.Info("Client process exiting")
 				os.Exit(0)
 			},
 		}
@@ -502,8 +503,8 @@ var ClientCmd = &cobra.Command{
 		// This check is only for attached mode; in detached mode, the subprocess runs elevated
 		if runtime.GOOS != "windows" {
 			if os.Geteuid() != 0 {
-				utils.Error("This command requires elevated permissions for network interface creation.")
-				utils.Info("Please run with sudo or use detached mode (default) to run the subprocess elevated.")
+				logger.Error("This command requires elevated permissions for network interface creation.")
+				logger.Info("Please run with sudo or use detached mode (default) to run the subprocess elevated.")
 				os.Exit(1)
 			}
 		}
@@ -568,7 +569,7 @@ func setupLogFile(logPath string) error {
 	}
 
 	// Set the logger output
-	logger.GetLogger().SetOutput(file)
+	newtLogger.GetLogger().SetOutput(file)
 
 	// log.Printf("Logging to file: %s", logPath)
 	return nil

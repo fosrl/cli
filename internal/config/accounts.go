@@ -31,7 +31,7 @@ type OlmCredentials struct {
 	Secret string `mapstructure:"secret" json:"secret"`
 }
 
-func newViper() (*viper.Viper, error) {
+func newAccountViper() (*viper.Viper, error) {
 	v := viper.New()
 
 	dir, err := GetPangolinConfigDir()
@@ -47,7 +47,7 @@ func newViper() (*viper.Viper, error) {
 }
 
 func LoadAccountStore() (*AccountStore, error) {
-	v, err := newViper()
+	v, err := newAccountViper()
 	if err != nil {
 		return nil, err
 	}

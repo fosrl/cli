@@ -9,7 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fosrl/cli/internal/utils"
+	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -23,12 +24,12 @@ var clientLogsCmd = &cobra.Command{
 	Short: "View client logs",
 	Long:  "View client logs. Use -f to follow log output.",
 	Run: func(cmd *cobra.Command, args []string) {
-		logPath := utils.GetDefaultLogPath()
+		logPath := config.GetDefaultLogPath()
 
 		if flagFollow {
 			// Follow the log file
 			if err := watchLogFile(logPath, flagLines); err != nil {
-				utils.Error("Error: %v", err)
+				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}
 		} else {
@@ -36,13 +37,13 @@ var clientLogsCmd = &cobra.Command{
 			if flagLines > 0 {
 				// Show last N lines
 				if err := printLastLines(logPath, flagLines); err != nil {
-					utils.Error("Error: %v", err)
+					logger.Error("Error: %v", err)
 					os.Exit(1)
 				}
 			} else {
 				// Show all lines
 				if err := printLogFile(logPath); err != nil {
-					utils.Error("Error: %v", err)
+					logger.Error("Error: %v", err)
 					os.Exit(1)
 				}
 			}

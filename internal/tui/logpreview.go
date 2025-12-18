@@ -9,8 +9,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
-	"github.com/fosrl/cli/internal/utils"
 )
 
 // ExitCondition is a function that determines if the preview should exit
@@ -147,7 +147,7 @@ func (m *logPreviewModel) View() string {
 
 	// Styles
 	logStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(utils.ColorLightGray))
+		Foreground(lipgloss.Color(logger.ColorLightGray))
 
 	// Header
 	sb.WriteString(m.config.Header)
@@ -174,9 +174,11 @@ func (m *logPreviewModel) View() string {
 }
 
 // Messages for bubbletea
-type logUpdateMsg struct{}
-type statusUpdateMsg struct{}
-type initCompleteMsg struct{}
+type (
+	logUpdateMsg    struct{}
+	statusUpdateMsg struct{}
+	initCompleteMsg struct{}
+)
 
 // tickLogUpdate sends a log update tick
 func tickLogUpdate() tea.Cmd {

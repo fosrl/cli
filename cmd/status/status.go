@@ -1,13 +1,14 @@
 package status
 
 import (
+	"github.com/fosrl/cli/cmd/status/client"
 	"github.com/spf13/cobra"
 )
 
 func StatusCmd() *cobra.Command {
 	// If no subcommand is specified, run the `client`
 	// subcommand by default.
-	cmd := ClientStatusCmd()
+	cmd := client.ClientStatusCmd()
 
 	cmd.Use = "status"
 	cmd.Short = "Status commands"
@@ -16,7 +17,7 @@ func StatusCmd() *cobra.Command {
 If ran with no subcommand, 'client' is passed.
 `
 
-	cmd.AddCommand(ClientStatusCmd())
+	cmd.AddCommand(client.ClientStatusCmd())
 
 	return cmd
 }

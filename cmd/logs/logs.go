@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"github.com/fosrl/cli/cmd/logs/client"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +12,7 @@ func LogsCmd() *cobra.Command {
 		Long:  "View and follow client logs",
 	}
 
-	cmd.AddCommand(ClientLogsCmd())
+	cmd.AddCommand(client.ClientLogsCmd())
 
 	return cmd
 }

@@ -1,13 +1,14 @@
 package down
 
 import (
+	"github.com/fosrl/cli/cmd/down/client"
 	"github.com/spf13/cobra"
 )
 
 func DownCmd() *cobra.Command {
 	// If no subcommand is specified, run the `client`
 	// subcommand by default.
-	cmd := ClientDownCmd()
+	cmd := client.ClientDownCmd()
 
 	cmd.Use = "down"
 	cmd.Short = "Stop a connection"
@@ -16,7 +17,7 @@ func DownCmd() *cobra.Command {
 If ran with no subcommand, 'client' is passed.
 `
 
-	cmd.AddCommand(ClientDownCmd())
+	cmd.AddCommand(client.ClientDownCmd())
 
 	return cmd
 }

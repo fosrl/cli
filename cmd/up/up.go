@@ -1,13 +1,14 @@
 package up
 
 import (
+	"github.com/fosrl/cli/cmd/up/client"
 	"github.com/spf13/cobra"
 )
 
 func UpCmd() *cobra.Command {
 	// If no subcommand is specified, run the `client`
 	// subcommand by default.
-	cmd := ClientUpCmd()
+	cmd := client.ClientUpCmd()
 
 	cmd.Use = "up"
 	cmd.Short = "Start a connection"
@@ -16,7 +17,7 @@ func UpCmd() *cobra.Command {
 If ran with no subcommand, 'client' is passed.
 `
 
-	cmd.AddCommand(ClientUpCmd())
+	cmd.AddCommand(client.ClientUpCmd())
 
 	return cmd
 }

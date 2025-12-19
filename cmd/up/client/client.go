@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -26,187 +27,199 @@ import (
 )
 
 const (
-	defaultMTU           = 1280
-	defaultDNS           = "8.8.8.8"
-	defaultInterfaceName = "pangolin"
-	defaultLogLevel      = "info"
-	defaultEnableAPI     = true
-	defaultSocketPath    = "/var/run/olm.sock"
-	defaultPingInterval  = "5s"
-	defaultPingTimeout   = "5s"
-	defaultHolepunch     = true
-	defaultAgent         = "Pangolin CLI"
-	defaultOverrideDNS   = true
-	defaultTunnelDNS     = false
+	defaultDNSServer  = "8.8.8.8"
+	defaultEnableAPI  = true
+	defaultSocketPath = "/var/run/olm.sock"
+	defaultAgent      = "Pangolin CLI"
 )
 
-var (
-	flagID            string
-	flagSecret        string
-	flagEndpoint      string
-	flagOrgID         string
-	flagMTU           int
-	flagDNS           string
-	flagInterfaceName string
-	flagLogLevel      string
-	flagHTTPAddr      string
-	flagPingInterval  string
-	flagPingTimeout   string
-	flagHolepunch     bool
-	flagTlsClientCert string
-	flagAttached      bool
-	flagSilent        bool
-	flagOverrideDNS   bool
-	flagTunnelDNS     bool
-	flagUpstreamDNS   []string
-)
+type ClientUpCmdOpts struct {
+	ID            string
+	Secret        string
+	Endpoint      string
+	OrgID         string
+	MTU           int
+	DNS           string
+	InterfaceName string
+	LogLevel      string
+	HTTPAddr      string
+	PingInterval  time.Duration
+	PingTimeout   time.Duration
+	Holepunch     bool
+	TlsClientCert string
+	Attached      bool
+	Silent        bool
+	OverrideDNS   bool
+	TunnelDNS     bool
+	UpstreamDNS   []string
+}
 
 func ClientUpCmd() *cobra.Command {
+	opts := ClientUpCmdOpts{}
+
 	cmd := &cobra.Command{
 		Use:   "client",
 		Short: "Start a client connection",
 		Long:  "Bring up a client tunneled connection",
-		Run:   clientUpMain,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// `--id` and `--secret` must be specified together
+			if (opts.ID == "") != (opts.Secret == "") {
+				return errors.New("--id and --secret must be provided together")
+			}
+
+			if opts.Attached && opts.Silent {
+				return errors.New("--silent and --attached options conflict")
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := clientUpMain(cmd, &opts, args); err != nil {
+				os.Exit(1)
+			}
+		},
 	}
 
 	// Optional flags - if not provided, will use config or create new OLM
-	cmd.Flags().StringVar(&flagID, "id", "", "Client ID (optional, will use user info if not provided)")
-	cmd.Flags().StringVar(&flagSecret, "secret", "", "Client secret (optional, will use user info if not provided)")
+	cmd.Flags().StringVar(&opts.ID, "id", "", "Client ID (optional, will use user info if not provided)")
+	cmd.Flags().StringVar(&opts.Secret, "secret", "", "Client secret (optional, will use user info if not provided)")
 
 	// Optional flags
-	cmd.Flags().StringVar(&flagOrgID, "org", "", "Organization ID (optional, will use selected org if not provided)")
-	cmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "Client endpoint (required if not logged in)")
-	cmd.Flags().IntVar(&flagMTU, "mtu", 0, fmt.Sprintf("MTU (default: %d)", defaultMTU))
-	cmd.Flags().StringVar(&flagDNS, "netstack-dns", "", fmt.Sprintf("DNS server to use for Netstack (default: %s)", defaultDNS))
-	cmd.Flags().StringVar(&flagInterfaceName, "interface-name", "", fmt.Sprintf("Interface name (default: %s)", defaultInterfaceName))
-	cmd.Flags().StringVar(&flagLogLevel, "log-level", "", fmt.Sprintf("Log level (default: %s)", defaultLogLevel))
-	cmd.Flags().StringVar(&flagHTTPAddr, "http-addr", "", "HTTP address for API server (default: disabled)")
-	cmd.Flags().StringVar(&flagPingInterval, "ping-interval", "", fmt.Sprintf("Ping interval (default: %s)", defaultPingInterval))
-	cmd.Flags().StringVar(&flagPingTimeout, "ping-timeout", "", fmt.Sprintf("Ping timeout (default: %s)", defaultPingTimeout))
-	cmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, fmt.Sprintf("Enable holepunching (default: %v)", defaultHolepunch))
-	cmd.Flags().StringVar(&flagTlsClientCert, "tls-client-cert", "", "TLS client certificate path")
-	cmd.Flags().BoolVar(&flagOverrideDNS, "override-dns", defaultOverrideDNS, fmt.Sprintf("Override system DNS for resolving internal resource alias (default: %v)", defaultOverrideDNS))
-	cmd.Flags().BoolVar(&flagTunnelDNS, "tunnel-dns", defaultTunnelDNS, fmt.Sprintf("Use tunnel DNS for internal resource alias resolution (default: %v)", defaultTunnelDNS))
-	cmd.Flags().StringSliceVar(&flagUpstreamDNS, "upstream-dns", nil, fmt.Sprintf("Comma separated list of DNS servers to use for external DNS resolution if overriding system DNS (default: %s)", defaultDNS))
-	cmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
-	cmd.Flags().BoolVar(&flagSilent, "silent", false, "Disable TUI and run silently (only applies to detached mode)")
+	cmd.Flags().StringVar(&opts.OrgID, "org", "", "Organization ID (default: selected organization if logged in)")
+	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Client endpoint (required if not logged in)")
+	cmd.Flags().IntVar(&opts.MTU, "mtu", 1280, "Maximum transmission unit")
+	cmd.Flags().StringVar(&opts.DNS, "netstack-dns", defaultDNSServer, "DNS `server` to use for Netstack")
+	cmd.Flags().StringVar(&opts.InterfaceName, "interface-name", "pangolin", "Interface `name`")
+	cmd.Flags().StringVar(&opts.LogLevel, "log-level", "info", "Log level")
+	cmd.Flags().StringVar(&opts.HTTPAddr, "http-addr", "", "HTTP address for API server")
+	cmd.Flags().DurationVar(&opts.PingInterval, "ping-interval", 5*time.Second, "Ping `interval`")
+	cmd.Flags().DurationVar(&opts.PingTimeout, "ping-timeout", 5*time.Second, "Ping `timeout`")
+	cmd.Flags().BoolVar(&opts.Holepunch, "holepunch", true, "Enable holepunching")
+	cmd.Flags().StringVar(&opts.TlsClientCert, "tls-client-cert", "", "TLS client certificate `path`")
+	cmd.Flags().BoolVar(&opts.OverrideDNS, "override-dns", true, "Override system DNS for resolving internal resource alias")
+	cmd.Flags().BoolVar(&opts.TunnelDNS, "tunnel-dns", false, "Use tunnel DNS for internal resource alias resolution")
+	cmd.Flags().StringSliceVar(&opts.UpstreamDNS, "upstream-dns", []string{defaultDNSServer}, "List of DNS servers to use for external DNS resolution if overriding system DNS")
+	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
+	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
 	return cmd
 }
 
-func clientUpMain(cmd *cobra.Command, args []string) {
+func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string) error {
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
 
 	if runtime.GOOS == "windows" {
-		logger.Error("Windows is not supported")
-		os.Exit(1)
+		err := errors.New("this command is currently unsupported on Windows")
+		logger.Error("Error: %v", err)
+		return err
 	}
 
 	// Check if a client is already running
 	olmClient := olm.NewClient("")
 	if olmClient.IsRunning() {
-		logger.Info("A client is already running")
-		os.Exit(1)
+		err := errors.New("a client is already running")
+		logger.Error("Error: %v", err)
+		return err
 	}
 
-	var olmID, olmSecret string
-	var credentialsFromKeyring bool
+	// Use provided flags whenever possible.
+	// No user session is needed when passing these directly,
+	// so continue even if not logged in.
+	olmID := opts.ID
+	olmSecret := opts.Secret
 
-	if flagID != "" && flagSecret != "" {
-		// Use provided flags - no user session needed, continue even if not logged in
-		// Org cannot be set when passing id and secret directly
-		olmID = flagID
-		olmSecret = flagSecret
-		credentialsFromKeyring = false
-	} else if flagID != "" || flagSecret != "" {
-		// If only one flag is provided, require both
-		logger.Error("Both --id and --secret must be provided together")
-		os.Exit(1)
-	} else {
+	credentialsFromKeyring := olmID == "" && olmSecret == ""
+
+	if credentialsFromKeyring {
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
 			logger.Error("Error: %v. Run `pangolin login` to login", err)
-			os.Exit(1)
+			return err
 		}
 
 		// Ensure OLM credentials exist and are valid
 		newCredsGenerated, err := utils.EnsureOlmCredentials(apiClient, activeAccount)
 		if err != nil {
 			logger.Error("Failed to ensure OLM credentials: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		if newCredsGenerated {
 			err := accountStore.Save()
 			if err != nil {
 				logger.Error("Failed to save accounts to store: %v", err)
-				os.Exit(1)
+				return err
 			}
 		}
 
 		olmID = activeAccount.OlmCredentials.ID
 		olmSecret = activeAccount.OlmCredentials.Secret
-
-		if err != nil {
-			logger.Error("Failed to get OLM credentials: %v", err)
-			os.Exit(1)
-		}
-		credentialsFromKeyring = true
 	}
 
-	orgID := flagOrgID
+	orgID := opts.OrgID
 
-	// Get orgId from flag or viper (required for OLM config when using logged-in user)
-	if credentialsFromKeyring {
+	// If no organization ID is specified, then use the active user's
+	// selected organization if possible.
+	if orgID == "" && credentialsFromKeyring {
 		activeAccount, _ := accountStore.ActiveAccount()
 
-		// When using credentials from keyring, orgID is required
-		if orgID == "" {
-			orgID = activeAccount.OrgID
-		}
-
-		if orgID == "" {
-			logger.Error("Please select an organization first. Run `pangolin select org` to select an organization or pass --org [id] to the command")
-			os.Exit(1)
+		if activeAccount.OrgID == "" {
+			err := errors.New("organization not selected")
+			logger.Error("Error: %v", err)
+			logger.Info("Run `pangolin select org` to select an organization or pass --org [id] to the command")
+			return err
 		}
 
 		if err := utils.EnsureOrgAccess(apiClient, activeAccount); err != nil {
 			logger.Error("%v", err)
-			os.Exit(1)
+			return err
 		}
+
+		orgID = activeAccount.OrgID
 	}
 
 	// Handle log file setup - if detached mode, always use log file
 	var logFile string
-	if !flagAttached {
+	if !opts.Attached {
 		logFile = cfg.LogFile
 	}
 
-	endpoint := flagEndpoint
-	if endpoint == "" {
+	var endpoint string
+
+	if opts.Endpoint == "" && credentialsFromKeyring {
 		activeAccount, _ := accountStore.ActiveAccount()
-		if activeAccount != nil {
-			endpoint = activeAccount.Host
-		}
+		endpoint = activeAccount.Host
+	} else {
+		endpoint = opts.Endpoint
+	}
+
+	if endpoint == "" {
+		err := errors.New("endpoint is required")
+		logger.Error("Error: %v", err)
+		logger.Info("Please login with a host or provide the --endpoint flag.")
+		return err
 	}
 
 	// Handle detached mode - subprocess self without --attach flag
 	// Skip detached mode if already running as root (we're a subprocess spawned by sudo)
 	isRunningAsRoot := runtime.GOOS != "windows" && os.Geteuid() == 0
-	if !flagAttached && !isRunningAsRoot {
+	if !opts.Attached && !isRunningAsRoot {
 		executable, err := os.Executable()
 		if err != nil {
 			logger.Error("Error: failed to get executable path: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		// Build command arguments, excluding --attach flag
 		cmdArgs := []string{"up", "client"}
 
-		// Add org flag (required for subprocess, which runs as root and won't have user's config)
-		cmdArgs = append(cmdArgs, "--org", orgID)
+		// Add org flag if needed (required for subprocess, which runs as
+		// root and won't have user's config)
+		if orgID != "" {
+			cmdArgs = append(cmdArgs, "--org", orgID)
+		}
 
 		// Add all flags that were set (except --attach)
 		// OLM credentials are always included (from flags, config, or newly created)
@@ -215,53 +228,49 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 
 		// Always pass endpoint to subprocess (required, subprocess won't have user's config)
 		// Get endpoint from flag or hostname config (same logic as attached mode)
-		if endpoint == "" {
-			logger.Error("Endpoint is required. Please login with a host or provide --endpoint flag")
-			os.Exit(1)
-		}
 		cmdArgs = append(cmdArgs, "--endpoint", endpoint)
 
 		// Optional flags - only include if they were explicitly set
 		if cmd.Flags().Changed("mtu") {
-			cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", flagMTU))
+			cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", opts.MTU))
 		}
 		if cmd.Flags().Changed("netstack-dns") {
-			cmdArgs = append(cmdArgs, "--netstack-dns", flagDNS)
+			cmdArgs = append(cmdArgs, "--netstack-dns", opts.DNS)
 		}
 		if cmd.Flags().Changed("interface-name") {
-			cmdArgs = append(cmdArgs, "--interface-name", flagInterfaceName)
+			cmdArgs = append(cmdArgs, "--interface-name", opts.InterfaceName)
 		}
 		if cmd.Flags().Changed("log-level") {
-			cmdArgs = append(cmdArgs, "--log-level", flagLogLevel)
+			cmdArgs = append(cmdArgs, "--log-level", opts.LogLevel)
 		}
 		if cmd.Flags().Changed("http-addr") {
-			cmdArgs = append(cmdArgs, "--http-addr", flagHTTPAddr)
+			cmdArgs = append(cmdArgs, "--http-addr", opts.HTTPAddr)
 		}
 		if cmd.Flags().Changed("ping-interval") {
-			cmdArgs = append(cmdArgs, "--ping-interval", flagPingInterval)
+			cmdArgs = append(cmdArgs, "--ping-interval", opts.PingInterval.String())
 		}
 		if cmd.Flags().Changed("ping-timeout") {
-			cmdArgs = append(cmdArgs, "--ping-timeout", flagPingTimeout)
+			cmdArgs = append(cmdArgs, "--ping-timeout", opts.PingTimeout.String())
 		}
 		if cmd.Flags().Changed("holepunch") {
-			if flagHolepunch {
+			if opts.Holepunch {
 				cmdArgs = append(cmdArgs, "--holepunch")
 			} else {
 				cmdArgs = append(cmdArgs, "--holepunch=false")
 			}
 		}
 		if cmd.Flags().Changed("tls-client-cert") {
-			cmdArgs = append(cmdArgs, "--tls-client-cert", flagTlsClientCert)
+			cmdArgs = append(cmdArgs, "--tls-client-cert", opts.TlsClientCert)
 		}
 		if cmd.Flags().Changed("override-dns") {
-			if flagOverrideDNS {
+			if opts.OverrideDNS {
 				cmdArgs = append(cmdArgs, "--override-dns")
 			} else {
 				cmdArgs = append(cmdArgs, "--override-dns=false")
 			}
 		}
 		if cmd.Flags().Changed("tunnel-dns") {
-			if flagOverrideDNS {
+			if opts.TunnelDNS {
 				cmdArgs = append(cmdArgs, "--tunnel-dns")
 			} else {
 				cmdArgs = append(cmdArgs, "--tunnel-dns=false")
@@ -269,11 +278,11 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 		}
 		if cmd.Flags().Changed("upstream-dns") {
 			// Comma sep
-			cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(flagUpstreamDNS, ","))
+			cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(opts.UpstreamDNS, ","))
 		}
 
 		// Add positional args if any
-		cmdArgs = append(cmdArgs, args...)
+		cmdArgs = append(cmdArgs, extraArgs...)
 
 		// Create command - subprocess should run with elevated permissions
 		var procCmd *exec.Cmd
@@ -303,26 +312,27 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 			procCmd.Stdout = nil
 			procCmd.Stderr = os.Stderr
 		} else {
-			logger.Error("Windows is not supported for detached mode")
-			os.Exit(1)
+			err := errors.New("detached mode is not supported on Windows")
+			logger.Error("Error: %v", err)
+			return err
 		}
 
 		// Start the process
 		if err := procCmd.Start(); err != nil {
 			logger.Error("Error: failed to start detached process: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		// Wait for sudo to complete (password prompt + subprocess start)
 		// The shell wrapper backgrounds the subprocess, so sudo exits immediately
 		if err := procCmd.Wait(); err != nil {
 			logger.Error("Error: failed to start subprocess: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		// In silent mode, skip TUI and just exit after starting the process
-		if flagSilent {
-			os.Exit(0)
+		if opts.Silent {
+			return nil
 		}
 
 		// Show live log preview and status
@@ -339,7 +349,7 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 			OnEarlyExit: func(client *olm.Client) {
 				// Kill the subprocess if user exits early
 				if client.IsRunning() {
-					client.Exit()
+					_, _ = client.Exit()
 				}
 			},
 			StatusFormatter: func(isRunning bool, status *olm.StatusResponse) string {
@@ -353,7 +363,7 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 		})
 		if err != nil {
 			logger.Error("Error: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		// Check if the process completed successfully or was killed
@@ -364,111 +374,43 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 			// Completed successfully
 			logger.Success("Client interface created successfully")
 		}
-		os.Exit(0)
+		return nil
 	}
 
-	// Helper function to get value with precedence: CLI flag > default
-	getString := func(flagValue, flagName, configKey, defaultValue string) string {
-		// Check if flag was explicitly set (CLI takes precedence)
-		if cmd.Flags().Changed(flagName) {
-			return flagValue
-		}
-		return defaultValue
-	}
-
-	getInt := func(flagValue int, flagName, configKey string, defaultValue int) int {
-		// Check if flag was explicitly set (CLI takes precedence)
-		if cmd.Flags().Changed(flagName) {
-			return flagValue
-		}
-		return defaultValue
-	}
-
-	getBool := func(flagValue bool, flagName, configKey string, defaultValue bool) bool {
-		// Check if flag was explicitly set (CLI takes precedence)
-		if cmd.Flags().Changed(flagName) {
-			return flagValue
-		}
-		return defaultValue
-	}
-
-	getStringSlice := func(flagValue []string, flagName, configKey string, defaultValue []string) []string {
-		// Check if flag was explicitly set (CLI takes precedence)
-		if cmd.Flags().Changed(flagName) {
-			return flagValue
-		}
-		return defaultValue
-	}
-
-	// Parse duration strings to time.Duration
-	parseDuration := func(durationStr string, defaultDuration time.Duration) time.Duration {
-		if durationStr == "" {
-			return defaultDuration
-		}
-		d, err := time.ParseDuration(durationStr)
-		if err != nil {
-			logger.Warning("Invalid duration format '%s', using default: %v", durationStr, defaultDuration)
-			return defaultDuration
-		}
-		return d
-	}
-
-	if endpoint == "" {
-		logger.Error("Endpoint is required. Please provide --endpoint flag or set hostname in config")
-		os.Exit(1)
-	}
-
-	mtu := getInt(flagMTU, "mtu", "mtu", defaultMTU)
-	dns := getString(flagDNS, "netstack-dns", "netstack-dns", defaultDNS)
-	interfaceName := getString(flagInterfaceName, "interface-name", "interface_name", defaultInterfaceName)
-	logLevel := getString(flagLogLevel, "log-level", "log_level", defaultLogLevel)
 	enableAPI := defaultEnableAPI
 
 	// In detached mode, API cannot be disabled (required for status/control)
-	if !flagAttached && !enableAPI {
+	if !opts.Attached && !enableAPI {
 		enableAPI = true
 	}
 
-	httpAddr := getString(flagHTTPAddr, "http-addr", "http_addr", "")
 	socketPath := defaultSocketPath
-	pingInterval := getString(flagPingInterval, "ping-interval", "ping_interval", defaultPingInterval)
-	pingTimeout := getString(flagPingTimeout, "ping-timeout", "ping_timeout", defaultPingTimeout)
-	holepunch := getBool(flagHolepunch, "holepunch", "holepunch", defaultHolepunch)
-	tlsClientCert := getString(flagTlsClientCert, "tls-client-cert", "tls_client_cert", "")
-	version := versionpkg.Version
-	overrideDNS := getBool(flagOverrideDNS, "override-dns", "override_dns", defaultOverrideDNS)
-	tunnelDNS := getBool(flagTunnelDNS, "tunnel-dns", "tunnel_dns", defaultTunnelDNS)
-	upstreamDNS := getStringSlice(flagUpstreamDNS, "upstream-dns", "upstream_dns", []string{defaultDNS})
 
-	processedUpstreamDNS := make([]string, 0, len(upstreamDNS))
-	for _, entry := range upstreamDNS {
-		entry = strings.TrimSpace(entry)
-		if entry == "" {
+	upstreamDNS := make([]string, 0, len(opts.UpstreamDNS))
+	for _, server := range opts.UpstreamDNS {
+		server = strings.TrimSpace(server)
+		if server == "" {
 			continue
 		}
 
-		if !strings.Contains(entry, ":") {
-			entry = entry + ":53"
+		if !strings.Contains(server, ":") {
+			server = fmt.Sprintf("%s:53", server)
 		}
-		processedUpstreamDNS = append(processedUpstreamDNS, entry)
+
+		upstreamDNS = append(upstreamDNS, server)
 	}
 
-	// If no DNS servers were provided, use default
-	if len(processedUpstreamDNS) == 0 {
-		processedUpstreamDNS = []string{defaultDNS + ":53"}
+	// If no DNS servers were provided, force using
+	// the default server again.
+	if len(upstreamDNS) == 0 {
+		upstreamDNS = []string{fmt.Sprintf("%s:53", defaultDNSServer)}
 	}
-
-	// Parse durations
-	defaultPingIntervalDuration, _ := time.ParseDuration(defaultPingInterval)
-	defaultPingTimeoutDuration, _ := time.ParseDuration(defaultPingTimeout)
-	pingIntervalDuration := parseDuration(pingInterval, defaultPingIntervalDuration)
-	pingTimeoutDuration := parseDuration(pingTimeout, defaultPingTimeoutDuration)
 
 	// Setup log file if specified
 	if logFile != "" {
 		if err := setupLogFile(cfg.LogFile); err != nil {
 			logger.Error("Error: failed to setup log file: %v", err)
-			os.Exit(1)
+			return err
 		}
 	}
 
@@ -483,7 +425,7 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
 			logger.Error("Failed to get session token: %v", err)
-			return
+			return err
 		}
 
 		userToken = activeAccount.SessionToken
@@ -496,11 +438,11 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 
 	// Create OLM GlobalConfig with hardcoded values from Swift
 	olmInitConfig := olmpkg.GlobalConfig{
-		LogLevel:   logLevel,
+		LogLevel:   opts.LogLevel,
 		EnableAPI:  enableAPI,
 		SocketPath: socketPath,
-		HTTPAddr:   httpAddr,
-		Version:    version,
+		HTTPAddr:   opts.HTTPAddr,
+		Version:    versionpkg.Version,
 		Agent:      defaultAgent,
 		OnTerminated: func() {
 			logger.Info("Client process terminated")
@@ -523,16 +465,16 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 		ID:                   olmID,
 		Secret:               olmSecret,
 		OrgID:                orgID,
-		MTU:                  mtu,
-		DNS:                  dns,
-		InterfaceName:        interfaceName,
-		Holepunch:            holepunch,
-		TlsClientCert:        tlsClientCert,
-		PingIntervalDuration: pingIntervalDuration,
-		PingTimeoutDuration:  pingTimeoutDuration,
-		OverrideDNS:          overrideDNS,
-		TunnelDNS:            tunnelDNS,
-		UpstreamDNS:          processedUpstreamDNS,
+		MTU:                  opts.MTU,
+		DNS:                  opts.DNS,
+		InterfaceName:        opts.InterfaceName,
+		Holepunch:            opts.Holepunch,
+		TlsClientCert:        opts.TlsClientCert,
+		PingIntervalDuration: opts.PingInterval,
+		PingTimeoutDuration:  opts.PingTimeout,
+		OverrideDNS:          opts.OverrideDNS,
+		TunnelDNS:            opts.TunnelDNS,
+		UpstreamDNS:          upstreamDNS,
 	}
 
 	// Add UserToken if we have it (from flag or config)
@@ -544,17 +486,20 @@ func clientUpMain(cmd *cobra.Command, args []string) {
 	// This check is only for attached mode; in detached mode, the subprocess runs elevated
 	if runtime.GOOS != "windows" {
 		if os.Geteuid() != 0 {
-			logger.Error("This command requires elevated permissions for network interface creation.")
+			err := errors.New("elevated permissions are required for network interface creation")
+			logger.Error("Error: %v", err)
 			logger.Info("Please run with sudo or use detached mode (default) to run the subprocess elevated.")
-			os.Exit(1)
+			return err
 		}
 	}
 
 	olmpkg.Init(ctx, olmInitConfig)
 	if enableAPI {
-		olmpkg.StartApi()
+		_ = olmpkg.StartApi()
 	}
 	olmpkg.StartTunnel(olmConfig)
+
+	return nil
 }
 
 // setupLogFile sets up file logging with rotation
@@ -632,7 +577,7 @@ func cleanupOldLogFiles(logDir string, daysToKeep int) {
 				continue
 			}
 			if info.ModTime().Before(cutoff) {
-				os.Remove(filePath)
+				_ = os.Remove(filePath)
 			}
 		}
 	}

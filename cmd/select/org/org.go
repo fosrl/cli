@@ -33,6 +33,8 @@ func OrgCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.OrgID, "org", "", "Organization `ID` to select")
 
+	_ = cmd.RegisterFlagCompletionFunc("org", completeOrgID)
+
 	return cmd
 }
 

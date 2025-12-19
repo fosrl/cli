@@ -37,6 +37,7 @@ const (
 	defaultHolepunch     = true
 	defaultAgent         = "Pangolin CLI"
 	defaultOverrideDNS   = true
+	defaultTunnelDNS     = false
 )
 
 var (
@@ -56,6 +57,7 @@ var (
 	flagAttached      bool
 	flagSilent        bool
 	flagOverrideDNS   bool
+	flagTunnelDNS     bool
 	flagUpstreamDNS   []string
 )
 
@@ -229,6 +231,13 @@ var ClientCmd = &cobra.Command{
 					cmdArgs = append(cmdArgs, "--override-dns=false")
 				}
 			}
+			if cmd.Flags().Changed("tunnel-dns") {
+				if flagOverrideDNS {
+					cmdArgs = append(cmdArgs, "--tunnel-dns")
+				} else {
+					cmdArgs = append(cmdArgs, "--tunnel-dns=false")
+				}
+			}
 			if cmd.Flags().Changed("upstream-dns") {
 				// Comma sep
 				cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(flagUpstreamDNS, ","))
@@ -399,6 +408,7 @@ var ClientCmd = &cobra.Command{
 		tlsClientCert := getString(flagTlsClientCert, "tls-client-cert", "tls_client_cert", "")
 		version := versionpkg.Version
 		overrideDNS := getBool(flagOverrideDNS, "override-dns", "override_dns", defaultOverrideDNS)
+		tunnelDNS := getBool(flagTunnelDNS, "tunnel-dns", "tunnel_dns", defaultTunnelDNS)
 		upstreamDNS := getStringSlice(flagUpstreamDNS, "upstream-dns", "upstream_dns", []string{defaultDNS})
 
 		processedUpstreamDNS := make([]string, 0, len(upstreamDNS))
@@ -492,6 +502,7 @@ var ClientCmd = &cobra.Command{
 			PingIntervalDuration: pingIntervalDuration,
 			PingTimeoutDuration:  pingTimeoutDuration,
 			OverrideDNS:          overrideDNS,
+			TunnelDNS:            tunnelDNS,
 			UpstreamDNS:          processedUpstreamDNS,
 		}
 
@@ -537,6 +548,7 @@ func addClientFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flagHolepunch, "holepunch", false, fmt.Sprintf("Enable holepunching (default: %v)", defaultHolepunch))
 	cmd.Flags().StringVar(&flagTlsClientCert, "tls-client-cert", "", "TLS client certificate path")
 	cmd.Flags().BoolVar(&flagOverrideDNS, "override-dns", defaultOverrideDNS, fmt.Sprintf("Override system DNS for resolving internal resource alias (default: %v)", defaultOverrideDNS))
+	cmd.Flags().BoolVar(&flagTunnelDNS, "tunnel-dns", defaultTunnelDNS, fmt.Sprintf("Use tunnel DNS for internal resource alias resolution (default: %v)", defaultTunnelDNS))
 	cmd.Flags().StringSliceVar(&flagUpstreamDNS, "upstream-dns", nil, fmt.Sprintf("Comma separated list of DNS servers to use for external DNS resolution if overriding system DNS (default: %s)", defaultDNS))
 	cmd.Flags().BoolVar(&flagAttached, "attach", false, "Run in attached mode (foreground, default is detached)")
 	cmd.Flags().BoolVar(&flagSilent, "silent", false, "Disable TUI and run silently (only applies to detached mode)")

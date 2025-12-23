@@ -7,11 +7,10 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.6
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/fosrl/newt v0.0.0
-	github.com/fosrl/olm v0.0.0
+	github.com/fosrl/newt v1.8.0
+	github.com/fosrl/olm v1.3.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.10.1
-	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 )
 
@@ -51,6 +50,7 @@ require (
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
@@ -74,6 +74,8 @@ require (
 	software.sslmate.com/src/go-pkcs12 v0.6.0 // indirect
 )
 
-replace github.com/fosrl/olm v0.0.0 => ../olm
-
-replace github.com/fosrl/newt v0.0.0 => ../newt
+// If changes to Olm or Newt are required, use these
+// replace directives during development.
+//
+// replace github.com/fosrl/olm => ../olm
+// replace github.com/fosrl/newt => ../newt

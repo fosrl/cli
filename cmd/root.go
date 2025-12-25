@@ -9,6 +9,7 @@ import (
 	"github.com/fosrl/cli/cmd/auth"
 	"github.com/fosrl/cli/cmd/auth/login"
 	"github.com/fosrl/cli/cmd/auth/logout"
+	"github.com/fosrl/cli/cmd/completion"
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/logs"
 	selectcmd "github.com/fosrl/cli/cmd/select"
@@ -31,16 +32,14 @@ import (
 // state when doing doc generation.
 func RootCommand(initResources bool) (*cobra.Command, error) {
 	cmd := &cobra.Command{
-		Use:          "pangolin",
-		Short:        "Pangolin CLI",
-		SilenceUsage: true,
-		CompletionOptions: cobra.CompletionOptions{
-			HiddenDefaultCmd: true,
-		},
+		Use:               "pangolin",
+		Short:             "Pangolin CLI",
+		SilenceUsage:      true,
 		PersistentPreRunE: mainCommandPreRun,
 	}
 
 	cmd.AddCommand(auth.AuthCommand())
+	cmd.AddCommand(completion.CompletionCmd())
 	cmd.AddCommand(selectcmd.SelectCmd())
 	cmd.AddCommand(up.UpCmd())
 	cmd.AddCommand(down.DownCmd())
@@ -98,10 +97,10 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 func mainCommandPreRun(cmd *cobra.Command, args []string) error {
 	cfg := config.ConfigFromContext(cmd.Context())
 
-	// Skip init/update check for version and update commands
+	// Skip init/update check for version, update, and completion commands
 	// Check both the command name and if it's one of these specific commands
 	cmdName := cmd.Name()
-	if cmdName == "version" || cmdName == "update" {
+	if cmdName == "version" || cmdName == "update" || cmdName == "completion" {
 		return nil
 	}
 

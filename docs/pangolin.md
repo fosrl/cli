@@ -11,6 +11,7 @@ Pangolin CLI
 ### SEE ALSO
 
 * [pangolin auth](pangolin_auth.md)	 - Authentication commands
+* [pangolin completion](pangolin_completion.md)	 - Generate shell completion script
 * [pangolin down](pangolin_down.md)	 - Stop a connection
 * [pangolin login](pangolin_login.md)	 - Login to Pangolin
 * [pangolin logout](pangolin_logout.md)	 - Logout from Pangolin

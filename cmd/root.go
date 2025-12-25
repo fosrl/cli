@@ -97,10 +97,10 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 func mainCommandPreRun(cmd *cobra.Command, args []string) error {
 	cfg := config.ConfigFromContext(cmd.Context())
 
-	// Skip init/update check for version and update commands
+	// Skip init/update check for version, update, and completion commands
 	// Check both the command name and if it's one of these specific commands
 	cmdName := cmd.Name()
-	if cmdName == "version" || cmdName == "update" {
+	if cmdName == "version" || cmdName == "update" || cmdName == "completion" {
 		return nil
 	}
 

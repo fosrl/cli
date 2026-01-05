@@ -112,6 +112,21 @@ func (s *AccountStore) Deactivate(userID string) error {
 	return s.Save()
 }
 
+// Return a list of accounts that are available to use.
+// These accounts are guaranteed to have a vaild
+// session token.
+func (s *AccountStore) AvailableAccounts() []Account {
+	available := []Account{}
+
+	for _, account := range s.Accounts {
+		if account.SessionToken != "" {
+			available = append(available, account)
+		}
+	}
+
+	return available
+}
+
 func (s *AccountStore) Save() error {
 	// HACK: If there's a better way to write the config all at once
 	// without having to specify each toplevel struct key, that

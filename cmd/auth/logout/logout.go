@@ -102,15 +102,15 @@ func logoutMain(cmd *cobra.Command) error {
 		logger.Debug("Failed to logout from server: %v", err)
 	}
 
-	deletedAccount := accountStore.Accounts[accountStore.ActiveUserID]
-	delete(accountStore.Accounts, accountStore.ActiveUserID)
+	account, err := accountStore.ActiveAccount()
+	if err != nil {
+		logger.Error("Failed to get active account: %v", err)
+		return err
+	}
 
-	// If there are still other accounts, then we need to set the active key again.
-	// Automatically set next active user ID to the first account found.
-	if nextUserID, ok := anyKey(accountStore.Accounts); ok {
-		accountStore.ActiveUserID = nextUserID
-	} else {
-		accountStore.ActiveUserID = ""
+	if err := accountStore.Deactivate(accountStore.ActiveUserID); err != nil {
+		logger.Error("Failed to save account store: %v", err)
+		return err
 	}
 
 	if err := accountStore.Save(); err != nil {
@@ -119,15 +119,7 @@ func logoutMain(cmd *cobra.Command) error {
 	}
 
 	// Print logout message with account name
-	logger.Success("Logged out of Pangolin account %s", deletedAccount.Email)
+	logger.Success("Logged out of Pangolin account %s", account.Email)
 
 	return nil
-}
-
-func anyKey[K comparable, V any](m map[K]V) (K, bool) {
-	var zero K
-	for k := range m {
-		return k, true
-	}
-	return zero, false
 }

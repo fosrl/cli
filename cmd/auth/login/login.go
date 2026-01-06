@@ -298,7 +298,7 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 			Secret: newOlmCreds.Secret,
 		}
 	} else {
-		logger.Info("Olm credentials already exist for this account, skipping generation")
+		// logger.Info("Olm credentials already exist for this account, skipping generation")
 	}
 
 	accountStore.Accounts[user.UserID] = newAccount

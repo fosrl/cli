@@ -82,7 +82,49 @@ func (s *AccountStore) ActiveAccount() (*Account, error) {
 		return nil, errors.New("active account missing")
 	}
 
+	if activeAccount.SessionToken == "" {
+		return nil, errors.New("active account missing session token")
+	}
+
 	return &activeAccount, nil
+}
+
+// Set account with the user ID as "inactive"; keeps the Olm
+// credentials for the account, but clear other account state
+// like the session token and selected org ID.
+//
+// This effectively logs out the account.
+func (s *AccountStore) Deactivate(userID string) error {
+	account, exists := s.Accounts[userID]
+	if !exists {
+		return errors.New("account does not exist")
+	}
+
+	account.SessionToken = ""
+	account.OrgID = ""
+
+	s.Accounts[userID] = account
+
+	if s.ActiveUserID == userID {
+		s.ActiveUserID = ""
+	}
+
+	return s.Save()
+}
+
+// Return a list of accounts that are available to use.
+// These accounts are guaranteed to have a vaild
+// session token.
+func (s *AccountStore) AvailableAccounts() []Account {
+	available := []Account{}
+
+	for _, account := range s.Accounts {
+		if account.SessionToken != "" {
+			available = append(available, account)
+		}
+	}
+
+	return available
 }
 
 func (s *AccountStore) Save() error {

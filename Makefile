@@ -27,7 +27,7 @@ docs:
 	@go run tools/gendocs/main.go -dir docs
 	@echo "Documentation generated in docs/"
 
-go-build-release:
+go-build-release: \
     go-build-release-linux-arm64 \
     go-build-release-linux-arm32-v7 \
     go-build-release-linux-arm32-v6 \

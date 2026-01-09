@@ -88,7 +88,15 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 		}
 	}
 
-	activeAccount.OrgID = selectedOrgID
+	// Update the account in the store's map to persist the change
+	account, exists := accountStore.Accounts[userID]
+	if !exists {
+		logger.Error("Failed to find account in store")
+		return fmt.Errorf("account not found in store")
+	}
+	account.OrgID = selectedOrgID
+	accountStore.Accounts[userID] = account
+	
 	if err := accountStore.Save(); err != nil {
 		logger.Error("Failed to save account to store: %v", err)
 		return err

@@ -108,9 +108,33 @@ func logoutMain(cmd *cobra.Command) error {
 		return err
 	}
 
-	if err := accountStore.Deactivate(accountStore.ActiveUserID); err != nil {
+	currentUserID := accountStore.ActiveUserID
+
+	// Get available accounts before deactivating to check if there are others
+	availableAccounts := accountStore.AvailableAccounts()
+	var nextAccount *config.Account
+	for _, acc := range availableAccounts {
+		if acc.UserID != currentUserID {
+			nextAccount = &acc
+			break
+		}
+	}
+
+	if err := accountStore.Deactivate(currentUserID); err != nil {
 		logger.Error("Failed to save account store: %v", err)
 		return err
+	}
+
+	// If there's another account available, switch to it
+	if nextAccount != nil {
+		accountStore.ActiveUserID = nextAccount.UserID
+		if err := accountStore.Save(); err != nil {
+			logger.Error("Failed to save account store: %v", err)
+			return err
+		}
+		logger.Success("Logged out of Pangolin account %s", account.Email)
+		logger.Success("Switched to account %s", nextAccount.Email)
+		return nil
 	}
 
 	if err := accountStore.Save(); err != nil {

@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/fosrl/cli/internal/version"
 )
 
 // ClientConfig holds configuration for creating a new client
@@ -104,11 +106,8 @@ func (c *Client) request(method, endpoint string, payload interface{}, result in
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	// Set User-Agent with agent name
-	userAgent := c.AgentName
-	if userAgent == "" {
-		userAgent = "pangolin-cli"
-	}
+	// Set User-Agent with version
+	userAgent := getUserAgent(c.AgentName)
 	req.Header.Set("User-Agent", userAgent)
 
 	// Set CSRF header if provided
@@ -358,10 +357,7 @@ func (c *Client) TestConnection() (bool, error) {
 		return false, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	userAgent := c.AgentName
-	if userAgent == "" {
-		userAgent = "pangolin-cli"
-	}
+	userAgent := getUserAgent(c.AgentName)
 	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := testClient.Do(req)
@@ -405,12 +401,9 @@ func buildAPIBaseURL(baseURL string) string {
 	return baseURL
 }
 
-// getUserAgent returns the user agent string, defaulting to "pangolin-cli" if empty
+// getUserAgent returns the user agent string formatted as "pangolin-cli-version"
 func getUserAgent(agentName string) string {
-	if agentName == "" {
-		return "pangolin-cli"
-	}
-	return agentName
+	return fmt.Sprintf("pangolin-cli-%s", version.Version)
 }
 
 // setJSONRequestHeaders sets common headers for JSON API requests

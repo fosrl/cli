@@ -202,6 +202,27 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		return err
 	}
 
+	// Check if OLM is blocked before connecting (only when credentials come from keyring)
+	// This check should only happen when attempting to connect, not during authentication.
+	// Must happen in parent process before spawning subprocess or starting OLM.
+	if credentialsFromKeyring {
+		activeAccount, err := accountStore.ActiveAccount()
+		if err == nil {
+			err := utils.CheckBlockedBeforeConnect(apiClient, activeAccount)
+			if err != nil {
+				// If the error is specifically about being blocked, show user-friendly message
+				if strings.Contains(err.Error(), "blocked") {
+					logger.Error("Error: %v", err)
+					return err
+				}
+				// If check failed (network error, etc.), log but allow connection attempt
+				// The server will reject if truly blocked
+				logger.Info("Warning: failed to check blocked status: %v", err)
+				logger.Info("Proceeding with connection attempt...")
+			}
+		}
+	}
+
 	// Handle detached mode - subprocess self without --attach flag
 	// Skip detached mode if already running as root (we're a subprocess spawned by sudo)
 	isRunningAsRoot := runtime.GOOS != "windows" && os.Geteuid() == 0

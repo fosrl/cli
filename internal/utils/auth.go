@@ -80,3 +80,44 @@ func EnsureOrgAccess(client *api.Client, account *config.Account) error {
 
 	return nil
 }
+
+// CheckBlockedBeforeConnect checks if the OLM is blocked before attempting to connect.
+// This should only be called when the user attempts to connect, not during authentication.
+// Returns an error if the account is blocked. If the check fails (network error, etc.),
+// returns an error that the caller should log but allow the connection attempt to proceed
+// (the server will reject if truly blocked).
+func CheckBlockedBeforeConnect(client *api.Client, account *config.Account) error {
+	if account.OlmCredentials == nil {
+		// No OLM credentials, can't check blocked status
+		return nil
+	}
+
+	userID := account.UserID
+	olmID := account.OlmCredentials.ID
+	var orgID string
+	if account.OrgID != "" {
+		orgID = account.OrgID
+	}
+
+	// Get OLM with optional orgId parameter
+	var olm *api.Olm
+	var err error
+	if orgID != "" {
+		olm, err = client.GetUserOlm(userID, olmID, orgID)
+	} else {
+		olm, err = client.GetUserOlm(userID, olmID)
+	}
+
+	if err != nil {
+		// If check fails (network error, etc.), log but allow connection attempt
+		// The server will reject if truly blocked
+		return fmt.Errorf("failed to check blocked status: %w", err)
+	}
+
+	// Check if blocked
+	if olm != nil && olm.Blocked != nil && *olm.Blocked {
+		return fmt.Errorf("Your device is blocked in this organization. Contact your admin for more information.")
+	}
+
+	return nil
+}

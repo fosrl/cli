@@ -286,10 +286,23 @@ func (c *Client) CreateOlm(userID, name string) (*CreateOlmResponse, error) {
 }
 
 // GetUserOlm gets an OLM for a user by userId and olmId
-func (c *Client) GetUserOlm(userID, olmID string) (*Olm, error) {
+// If orgID is provided, it will be passed as a query parameter
+func (c *Client) GetUserOlm(userID, olmID string, orgID ...string) (*Olm, error) {
 	path := fmt.Sprintf("/user/%s/olm/%s", userID, olmID)
 	var olm Olm
-	err := c.Get(path, &olm)
+
+	var opts []RequestOptions
+	if len(orgID) > 0 && orgID[0] != "" {
+		opts = []RequestOptions{
+			{
+				Query: map[string]string{
+					"orgId": orgID[0],
+				},
+			},
+		}
+	}
+
+	err := c.Get(path, &olm, opts...)
 	if err != nil {
 		return nil, err
 	}

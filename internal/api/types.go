@@ -183,16 +183,16 @@ type OrgPolicies struct {
 
 // MaxSessionLength represents max session length policy
 type MaxSessionLength struct {
-	Compliant             bool `json:"compliant"`
-	MaxSessionLengthHours int  `json:"maxSessionLengthHours"`
-	SessionAgeHours       float64  `json:"sessionAgeHours"`
+	Compliant             bool    `json:"compliant"`
+	MaxSessionLengthHours int     `json:"maxSessionLengthHours"`
+	SessionAgeHours       float64 `json:"sessionAgeHours"`
 }
 
 // PasswordAge represents password age policy
 type PasswordAge struct {
-	Compliant          bool `json:"compliant"`
-	MaxPasswordAgeDays int  `json:"maxPasswordAgeDays"`
-	PasswordAgeDays    float64  `json:"passwordAgeDays"`
+	Compliant          bool    `json:"compliant"`
+	MaxPasswordAgeDays int     `json:"maxPasswordAgeDays"`
+	PasswordAgeDays    float64 `json:"passwordAgeDays"`
 }
 
 // GetClientResponse represents the response for getting a client
@@ -225,10 +225,11 @@ type ResponseOrg struct {
 
 // Olm represents an OLM (Online Management) record
 type Olm struct {
-	OlmID  string  `json:"olmId"`
-	UserID string  `json:"userId"`
-	Name   *string `json:"name,omitempty"`
-	Secret *string `json:"secret,omitempty"`
+	OlmID   string  `json:"olmId"`
+	UserID  string  `json:"userId"`
+	Name    *string `json:"name,omitempty"`
+	Secret  *string `json:"secret,omitempty"`
+	Blocked *bool   `json:"blocked,omitempty"` // Indicates if the OLM is blocked
 }
 
 // MyDeviceResponse represents the response for getting my device

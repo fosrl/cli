@@ -1,5 +1,7 @@
 package fingerprint
 
+import "encoding/json"
+
 type Fingerprint struct {
 	Username      string `json:"username"`
 	Hostname      string `json:"hostname"`
@@ -9,6 +11,20 @@ type Fingerprint struct {
 	Architecture  string `json:"arch"`
 	DeviceModel   string `json:"deviceModel"`
 	SerialNumber  string `json:"serialNumber"`
+}
+
+func (p *Fingerprint) ToMap() map[string]any {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return map[string]any{}
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return map[string]any{}
+	}
+
+	return m
 }
 
 type PostureChecks struct {
@@ -34,4 +50,18 @@ type PostureChecks struct {
 
 	LinuxAppArmorEnabled bool `json:"linuxAppArmorEnabled"`
 	LinuxSELinuxEnabled  bool `json:"linuxSELinuxEnabled"`
+}
+
+func (p *PostureChecks) ToMap() map[string]any {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return map[string]any{}
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return map[string]any{}
+	}
+
+	return m
 }

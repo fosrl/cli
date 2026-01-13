@@ -16,6 +16,7 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/fingerprint"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
@@ -480,6 +481,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
+	initialFingerprint := fingerprint.GatherFingerprintInfo().ToMap()
+	initialPostures := fingerprint.GatherPostureChecks().ToMap()
+
 	tunnelConfig := olmpkg.TunnelConfig{
 		Endpoint:             endpoint,
 		ID:                   olmID,
@@ -496,6 +500,8 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		TunnelDNS:            opts.TunnelDNS,
 		UpstreamDNS:          upstreamDNS,
 		UserToken:            userToken,
+		InitialFingerprint:   initialFingerprint,
+		InitialPostures:      initialPostures,
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)
@@ -515,6 +521,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		return err
 	}
 	defer olm.Close()
+
+	cancelFingerprinting := startFingerprinting(olm)
+	defer cancelFingerprinting()
 
 	if enableAPI {
 		_ = olm.StartApi()
@@ -603,4 +612,28 @@ func cleanupOldLogFiles(logDir string, daysToKeep int) {
 			}
 		}
 	}
+}
+
+func startFingerprinting(o *olmpkg.Olm) context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				fp := fingerprint.GatherFingerprintInfo().ToMap()
+				postures := fingerprint.GatherPostureChecks().ToMap()
+
+				o.SetFingerprint(fp)
+				o.SetPostures(postures)
+			}
+		}
+	}()
+
+	return cancel
 }

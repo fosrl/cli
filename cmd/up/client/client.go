@@ -454,11 +454,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	// Create context for signal handling and cleanup
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer olmpkg.Close()
 	defer stop()
 
 	// Create OLM GlobalConfig with hardcoded values from Swift
-	olmInitConfig := olmpkg.GlobalConfig{
+	olmInitConfig := olmpkg.OlmConfig{
 		LogLevel:   opts.LogLevel,
 		EnableAPI:  enableAPI,
 		SocketPath: socketPath,
@@ -481,7 +480,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
-	olmConfig := olmpkg.TunnelConfig{
+	tunnelConfig := olmpkg.TunnelConfig{
 		Endpoint:             endpoint,
 		ID:                   olmID,
 		Secret:               olmSecret,
@@ -496,11 +495,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		OverrideDNS:          opts.OverrideDNS,
 		TunnelDNS:            opts.TunnelDNS,
 		UpstreamDNS:          upstreamDNS,
-	}
-
-	// Add UserToken if we have it (from flag or config)
-	if userToken != "" {
-		olmConfig.UserToken = userToken
+		UserToken:            userToken,
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)
@@ -514,11 +509,17 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 	}
 
-	olmpkg.Init(ctx, olmInitConfig)
-	if enableAPI {
-		_ = olmpkg.StartApi()
+	olm, err := olmpkg.Init(ctx, olmInitConfig)
+	if err != nil {
+		logger.Error("Error: failed to init olm: %v", err)
+		return err
 	}
-	olmpkg.StartTunnel(olmConfig)
+	defer olm.Close()
+
+	if enableAPI {
+		_ = olm.StartApi()
+	}
+	olm.StartTunnel(tunnelConfig)
 
 	return nil
 }

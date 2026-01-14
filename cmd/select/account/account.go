@@ -43,9 +43,7 @@ func AccountCmd() *cobra.Command {
 func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
-	availableAccounts := accountStore.AvailableAccounts()
-
-	if len(availableAccounts) == 0 {
+	if len(accountStore.Accounts) == 0 {
 		err := errors.New("not logged in")
 		logger.Error("Error: %v", err)
 		return err
@@ -56,7 +54,7 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 	// If flag is provided, find an account that matches the
 	// terms verbatim.
 	if opts.Account != "" {
-		for _, account := range availableAccounts {
+		for _, account := range accountStore.Accounts {
 			if opts.Host != "" && opts.Host != account.Host {
 				continue
 			}
@@ -74,7 +72,7 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 		}
 	} else {
 		// No flag provided, use GUI selection if necessary
-		selected, err := selectAccountForm(availableAccounts, opts.Host)
+		selected, err := selectAccountForm(accountStore.Accounts, opts.Host)
 		if err != nil {
 			logger.Error("Error: failed to select account: %v", err)
 			return err
@@ -108,11 +106,11 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 // selectAccountForm lists organizations for a user and prompts them to select one.
 // It returns the selected org ID and any error.
 // If the user has only one organization, it's automatically selected.
-func selectAccountForm(accounts []config.Account, hostFilter string) (*config.Account, error) {
-	var filteredAccounts []config.Account
+func selectAccountForm(accounts map[string]config.Account, hostFilter string) (*config.Account, error) {
+	var filteredAccounts []*config.Account
 	for _, account := range accounts {
 		if hostFilter == "" || hostFilter == account.Host {
-			filteredAccounts = append(filteredAccounts, account)
+			filteredAccounts = append(filteredAccounts, &account)
 		}
 	}
 
@@ -123,7 +121,7 @@ func selectAccountForm(accounts []config.Account, hostFilter string) (*config.Ac
 	if len(filteredAccounts) == 1 {
 		// Auto-select the first account
 		for _, account := range filteredAccounts {
-			return &account, nil
+			return account, nil
 		}
 	}
 
@@ -136,7 +134,7 @@ func selectAccountForm(accounts []config.Account, hostFilter string) (*config.Ac
 	for _, account := range filteredAccounts {
 		label := fmt.Sprintf("%s @ %s", account.Email, account.Host)
 		orgOptions = append(orgOptions, huh.NewOption(label, accountOption{
-			Account: &account,
+			Account: account,
 			Label:   label,
 		}))
 	}

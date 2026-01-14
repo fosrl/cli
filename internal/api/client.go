@@ -309,6 +309,25 @@ func (c *Client) GetUserOlm(userID, olmID string, orgID ...string) (*Olm, error)
 	return &olm, nil
 }
 
+// RecoverOlm attempts to recover an existing olm's secret
+// based on the device's platform fingerprint. This is useful
+// for device reinstalls so that a new device isn't always
+// created on the server side.
+func (c *Client) RecoverOlmFromFingerprint(userID string, platformFingerprint string) (*RecoverOlmResponse, error) {
+	requestBody := RecoverOlmRequest{
+		PlatformFingerprint: platformFingerprint,
+	}
+
+	path := fmt.Sprintf("/user/%s/olm/recover", userID)
+	var response RecoverOlmResponse
+	err := c.Post(path, requestBody, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
 // GetOrg gets an organization by ID
 func (c *Client) GetOrg(orgID string) (*GetOrgResponse, error) {
 	path := fmt.Sprintf("/org/%s", orgID)

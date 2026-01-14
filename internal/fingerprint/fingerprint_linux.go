@@ -1,9 +1,13 @@
 package fingerprint
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
+	"sort"
 	"strings"
 )
 
@@ -33,14 +37,15 @@ func GatherFingerprintInfo() *Fingerprint {
 	deviceModel, serialNumber := getLinuxDeviceModelAndSerialNumber()
 
 	return &Fingerprint{
-		Username:      username,
-		Hostname:      hostname,
-		Platform:      "linux",
-		OSVersion:     detectOSVersion(),
-		KernelVersion: kernelVersion,
-		Architecture:  architecture,
-		DeviceModel:   deviceModel,
-		SerialNumber:  serialNumber,
+		Username:            username,
+		Hostname:            hostname,
+		Platform:            "linux",
+		OSVersion:           detectOSVersion(),
+		KernelVersion:       kernelVersion,
+		Architecture:        architecture,
+		DeviceModel:         deviceModel,
+		SerialNumber:        serialNumber,
+		PlatformFingerprint: computeHwFingerprint(),
 	}
 }
 
@@ -182,4 +187,111 @@ func tpmAvailable() bool {
 	}
 
 	return false
+}
+
+func readFileAndTrim(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func computeHwFingerprint() string {
+	var parts []string
+
+	parts = append(parts, runtime.GOARCH, runtime.GOOS)
+
+	parts = append(parts, cpuFingerprint())
+
+	dmiPaths := []string{
+		"/sys/devices/virtual/dmi/id/product_uuid",
+		"/sys/devices/virtual/dmi/id/board_serial",
+		"/sys/devices/virtual/dmi/id/product_name",
+		"/sys/devices/virtual/dmi/id/sys_vendor",
+	}
+	for _, p := range dmiPaths {
+		parts = append(parts, readFileAndTrim(p))
+	}
+
+	// Normalize
+	var cleaned []string
+	for _, p := range parts {
+		p = strings.ToLower(strings.TrimSpace(p))
+		if p != "" {
+			cleaned = append(cleaned, p)
+		}
+	}
+
+	sort.Strings(cleaned)
+
+	joined := strings.Join(cleaned, "|")
+
+	hash := sha256.Sum256([]byte(joined))
+	return hex.EncodeToString(hash[:])
+}
+
+// Extracts stable, per-CPU fields from /proc/cpuinfo.
+// Returns a deterministic, normalized string.
+func cpuFingerprint() string {
+	data, err := os.ReadFile("/proc/cpuinfo")
+	if err != nil {
+		return ""
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	allowed := map[string]string{
+		"vendor_id":       "vendor",
+		"model name":      "model_name",
+		"cpu family":      "family",
+		"model":           "model",
+		"stepping":        "stepping",
+		"cpu cores":       "cores",
+		"siblings":        "siblings",
+		"cpu implementer": "implementer",
+		"cpu part":        "part",
+		"cpu revision":    "revision",
+	}
+
+	values := make(map[string]string)
+
+	for _, line := range lines {
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.ToLower(strings.TrimSpace(parts[0]))
+		val := strings.ToLower(strings.TrimSpace(parts[1]))
+
+		if normKey, ok := allowed[key]; ok {
+			// Take the first occurrence only (per CPU differences are noise)
+			if _, exists := values[normKey]; !exists && val != "" {
+				values[normKey] = val
+			}
+		}
+	}
+
+	order := []string{
+		"vendor",
+		"model_name",
+		"family",
+		"model",
+		"stepping",
+		"cores",
+		"siblings",
+		"implementer",
+		"part",
+		"revision",
+	}
+
+	var out []string
+	for _, k := range order {
+		if v, ok := values[k]; ok {
+			out = append(out, k+"="+v)
+		}
+	}
+
+	return strings.Join(out, "|")
 }

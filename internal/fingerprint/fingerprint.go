@@ -3,14 +3,15 @@ package fingerprint
 import "encoding/json"
 
 type Fingerprint struct {
-	Username      string `json:"username"`
-	Hostname      string `json:"hostname"`
-	Platform      string `json:"platform"`
-	OSVersion     string `json:"osVersion"`
-	KernelVersion string `json:"kernelVersion"`
-	Architecture  string `json:"arch"`
-	DeviceModel   string `json:"deviceModel"`
-	SerialNumber  string `json:"serialNumber"`
+	Username            string `json:"username"`
+	Hostname            string `json:"hostname"`
+	Platform            string `json:"platform"`
+	OSVersion           string `json:"osVersion"`
+	KernelVersion       string `json:"kernelVersion"`
+	Architecture        string `json:"arch"`
+	DeviceModel         string `json:"deviceModel"`
+	SerialNumber        string `json:"serialNumber"`
+	PlatformFingerprint string `json:"platformFingerprint"`
 }
 
 func (p *Fingerprint) ToMap() map[string]any {

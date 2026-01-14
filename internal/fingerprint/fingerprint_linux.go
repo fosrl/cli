@@ -9,7 +9,10 @@ import (
 
 func GatherFingerprintInfo() *Fingerprint {
 	var username string
-	if u, err := user.Current(); err == nil {
+
+	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+		username = sudoUser
+	} else if u, err := user.Current(); err == nil {
 		username = u.Username
 	} else if u := os.Getenv("USER"); u != "" {
 		username = u

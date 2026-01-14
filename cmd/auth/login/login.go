@@ -260,45 +260,36 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		return err
 	}
 
-	var newAccount config.Account
-
-	// Re-use the current account entry in case
-	if account, exists := accountStore.Accounts[user.UserID]; exists {
-		newAccount = account
+	if _, exists := accountStore.Accounts[user.UserID]; exists {
+		logger.Warning("Already logged in as this user; no action needed")
+		return nil
 	}
 
+	// Ensure OLM credentials exist and are valid
 	userID := user.UserID
 
-	newAccount.UserID = userID
-	newAccount.Email = user.Email
-	newAccount.Host = hostname
-	newAccount.SessionToken = sessionToken
-
-	// Ensure new user has an organization selected
-	if newAccount.OrgID == "" {
-		orgID, err := utils.SelectOrgForm(apiClient, userID)
-		if err != nil {
-			logger.Error("Failed to select organization: %v", err)
-			return err
-		}
-
-		newAccount.OrgID = orgID
+	orgID, err := utils.SelectOrgForm(apiClient, userID)
+	if err != nil {
+		logger.Error("Failed to select organization: %v", err)
+		return err
 	}
 
-	// Ensure OLM credentials exist
-	if newAccount.OlmCredentials == nil {
-		newOlmCreds, err := apiClient.CreateOlm(userID, utils.GetDeviceName())
-		if err != nil {
-			logger.Error("Failed to obtain olm credentials: %v", err)
-			return err
-		}
+	newOlmCreds, err := apiClient.CreateOlm(userID, utils.GetDeviceName())
+	if err != nil {
+		logger.Error("Failed to obtain olm credentials: %v", err)
+		return err
+	}
 
-		newAccount.OlmCredentials = &config.OlmCredentials{
+	newAccount := config.Account{
+		UserID:       userID,
+		Host:         hostname,
+		Email:        user.Email,
+		SessionToken: sessionToken,
+		OrgID:        orgID,
+		OlmCredentials: &config.OlmCredentials{
 			ID:     newOlmCreds.OlmID,
 			Secret: newOlmCreds.Secret,
-		}
-	} else {
-		// logger.Info("Olm credentials already exist for this account, skipping generation")
+		},
 	}
 
 	accountStore.Accounts[user.UserID] = newAccount
@@ -311,13 +302,22 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		return err
 	}
 
-	// Print logged in message after all setup is complete
-	displayName := user.Email
-	if displayName == "" && user.Username != nil && *user.Username != "" {
-		displayName = *user.Username
+	// List and select organization
+	if user != nil {
+		if _, err := utils.SelectOrgForm(apiClient, user.UserID); err != nil {
+			logger.Warning("%v", err)
+		}
 	}
-	if displayName != "" {
-		logger.Success("Logged in as %s", displayName)
+
+	// Print logged in message after all setup is complete
+	if user != nil {
+		displayName := user.Email
+		if displayName == "" && user.Username != nil && *user.Username != "" {
+			displayName = *user.Username
+		}
+		if displayName != "" {
+			logger.Success("Logged in as %s", displayName)
+		}
 	}
 
 	return nil

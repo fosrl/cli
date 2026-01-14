@@ -274,22 +274,15 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		return err
 	}
 
-	newOlmCreds, err := apiClient.CreateOlm(userID, utils.GetDeviceName())
-	if err != nil {
-		logger.Error("Failed to obtain olm credentials: %v", err)
-		return err
-	}
-
 	newAccount := config.Account{
 		UserID:       userID,
 		Host:         hostname,
 		Email:        user.Email,
 		SessionToken: sessionToken,
 		OrgID:        orgID,
-		OlmCredentials: &config.OlmCredentials{
-			ID:     newOlmCreds.OlmID,
-			Secret: newOlmCreds.Secret,
-		},
+		// Credentials will get generated on the
+		// first connection.
+		OlmCredentials: nil,
 	}
 
 	accountStore.Accounts[user.UserID] = newAccount

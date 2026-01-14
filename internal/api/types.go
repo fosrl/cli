@@ -152,10 +152,19 @@ type CreateOlmRequest struct {
 
 // CreateOlmResponse represents the response from creating an OLM
 type CreateOlmResponse struct {
-	Id     string `json:"id"`
+	ID     string `json:"id"`
 	OlmID  string `json:"olmId"`
 	Secret string `json:"secret"`
 	Name   string `json:"name"`
+}
+
+type RecoverOlmRequest struct {
+	PlatformFingerprint string `json:"platformFingerprint"`
+}
+
+type RecoverOlmResponse struct {
+	OlmID  string `json:"olmId"`
+	Secret string `json:"secret"`
 }
 
 // EmptyResponse represents an empty API response
@@ -163,7 +172,7 @@ type EmptyResponse struct{}
 
 // GetOrgResponse represents the response for getting an organization
 type GetOrgResponse struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 

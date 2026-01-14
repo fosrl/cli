@@ -5,6 +5,7 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/fingerprint"
 )
 
 // EnsureOlmCredentials ensures that OLM credentials exist and are valid.
@@ -32,6 +33,21 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 
 		// Clear invalid credentials so we can try to create new ones
 		account.OlmCredentials = nil
+	}
+
+	// First, attempt to recover any credentials on any other machines
+	// using the platform fingerprint.
+	fp := fingerprint.GatherFingerprintInfo()
+
+	if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint); err == nil {
+		account.OlmCredentials = &config.OlmCredentials{
+			ID:     recoveredOlm.OlmID,
+			Secret: recoveredOlm.Secret,
+		}
+
+		return true, nil
+	} else {
+		fmt.Println("err:", err)
 	}
 
 	newOlm, err := client.CreateOlm(userID, GetDeviceName())

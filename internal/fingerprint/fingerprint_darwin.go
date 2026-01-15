@@ -1,11 +1,14 @@
 package fingerprint
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"os/user"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -35,17 +38,20 @@ func GatherFingerprintInfo() *Fingerprint {
 		architecture = strings.TrimSpace(string(output))
 	}
 
-	deviceModel, serialNumber := getDeviceModelAndSerialNumber()
+	systemProfilerOutput := runSystemProfiler()
+
+	platformFingerprint := computePlatformFingerprint(systemProfilerOutput)
 
 	return &Fingerprint{
-		Username:      username,
-		Hostname:      hostname,
-		Platform:      "macos",
-		OSVersion:     osVersion,
-		KernelVersion: kernelVersion,
-		Architecture:  architecture,
-		DeviceModel:   deviceModel,
-		SerialNumber:  serialNumber,
+		Username:            username,
+		Hostname:            hostname,
+		Platform:            "macos",
+		OSVersion:           osVersion,
+		KernelVersion:       kernelVersion,
+		Architecture:        architecture,
+		DeviceModel:         systemProfilerOutput.MachineModel,
+		SerialNumber:        systemProfilerOutput.SerialNumber,
+		PlatformFingerprint: platformFingerprint,
 	}
 }
 
@@ -117,24 +123,58 @@ func GatherPostureChecks() *PostureChecks {
 
 var biometricsRegex = regexp.MustCompile(`Biometrics for unlock:\s*(\d+)`)
 
-func getDeviceModelAndSerialNumber() (string, string) {
-	type spHardwareOutput struct {
-		Output struct {
-			SerialNumber string `json:"serial_number"`
-			MachineModel string `json:"machine_model"`
-		} `json:"SPHardwareDataType"`
+type spHardwareOutput struct {
+	SerialNumber string `json:"serial_number"`
+	MachineModel string `json:"machine_model"`
+	PlatformUUID string `json:"platform_UUID"`
+}
+
+func runSystemProfiler() *spHardwareOutput {
+	type outerType struct {
+		Output spHardwareOutput `json:"SPHardwareDataType"`
 	}
 
 	cmd := exec.Command("system_profiler", "SPHardwareDataType", "-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", ""
+		return nil
 	}
 
-	var jsonOutput spHardwareOutput
+	var jsonOutput outerType
 	if err := json.Unmarshal(output, &jsonOutput); err != nil {
-		return "", ""
+		return nil
 	}
 
-	return jsonOutput.Output.MachineModel, jsonOutput.Output.SerialNumber
+	return &jsonOutput.Output
+}
+
+func computePlatformFingerprint(hw *spHardwareOutput) string {
+	if hw == nil {
+		return ""
+	}
+
+	var parts []string
+
+	parts = append(parts, runtime.GOOS, runtime.GOARCH)
+
+	if hw.MachineModel != "" {
+		parts = append(parts, normalize(hw.MachineModel))
+	}
+
+	if hw.SerialNumber != "" {
+		parts = append(parts, normalize(hw.SerialNumber))
+	}
+
+	if hw.PlatformUUID != "" {
+		parts = append(parts, normalize(hw.PlatformUUID))
+	}
+
+	raw := strings.Join(parts, "|")
+	h := sha256.Sum256([]byte(raw))
+	return hex.EncodeToString(h[:])
+}
+
+func normalize(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.Join(strings.Fields(s), " ")
 }

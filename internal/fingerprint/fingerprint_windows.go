@@ -1,6 +1,9 @@
 package fingerprint
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"os/exec"
 	"os/user"
@@ -9,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 func GatherFingerprintInfo() *Fingerprint {
@@ -24,14 +29,15 @@ func GatherFingerprintInfo() *Fingerprint {
 	deviceModel, serialNumber := getWindowsModelAndSerial()
 
 	return &Fingerprint{
-		Username:      username,
-		Hostname:      hostname,
-		Platform:      "windows",
-		OSVersion:     osVersion,
-		KernelVersion: kernelVersion,
-		Architecture:  runtime.GOARCH,
-		DeviceModel:   deviceModel,
-		SerialNumber:  serialNumber,
+		Username:            username,
+		Hostname:            hostname,
+		Platform:            "windows",
+		OSVersion:           osVersion,
+		KernelVersion:       kernelVersion,
+		Architecture:        runtime.GOARCH,
+		DeviceModel:         deviceModel,
+		SerialNumber:        serialNumber,
+		PlatformFingerprint: computePlatformFingerprint(),
 	}
 }
 
@@ -172,4 +178,85 @@ func runPowerShell(cmd string) (string, error) {
 	).CombinedOutput()
 
 	return strings.TrimSpace(string(out)), err
+}
+
+func computePlatformFingerprint() string {
+	parts := []string{
+		runtime.GOOS,
+		runtime.GOARCH,
+		cpuFingerprint(),
+		dmiFingerprint(),
+	}
+
+	fmt.Println("parts")
+
+	var out []string
+	for _, p := range parts {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+
+	raw := strings.Join(out, "|")
+	h := sha256.Sum256([]byte(raw))
+	return hex.EncodeToString(h[:])
+}
+
+func cpuFingerprint() string {
+	k, err := registry.OpenKey(
+		registry.LOCAL_MACHINE,
+		`HARDWARE\DESCRIPTION\System\CentralProcessor\0`,
+		registry.QUERY_VALUE,
+	)
+	if err != nil {
+		return ""
+	}
+	defer k.Close()
+
+	var parts []string
+
+	if v, _, err := k.GetStringValue("VendorIdentifier"); err == nil {
+		parts = append(parts, "vendor="+normalize(v))
+	}
+	if v, _, err := k.GetStringValue("ProcessorNameString"); err == nil {
+		parts = append(parts, "model_name="+normalize(v))
+	}
+	if v, _, err := k.GetStringValue("Identifier"); err == nil {
+		parts = append(parts, "identifier="+normalize(v))
+	}
+
+	return strings.Join(parts, "|")
+}
+
+func dmiFingerprint() string {
+	k, err := registry.OpenKey(
+		registry.LOCAL_MACHINE,
+		`SYSTEM\CurrentControlSet\Control\SystemInformation`,
+		registry.QUERY_VALUE,
+	)
+	if err != nil {
+		return ""
+	}
+	defer k.Close()
+
+	var parts []string
+
+	read := func(name, key string) {
+		if v, _, err := k.GetStringValue(name); err == nil && v != "" {
+			parts = append(parts, key+"="+normalize(v))
+		}
+	}
+
+	read("SystemManufacturer", "sys_vendor")
+	read("SystemProductName", "product_name")
+	read("SystemSKU", "sku")
+	read("BaseBoardManufacturer", "board_vendor")
+	read("BaseBoardProduct", "board_name")
+
+	return strings.Join(parts, "|")
+}
+
+func normalize(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.Join(strings.Fields(s), " ")
 }

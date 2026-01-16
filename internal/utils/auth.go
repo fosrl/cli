@@ -46,11 +46,9 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 		}
 
 		return true, nil
-	} else {
-		fmt.Println("err:", err)
 	}
 
-	newOlm, err := client.CreateOlm(userID, GetDeviceName())
+	newOlm, err := client.CreateOlm(userID, fingerprint.GetDeviceName())
 	if err != nil {
 		return false, fmt.Errorf("failed to create OLM: %w", err)
 	}

@@ -66,3 +66,10 @@ func (p *PostureChecks) ToMap() map[string]any {
 
 	return m
 }
+
+func formatDeviceName(osName string, isLaptop bool) string {
+	if isLaptop {
+		return osName + " Laptop"
+	}
+	return osName + " Desktop"
+}

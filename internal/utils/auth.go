@@ -2,20 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 )
-
-// GetDeviceName returns a human-readable device name
-func GetDeviceName() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "Unknown Device"
-	}
-	return hostname
-}
 
 // EnsureOlmCredentials ensures that OLM credentials exist and are valid.
 // It checks if OLM credentials exist locally, verifies them on the server,

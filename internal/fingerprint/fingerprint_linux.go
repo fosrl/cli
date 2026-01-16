@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/fosrl/cli/internal/utils"
 )
 
 func GatherFingerprintInfo() *Fingerprint {
@@ -109,17 +111,13 @@ func detectOSVersion() string {
 }
 
 func detectReleaseFromOSRelease(data []byte) string {
-	var name, version string
-
-	lines := strings.SplitSeq(string(data), "\n")
-	for line := range lines {
-		if after, ok := strings.CutPrefix(line, "PRETTY_NAME="); ok {
-			return strings.Trim(after, `"`)
-		}
-		if after, ok := strings.CutPrefix(line, "VERSION="); ok {
-			version = strings.Trim(after, `"`)
-		}
+	osRelease, err := utils.ParseOSRelease()
+	if err != nil {
+		return ""
 	}
+
+	name, _ := osRelease["PRETTY_NAME"]
+	version, _ := osRelease["VERSION"]
 
 	if name != "" && version != "" {
 		return name + " " + version

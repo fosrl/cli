@@ -621,16 +621,21 @@ func startFingerprinting(o *olmpkg.Olm) context.CancelFunc {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
+		configDir, _ := config.GetPangolinConfigDir()
+		fingerprintHashFilename := filepath.Join(configDir, "platform_fingerprint")
+
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				fp := fingerprint.GatherFingerprintInfo().ToMap()
-				postures := fingerprint.GatherPostureChecks().ToMap()
+				fp := fingerprint.GatherFingerprintInfo()
+				postures := fingerprint.GatherPostureChecks()
 
-				o.SetFingerprint(fp)
-				o.SetPostures(postures)
+				_ = os.WriteFile(fingerprintHashFilename, []byte(fp.PlatformFingerprint), 0o777)
+
+				o.SetFingerprint(fp.ToMap())
+				o.SetPostures(postures.ToMap())
 			}
 		}
 	}()

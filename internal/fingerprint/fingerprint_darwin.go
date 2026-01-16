@@ -3,7 +3,6 @@ package fingerprint
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"os"
 	"os/exec"
 	"os/user"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/fosrl/cli/internal/utils"
 )
 
 func GatherFingerprintInfo() *Fingerprint {
@@ -38,7 +39,13 @@ func GatherFingerprintInfo() *Fingerprint {
 		architecture = strings.TrimSpace(string(output))
 	}
 
-	systemProfilerOutput := runSystemProfiler()
+	var deviceModel, serialNumber string
+
+	systemProfilerOutput := utils.RunMacOSSystemProfiler()
+	if systemProfilerOutput != nil {
+		deviceModel = systemProfilerOutput.MachineModel
+		serialNumber = systemProfilerOutput.SerialNumber
+	}
 
 	platformFingerprint := computePlatformFingerprint(systemProfilerOutput)
 
@@ -49,8 +56,8 @@ func GatherFingerprintInfo() *Fingerprint {
 		OSVersion:           osVersion,
 		KernelVersion:       kernelVersion,
 		Architecture:        architecture,
-		DeviceModel:         systemProfilerOutput.MachineModel,
-		SerialNumber:        systemProfilerOutput.SerialNumber,
+		DeviceModel:         deviceModel,
+		SerialNumber:        serialNumber,
 		PlatformFingerprint: platformFingerprint,
 	}
 }
@@ -123,32 +130,7 @@ func GatherPostureChecks() *PostureChecks {
 
 var biometricsRegex = regexp.MustCompile(`Biometrics for unlock:\s*(\d+)`)
 
-type spHardwareOutput struct {
-	SerialNumber string `json:"serial_number"`
-	MachineModel string `json:"machine_model"`
-	PlatformUUID string `json:"platform_UUID"`
-}
-
-func runSystemProfiler() *spHardwareOutput {
-	type outerType struct {
-		Output spHardwareOutput `json:"SPHardwareDataType"`
-	}
-
-	cmd := exec.Command("system_profiler", "SPHardwareDataType", "-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil
-	}
-
-	var jsonOutput outerType
-	if err := json.Unmarshal(output, &jsonOutput); err != nil {
-		return nil
-	}
-
-	return &jsonOutput.Output
-}
-
-func computePlatformFingerprint(hw *spHardwareOutput) string {
+func computePlatformFingerprint(hw *utils.SPHardwareOutput) string {
 	if hw == nil {
 		return ""
 	}

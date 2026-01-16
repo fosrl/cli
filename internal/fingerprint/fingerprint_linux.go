@@ -1,16 +1,16 @@
 package fingerprint
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
-
-	"github.com/fosrl/cli/internal/utils"
 )
 
 func GatherFingerprintInfo() *Fingerprint {
@@ -111,12 +111,12 @@ func detectOSVersion() string {
 }
 
 func detectReleaseFromOSRelease(data []byte) string {
-	osRelease, err := utils.ParseOSRelease()
+	osRelease, err := ParseOSRelease()
 	if err != nil {
 		return ""
 	}
 
-	name, _ := osRelease["PRETTY_NAME"]
+	name, _ := osRelease["NAME"]
 	version, _ := osRelease["VERSION"]
 
 	if name != "" && version != "" {
@@ -292,4 +292,50 @@ func cpuFingerprint() string {
 	}
 
 	return strings.Join(out, "|")
+}
+
+func GetDeviceName() string {
+	var osName string = "Linux"
+
+	if osRelease, err := ParseOSRelease(); err == nil {
+		if name, ok := osRelease["NAME"]; ok {
+			osName = name
+		}
+	}
+
+	var isLaptop bool
+	if matches, err := filepath.Glob("/sys/class/power_supply/BAT*"); err == nil {
+		isLaptop = len(matches) > 0
+	}
+
+	return formatDeviceName(osName, isLaptop)
+}
+
+func ParseOSRelease() (map[string]string, error) {
+	file, err := os.Open("/etc/os-release")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	values := make(map[string]string)
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := parts[0]
+		value := strings.Trim(parts[1], `"`)
+		values[key] = value
+	}
+
+	return values, nil
 }

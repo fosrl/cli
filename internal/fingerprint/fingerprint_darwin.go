@@ -3,6 +3,7 @@ package fingerprint
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"os/user"
@@ -10,8 +11,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	"github.com/fosrl/cli/internal/utils"
 )
 
 func GatherFingerprintInfo() *Fingerprint {
@@ -35,13 +34,13 @@ func GatherFingerprintInfo() *Fingerprint {
 	}
 
 	var architecture string
-	if output, err := exec.Command("uname", "-a").CombinedOutput(); err == nil {
+	if output, err := exec.Command("uname", "-m").CombinedOutput(); err == nil {
 		architecture = strings.TrimSpace(string(output))
 	}
 
 	var deviceModel, serialNumber string
 
-	systemProfilerOutput := utils.RunMacOSSystemProfiler()
+	systemProfilerOutput := RunMacOSSystemProfiler()
 	if systemProfilerOutput != nil {
 		deviceModel = systemProfilerOutput.MachineModel
 		serialNumber = systemProfilerOutput.SerialNumber
@@ -130,7 +129,7 @@ func GatherPostureChecks() *PostureChecks {
 
 var biometricsRegex = regexp.MustCompile(`Biometrics for unlock:\s*(\d+)`)
 
-func computePlatformFingerprint(hw *utils.SPHardwareOutput) string {
+func computePlatformFingerprint(hw *SPHardwareOutput) string {
 	if hw == nil {
 		return ""
 	}
@@ -159,4 +158,46 @@ func computePlatformFingerprint(hw *utils.SPHardwareOutput) string {
 func normalize(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	return strings.Join(strings.Fields(s), " ")
+}
+
+type SPHardwareOutput struct {
+	MachineName  string `json:"machine_name"`
+	SerialNumber string `json:"serial_number"`
+	MachineModel string `json:"machine_model"`
+	PlatformUUID string `json:"platform_UUID"`
+}
+
+// Run the system_profiler command on macOS and
+// get the SPHardwareDataType.
+// Returns nil if unsuccessful or on an unsupported
+// platform.
+func RunMacOSSystemProfiler() *SPHardwareOutput {
+	type outerType struct {
+		Output []SPHardwareOutput `json:"SPHardwareDataType"`
+	}
+
+	cmd := exec.Command("system_profiler", "SPHardwareDataType", "-json")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil
+	}
+
+	var jsonOutput outerType
+	if err := json.Unmarshal(output, &jsonOutput); err != nil {
+		return nil
+	}
+
+	if len(jsonOutput.Output) == 0 {
+		return nil
+	}
+	return &jsonOutput.Output[0]
+}
+
+func GetDeviceName() string {
+	hw := RunMacOSSystemProfiler()
+	if hw == nil {
+		return "macOS"
+	}
+
+	return hw.MachineName
 }

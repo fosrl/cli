@@ -309,3 +309,8 @@ func normalize(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	return strings.Join(strings.Fields(s), " ")
 }
+
+func GetDeviceName() string {
+	// TODO: implement laptop/desktop detection
+	return "Windows"
+}

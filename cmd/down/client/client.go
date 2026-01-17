@@ -60,7 +60,7 @@ func clientDownMain(cmd *cobra.Command) error {
 	}
 
 	// Show log preview until process stops
-	completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
+	completed, _, err := tui.NewLogPreview(tui.LogPreviewConfig{
 		LogFile: cfg.LogFile,
 		Header:  "Shutting down client...",
 		ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {

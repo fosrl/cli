@@ -81,7 +81,7 @@ func printStatusTable(status *olm.StatusResponse) {
 		{
 			status.Agent,
 			status.Version,
-			formatStatus(status.Connected),
+			formatStatus(status.Connected, status.Registered),
 			status.OrgID,
 		},
 	}
@@ -99,7 +99,7 @@ func printStatusTable(status *olm.StatusResponse) {
 			peerRows = append(peerRows, []string{
 				peer.SiteName,
 				peer.Endpoint,
-				formatStatus(peer.Connected),
+				formatStatus(peer.Connected, true), // Peers don't have registered field, use true
 				lastSeen,
 				fmt.Sprintf("%t", peer.IsRelay),
 			})
@@ -112,8 +112,9 @@ func printStatusTable(status *olm.StatusResponse) {
 }
 
 // formatStatus formats the connection status
-func formatStatus(connected bool) string {
-	if connected {
+// Status is only "Connected" when both connected and registered are true
+func formatStatus(connected, registered bool) string {
+	if connected && registered {
 		return "Connected"
 	}
 	return "Disconnected"

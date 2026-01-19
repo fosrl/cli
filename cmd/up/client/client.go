@@ -16,6 +16,7 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/fingerprint"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
@@ -454,11 +455,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	// Create context for signal handling and cleanup
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer olmpkg.Close()
 	defer stop()
 
 	// Create OLM GlobalConfig with hardcoded values from Swift
-	olmInitConfig := olmpkg.GlobalConfig{
+	olmInitConfig := olmpkg.OlmConfig{
 		LogLevel:   opts.LogLevel,
 		EnableAPI:  enableAPI,
 		SocketPath: socketPath,
@@ -481,7 +481,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
-	olmConfig := olmpkg.TunnelConfig{
+	initialFingerprint := fingerprint.GatherFingerprintInfo().ToMap()
+	initialPostures := fingerprint.GatherPostureChecks().ToMap()
+
+	tunnelConfig := olmpkg.TunnelConfig{
 		Endpoint:             endpoint,
 		ID:                   olmID,
 		Secret:               olmSecret,
@@ -496,11 +499,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		OverrideDNS:          opts.OverrideDNS,
 		TunnelDNS:            opts.TunnelDNS,
 		UpstreamDNS:          upstreamDNS,
-	}
-
-	// Add UserToken if we have it (from flag or config)
-	if userToken != "" {
-		olmConfig.UserToken = userToken
+		UserToken:            userToken,
+		InitialFingerprint:   initialFingerprint,
+		InitialPostures:      initialPostures,
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)
@@ -514,11 +515,20 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 	}
 
-	olmpkg.Init(ctx, olmInitConfig)
-	if enableAPI {
-		_ = olmpkg.StartApi()
+	olm, err := olmpkg.Init(ctx, olmInitConfig)
+	if err != nil {
+		logger.Error("Error: failed to init olm: %v", err)
+		return err
 	}
-	olmpkg.StartTunnel(olmConfig)
+	defer olm.Close()
+
+	cancelFingerprinting := startFingerprinting(olm)
+	defer cancelFingerprinting()
+
+	if enableAPI {
+		_ = olm.StartApi()
+	}
+	olm.StartTunnel(tunnelConfig)
 
 	return nil
 }
@@ -602,4 +612,33 @@ func cleanupOldLogFiles(logDir string, daysToKeep int) {
 			}
 		}
 	}
+}
+
+func startFingerprinting(o *olmpkg.Olm) context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		configDir, _ := config.GetPangolinConfigDir()
+		fingerprintHashFilename := filepath.Join(configDir, "platform_fingerprint")
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				fp := fingerprint.GatherFingerprintInfo()
+				postures := fingerprint.GatherPostureChecks()
+
+				_ = os.WriteFile(fingerprintHashFilename, []byte(fp.PlatformFingerprint), 0o777)
+
+				o.SetFingerprint(fp.ToMap())
+				o.SetPostures(postures.ToMap())
+			}
+		}
+	}()
+
+	return cancel
 }

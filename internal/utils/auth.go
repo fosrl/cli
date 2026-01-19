@@ -3,19 +3,12 @@ package utils
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/fingerprint"
 )
-
-// GetDeviceName returns a human-readable device name
-func GetDeviceName() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "Unknown Device"
-	}
-	return hostname
-}
 
 // EnsureOlmCredentials ensures that OLM credentials exist and are valid.
 // It checks if OLM credentials exist locally, verifies them on the server,
@@ -44,7 +37,38 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 		account.OlmCredentials = nil
 	}
 
-	newOlm, err := client.CreateOlm(userID, GetDeviceName())
+	// First, attempt to recover any credentials on any other machines
+	// using the platform fingerprint.
+	//
+	// Use the cached one if it is available, since this is cached
+	// by a privileged process that has access to fingerprinting
+	// attributes like DMI information.
+	configDir, _ := config.GetPangolinConfigDir()
+	cachedPlatfromFingerprintFilename := filepath.Join(configDir, "platform_fingerprint")
+
+	if cachedFingerprint, err := os.ReadFile(cachedPlatfromFingerprintFilename); err == nil {
+		if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, string(cachedFingerprint)); err == nil {
+			account.OlmCredentials = &config.OlmCredentials{
+				ID:     recoveredOlm.OlmID,
+				Secret: recoveredOlm.Secret,
+			}
+
+			return true, nil
+		}
+	}
+
+	fp := fingerprint.GatherFingerprintInfo()
+
+	if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint); err == nil {
+		account.OlmCredentials = &config.OlmCredentials{
+			ID:     recoveredOlm.OlmID,
+			Secret: recoveredOlm.Secret,
+		}
+
+		return true, nil
+	}
+
+	newOlm, err := client.CreateOlm(userID, fingerprint.GetDeviceName())
 	if err != nil {
 		return false, fmt.Errorf("failed to create OLM: %w", err)
 	}

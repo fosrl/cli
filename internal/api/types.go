@@ -247,3 +247,12 @@ type MyDeviceResponse struct {
 	Orgs []ResponseOrg `json:"orgs"`
 	Olm  *Olm          `json:"olm,omitempty"`
 }
+
+// ServerInfo represents server information including version, build type, and license status
+type ServerInfo struct {
+	Version                  string  `json:"version"`
+	SupporterStatusValid     bool    `json:"supporterStatusValid"`
+	Build                    string  `json:"build"` // "oss" | "enterprise" | "saas"
+	EnterpriseLicenseValid   bool    `json:"enterpriseLicenseValid"`
+	EnterpriseLicenseType    *string `json:"enterpriseLicenseType,omitempty"`
+}

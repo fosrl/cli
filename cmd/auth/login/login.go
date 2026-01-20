@@ -285,6 +285,14 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		OlmCredentials: nil,
 	}
 
+	// Update account with username and name from user data
+	if user.Username != nil {
+		newAccount.Username = user.Username
+	}
+	if user.Name != nil {
+		newAccount.Name = user.Name
+	}
+
 	accountStore.Accounts[user.UserID] = newAccount
 	accountStore.ActiveUserID = userID
 
@@ -295,19 +303,32 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		return err
 	}
 
-	// List and select organization
-	if user != nil {
-		if _, err := utils.SelectOrgForm(apiClient, user.UserID); err != nil {
-			logger.Warning("%v", err)
+	// Fetch server info after successful authentication
+	apiServerInfo, err := apiClient.GetServerInfo()
+	if err != nil {
+		// Log warning but don't fail login if server info fetch fails
+		logger.Debug("Failed to fetch server info: %v", err)
+	} else if apiServerInfo != nil {
+		// Convert api.ServerInfo to config.ServerInfo
+		serverInfo := &config.ServerInfo{
+			Version:                  apiServerInfo.Version,
+			SupporterStatusValid:     apiServerInfo.SupporterStatusValid,
+			Build:                    apiServerInfo.Build,
+			EnterpriseLicenseValid:   apiServerInfo.EnterpriseLicenseValid,
+			EnterpriseLicenseType:    apiServerInfo.EnterpriseLicenseType,
+		}
+		// Update account with server info
+		account := accountStore.Accounts[user.UserID]
+		account.ServerInfo = serverInfo
+		accountStore.Accounts[user.UserID] = account
+		if err := accountStore.Save(); err != nil {
+			logger.Debug("Failed to save server info: %v", err)
 		}
 	}
 
 	// Print logged in message after all setup is complete
 	if user != nil {
-		displayName := user.Email
-		if displayName == "" && user.Username != nil && *user.Username != "" {
-			displayName = *user.Username
-		}
+		displayName := utils.UserDisplayName(user)
 		if displayName != "" {
 			logger.Success("Logged in as %s", displayName)
 		}

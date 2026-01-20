@@ -119,7 +119,13 @@ func logoutMain(cmd *cobra.Command) error {
 	}
 
 	// Print logout message with account name
-	logger.Success("Logged out of Pangolin account %s", deletedAccount.Email)
+	displayName := deletedAccount.Email
+	if deletedAccount.Name != nil && *deletedAccount.Name != "" {
+		displayName = *deletedAccount.Name
+	} else if deletedAccount.Username != nil && *deletedAccount.Username != "" {
+		displayName = *deletedAccount.Username
+	}
+	logger.Success("Logged out of Pangolin account %s", displayName)
 
 	return nil
 }

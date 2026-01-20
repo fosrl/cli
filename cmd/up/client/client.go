@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	defaultDNSServer  = "8.8.8.8"
+	defaultDNSServer  = "1.1.1.1"
 	defaultEnableAPI  = true
 	defaultSocketPath = "/var/run/olm.sock"
 	defaultAgent      = "Pangolin CLI"
@@ -133,6 +133,50 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	credentialsFromKeyring := olmID == "" && olmSecret == ""
 
+	// Determine endpoint early
+	var endpoint string
+	if opts.Endpoint != "" {
+		endpoint = opts.Endpoint
+	} else if credentialsFromKeyring {
+		activeAccount, err := accountStore.ActiveAccount()
+		if err != nil {
+			logger.Error("Error: %v. Run `pangolin login` to login", err)
+			return err
+		}
+		endpoint = activeAccount.Host
+	}
+
+	if endpoint == "" {
+		err := errors.New("endpoint is required")
+		logger.Error("Error: %v", err)
+		logger.Info("Please login with a host or provide the --endpoint flag.")
+		return err
+	}
+
+	// Check server health before doing anything else
+	// If credentials come from keyring, use the configured API client
+	// Otherwise, create a temporary client for the endpoint
+	var healthClient *api.Client
+	if credentialsFromKeyring {
+		healthClient = apiClient
+	} else {
+		// Create a temporary client for health check
+		var err error
+		healthClient, err = api.InitClient(endpoint, "")
+		if err != nil {
+			logger.Error("Error: failed to create API client for health check: %v", err)
+			return err
+		}
+	}
+
+	healthOk, healthErr := healthClient.CheckHealth()
+	if healthErr != nil || !healthOk {
+		err := fmt.Errorf("the server appears to be down: %w", healthErr)
+		logger.Error("Error: %v", err)
+		logger.Info("Please check that the server is running and accessible.")
+		return err
+	}
+
 	if credentialsFromKeyring {
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
@@ -180,22 +224,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	var logFile string
 	if !opts.Attached {
 		logFile = cfg.LogFile
-	}
-
-	var endpoint string
-
-	if opts.Endpoint == "" && credentialsFromKeyring {
-		activeAccount, _ := accountStore.ActiveAccount()
-		endpoint = activeAccount.Host
-	} else {
-		endpoint = opts.Endpoint
-	}
-
-	if endpoint == "" {
-		err := errors.New("endpoint is required")
-		logger.Error("Error: %v", err)
-		logger.Info("Please login with a host or provide the --endpoint flag.")
-		return err
 	}
 
 	// Handle detached mode - subprocess self without --attach flag

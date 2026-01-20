@@ -25,8 +25,9 @@ type LogPreviewConfig struct {
 	LogFile         string
 	Header          string
 	ExitCondition   ExitCondition
-	OnEarlyExit     func(client *olm.Client) // Called when user exits early (Ctrl+C)
-	StatusFormatter StatusFormatter          // Status formatter (required)
+	OnEarlyExit     func(client *olm.Client)                         // Called when user exits early (Ctrl+C)
+	OnError         func(client *olm.Client, error *olm.StatusError) // Called when error is detected before registration
+	StatusFormatter StatusFormatter                                  // Status formatter (required)
 }
 
 // logPreviewModel is the bubbletea model for the live log preview
@@ -39,10 +40,12 @@ type logPreviewModel struct {
 	completedTime *time.Time
 	completed     bool
 	width         int
+	error         *olm.StatusError // Store error to return after TUI exits
 }
 
 // NewLogPreview creates and runs a new log preview TUI
-func NewLogPreview(config LogPreviewConfig) (completed bool, err error) {
+// Returns completed status, error from status (if any), and any TUI error
+func NewLogPreview(config LogPreviewConfig) (completed bool, statusError *olm.StatusError, err error) {
 	model := &logPreviewModel{
 		config:    config,
 		olmClient: olm.NewClient(""),
@@ -52,13 +55,13 @@ func NewLogPreview(config LogPreviewConfig) (completed bool, err error) {
 	program := tea.NewProgram(model)
 	finalModel, err := program.Run()
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	if previewModel, ok := finalModel.(*logPreviewModel); ok {
-		return previewModel.completed, nil
+		return previewModel.completed, previewModel.error, nil
 	}
-	return false, nil
+	return false, nil, nil
 }
 
 // Init initializes the model
@@ -109,6 +112,21 @@ func (m *logPreviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			status, err := m.olmClient.GetStatus()
 			if err == nil {
 				m.status = status
+
+				// Check for errors before registration
+				if status.Error != nil && !status.Registered {
+					// Store error to return after TUI exits
+					m.error = status.Error
+
+					// Call error callback if provided (for cleanup, not logging)
+					if m.config.OnError != nil {
+						m.config.OnError(m.olmClient, status.Error)
+					}
+
+					// Exit immediately on error
+					m.completed = false
+					return m, tea.Quit
+				}
 			}
 		} else {
 			// Socket doesn't exist - clear status

@@ -128,7 +128,7 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 // monitorOrgSwitch monitors the organization switch process with log preview
 func monitorOrgSwitch(logFile string, orgID string) {
 	// Show live log preview and status during switch
-	completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
+	completed, _, err := tui.NewLogPreview(tui.LogPreviewConfig{
 		LogFile: logFile,
 		Header:  "Switching organization...",
 		ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {

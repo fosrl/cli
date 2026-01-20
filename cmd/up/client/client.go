@@ -173,11 +173,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 
-		if err := utils.EnsureOrgAccess(apiClient, activeAccount); err != nil {
-			logger.Error("%v", err)
-			return err
-		}
-
 		orgID = activeAccount.OrgID
 	}
 
@@ -201,27 +196,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		logger.Error("Error: %v", err)
 		logger.Info("Please login with a host or provide the --endpoint flag.")
 		return err
-	}
-
-	// Check if OLM is blocked before connecting (only when credentials come from keyring)
-	// This check should only happen when attempting to connect, not during authentication.
-	// Must happen in parent process before spawning subprocess or starting OLM.
-	if credentialsFromKeyring {
-		activeAccount, err := accountStore.ActiveAccount()
-		if err == nil {
-			err := utils.CheckBlockedBeforeConnect(apiClient, activeAccount)
-			if err != nil {
-				// If the error is specifically about being blocked, show user-friendly message
-				if strings.Contains(err.Error(), "blocked") {
-					logger.Error("Error: %v", err)
-					return err
-				}
-				// If check failed (network error, etc.), log but allow connection attempt
-				// The server will reject if truly blocked
-				logger.Info("Warning: failed to check blocked status: %v", err)
-				logger.Info("Proceeding with connection attempt...")
-			}
-		}
 	}
 
 	// Handle detached mode - subprocess self without --attach flag
@@ -358,14 +332,15 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 
 		// Show live log preview and status
-		completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
+		completed, statusError, err := tui.NewLogPreview(tui.LogPreviewConfig{
 			LogFile: logFile,
 			Header:  "Starting up client...",
 			ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {
-				// Exit when interface is registered
-				if status != nil && status.Registered {
+				// Exit when both connected and registered
+				if status != nil && status.Connected && status.Registered {
 					return true, true
 				}
+				// Exit on error before registration (handled in statusUpdateMsg)
 				return false, false
 			},
 			OnEarlyExit: func(client *olm.Client) {
@@ -374,9 +349,23 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 					_, _ = client.Exit()
 				}
 			},
+			OnError: func(client *olm.Client, statusError *olm.StatusError) {
+				// Stop the client on error (error will be printed after TUI exits)
+				if client.IsRunning() {
+					_, _ = client.Exit()
+				}
+			},
 			StatusFormatter: func(isRunning bool, status *olm.StatusResponse) string {
 				if !isRunning || status == nil {
 					return "Starting"
+				}
+				// Show error if present
+				if status.Error != nil {
+					return fmt.Sprintf("Error: %s", status.Error.Message)
+				}
+				// Status is only "Connected" when both connected and registered
+				if status.Connected && status.Registered {
+					return "Connected"
 				} else if status.Registered {
 					return "Registered"
 				}
@@ -386,6 +375,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if err != nil {
 			logger.Error("Error: %v", err)
 			return err
+		}
+
+		// Print error after TUI exits if there was one
+		if statusError != nil {
+			logger.Error("Connection error: %s", statusError.Message)
+			return fmt.Errorf("connection failed: %s", statusError.Message)
 		}
 
 		// Check if the process completed successfully or was killed

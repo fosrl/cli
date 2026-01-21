@@ -1,14 +1,18 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
+	"runtime"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/fingerprint"
 )
+
+// ErrSudoRequired is returned when the user needs to run the command as sudo for first-time setup
+var ErrSudoRequired = errors.New("Please rerun this command as sudo. This is a one time thing for Pangolin to setup your machine.")
 
 // EnsureOlmCredentials ensures that OLM credentials exist and are valid.
 // It checks if OLM credentials exist locally, verifies them on the server,
@@ -43,8 +47,17 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 	// Use the cached one if it is available, since this is cached
 	// by a privileged process that has access to fingerprinting
 	// attributes like DMI information.
-	configDir, _ := config.GetPangolinConfigDir()
-	cachedPlatfromFingerprintFilename := filepath.Join(configDir, "platform_fingerprint")
+	cachedPlatfromFingerprintFilename, _ := config.GetFingerprintFilePath()
+
+	// Check if fingerprint file exists
+	_, statErr := os.Stat(cachedPlatfromFingerprintFilename)
+	fingerprintFileExists := statErr == nil
+
+	// If the fingerprint file doesn't exist and we're not running as root on Linux,
+	// we need to prompt the user to run as sudo for the first-time setup
+	if !fingerprintFileExists && runtime.GOOS == "linux" && os.Geteuid() != 0 {
+		return false, ErrSudoRequired
+	}
 
 	if cachedFingerprint, err := os.ReadFile(cachedPlatfromFingerprintFilename); err == nil {
 		if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, string(cachedFingerprint)); err == nil {
@@ -58,6 +71,14 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 	}
 
 	fp := fingerprint.GatherFingerprintInfo()
+
+	// Write the fingerprint to disk so it's available for future processes
+	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+			_ = os.MkdirAll(fingerprintDir, 0o755)
+		}
+		_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
+	}
 
 	if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint); err == nil {
 		account.OlmCredentials = &config.OlmCredentials{

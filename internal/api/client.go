@@ -332,6 +332,8 @@ func (c *Client) RecoverOlmFromFingerprint(userID string, platformFingerprint st
 	var response RecoverOlmResponse
 	err := c.Post(path, requestBody, &response)
 	if err != nil {
+		// print the error
+		fmt.Printf("Error recovering olm: %v\n", err)
 		return nil, err
 	}
 

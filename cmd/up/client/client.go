@@ -187,7 +187,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		// Ensure OLM credentials exist and are valid
 		newCredsGenerated, err := utils.EnsureOlmCredentials(apiClient, activeAccount)
 		if err != nil {
-			logger.Error("Failed to ensure OLM credentials: %v", err)
+			if errors.Is(err, utils.ErrSudoRequired) {
+				logger.Error("%v", err)
+			} else {
+				logger.Error("Failed to ensure OLM credentials: %v", err)
+			}
 			return err
 		}
 
@@ -504,8 +508,17 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
-	initialFingerprint := fingerprint.GatherFingerprintInfo().ToMap()
+	initialFp := fingerprint.GatherFingerprintInfo()
+	initialFingerprint := initialFp.ToMap()
 	initialPostures := fingerprint.GatherPostureChecks().ToMap()
+
+	// Write the fingerprint to disk immediately so it's available for other processes
+	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+			_ = os.MkdirAll(fingerprintDir, 0o755)
+		}
+		_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
+	}
 
 	tunnelConfig := olmpkg.TunnelConfig{
 		Endpoint:             endpoint,
@@ -644,8 +657,13 @@ func startFingerprinting(o *olmpkg.Olm) context.CancelFunc {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
-		configDir, _ := config.GetPangolinConfigDir()
-		fingerprintHashFilename := filepath.Join(configDir, "platform_fingerprint")
+		fingerprintFilePath, _ := config.GetFingerprintFilePath()
+		fingerprintDir, _ := config.GetFingerprintDir()
+
+		// Ensure the fingerprint directory exists
+		if fingerprintDir != "" {
+			_ = os.MkdirAll(fingerprintDir, 0o755)
+		}
 
 		for {
 			select {
@@ -655,7 +673,9 @@ func startFingerprinting(o *olmpkg.Olm) context.CancelFunc {
 				fp := fingerprint.GatherFingerprintInfo()
 				postures := fingerprint.GatherPostureChecks()
 
-				_ = os.WriteFile(fingerprintHashFilename, []byte(fp.PlatformFingerprint), 0o777)
+				if fingerprintFilePath != "" {
+					_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
+				}
 
 				o.SetFingerprint(fp.ToMap())
 				o.SetPostures(postures.ToMap())

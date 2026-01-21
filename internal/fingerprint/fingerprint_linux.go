@@ -103,7 +103,7 @@ func detectOSVersion() string {
 		}
 	}
 
-	if output, err := exec.Command("uname", "-srv").CombinedOutput(); err == nil {
+	if output, err := exec.Command("uname", "-sr").CombinedOutput(); err == nil {
 		return strings.TrimSpace(string(output))
 	}
 

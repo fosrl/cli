@@ -250,9 +250,25 @@ type MyDeviceResponse struct {
 
 // ServerInfo represents server information including version, build type, and license status
 type ServerInfo struct {
-	Version                  string  `json:"version"`
-	SupporterStatusValid     bool    `json:"supporterStatusValid"`
-	Build                    string  `json:"build"` // "oss" | "enterprise" | "saas"
-	EnterpriseLicenseValid   bool    `json:"enterpriseLicenseValid"`
-	EnterpriseLicenseType    *string `json:"enterpriseLicenseType,omitempty"`
+	Version                string  `json:"version"`
+	SupporterStatusValid   bool    `json:"supporterStatusValid"`
+	Build                  string  `json:"build"` // "oss" | "enterprise" | "saas"
+	EnterpriseLicenseValid bool    `json:"enterpriseLicenseValid"`
+	EnterpriseLicenseType  *string `json:"enterpriseLicenseType,omitempty"`
+}
+
+// ApplyBlueprintRequest represents a new blueprint application request.
+type ApplyBlueprintRequest struct {
+	Name      string `json:"name"`
+	Blueprint string `json:"blueprint"`
+}
+
+type ApplyBlueprintResponse struct {
+	Name        string  `json:"name"`
+	OrgID       string  `json:"orgId"`
+	Source      string  `json:"source"`
+	Message     *string `json:"message"`
+	BlueprintID string  `json:"blueprintId"`
+	Succeeded   bool    `json:"succeeded"`
+	Contents    string  `json:"contents"`
 }

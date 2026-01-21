@@ -803,6 +803,19 @@ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse,
 	return &response, message, nil
 }
 
-func (c *Client) ApplyBlueprint(name string, blueprint string) (*ApplyBlueprintResponse, error) {
-	return nil, nil
+func (c *Client) ApplyBlueprint(orgID string, name string, blueprint string) (*ApplyBlueprintResponse, error) {
+	// Create request payload with raw YAML content
+	requestBody := ApplyBlueprintRequest{
+		Name:      name,
+		Blueprint: blueprint,
+	}
+
+	path := fmt.Sprintf("/org/%s/blueprint", orgID)
+	var response ApplyBlueprintResponse
+	err := c.Put(path, requestBody, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }

@@ -69,18 +69,24 @@ func applyBlueprintMain(cmd *cobra.Command, opts ApplyBlueprintCmdOpts) error {
 	api := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
-	if _, err := accountStore.ActiveAccount(); err != nil {
+	account, err := accountStore.ActiveAccount()
+	if err != nil {
 		logger.Error("Error: %v", err)
 		return err
 	}
 
-	blueprintContents, err := os.ReadFile(opts.Name)
+	if account.OrgID == "" {
+		logger.Error("Error: no organization selected. Run 'pangolin select org' first.")
+		return errors.New("no organization selected")
+	}
+
+	blueprintContents, err := os.ReadFile(opts.Path)
 	if err != nil {
 		logger.Error("Error: failed to read blueprint file: %v", err)
 		return err
 	}
 
-	_, err = api.ApplyBlueprint(opts.Name, string(blueprintContents))
+	_, err = api.ApplyBlueprint(account.OrgID, opts.Name, string(blueprintContents))
 	if err != nil {
 		logger.Error("Error: failed to apply blueprint: %v", err)
 		return err

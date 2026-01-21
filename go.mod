@@ -77,5 +77,6 @@ require (
 // If changes to Olm or Newt are required, use these
 // replace directives during development.
 //
-// replace github.com/fosrl/olm => ../olm
-// replace github.com/fosrl/newt => ../newt
+replace github.com/fosrl/olm => ../olm
+
+replace github.com/fosrl/newt => ../newt

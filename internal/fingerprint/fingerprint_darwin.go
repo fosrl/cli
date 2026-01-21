@@ -63,7 +63,17 @@ func GatherFingerprintInfo() *Fingerprint {
 
 func GatherPostureChecks() *PostureChecks {
 	var biometricsEnabled bool
-	if output, err := exec.Command("bioutil", "-r").CombinedOutput(); err == nil {
+	// When running as root (via sudo), bioutil checks root's biometrics, not the original user's.
+	// We need to run it as the original user to get the correct result.
+	var cmd *exec.Cmd
+	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+		// Running with sudo, execute as the original user
+		cmd = exec.Command("sudo", "-u", sudoUser, "bioutil", "-r")
+	} else {
+		// Running as regular user, execute directly
+		cmd = exec.Command("bioutil", "-r")
+	}
+	if output, err := cmd.CombinedOutput(); err == nil {
 		matches := biometricsRegex.FindStringSubmatch(string(output))
 		if len(matches) > 1 {
 			// matches[0] is the full match, matches[1] is the captured group (the number)
@@ -86,10 +96,24 @@ func GatherPostureChecks() *PostureChecks {
 	}
 
 	var autoUpdatesEnabled bool
-	if output, err := exec.Command("softwareupdate", "--schedule").CombinedOutput(); err == nil {
-		statusStr := strings.ToLower(string(output))
-		autoUpdatesEnabled = strings.Contains(statusStr, "on")
+	// Check all required keys are set to 1
+	keys := []string{"AutomaticDownload", "AutomaticallyInstallMacOSUpdates", "ConfigDataInstall", "CriticalUpdateInstall"}
+	allEnabled := true
+	for _, key := range keys {
+		cmd := exec.Command("defaults", "read", "/Library/Preferences/com.apple.SoftwareUpdate.plist", key)
+		if output, err := cmd.CombinedOutput(); err == nil {
+			valueStr := strings.TrimSpace(string(output))
+			if valueStr != "1" {
+				allEnabled = false
+				break
+			}
+		} else {
+			// If we can't read a key, assume not enabled
+			allEnabled = false
+			break
+		}
 	}
+	autoUpdatesEnabled = allEnabled
 
 	var sipEnabled bool
 	if output, err := exec.Command("csrutil", "status").CombinedOutput(); err == nil {

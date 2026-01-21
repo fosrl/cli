@@ -65,8 +65,9 @@ func GatherPostureChecks() *PostureChecks {
 	var biometricsEnabled bool
 	if output, err := exec.Command("bioutil", "-r").CombinedOutput(); err == nil {
 		matches := biometricsRegex.FindStringSubmatch(string(output))
-		if len(matches) > 0 {
-			if n, _ := strconv.ParseInt(matches[0], 10, 64); n > 0 {
+		if len(matches) > 1 {
+			// matches[0] is the full match, matches[1] is the captured group (the number)
+			if n, _ := strconv.ParseInt(matches[1], 10, 64); n > 0 {
 				biometricsEnabled = true
 			}
 		}
@@ -79,13 +80,9 @@ func GatherPostureChecks() *PostureChecks {
 	}
 
 	var firewallEnabled bool
-	firewallQueryCmd := exec.Command("/usr/bin/defaults", "read", "/Library/Preferences/com.apple.alf", "globalstate")
-	if output, err := firewallQueryCmd.CombinedOutput(); err == nil {
-		valueStr := strings.TrimSpace(strings.ToLower(string(output)))
-		if value, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
-			// 0 = off, 1 = on for specific services, 2 = on for essential services
-			firewallEnabled = value != 0
-		}
+	if output, err := exec.Command("/usr/libexec/ApplicationFirewall/socketfilterfw", "--getglobalstate").CombinedOutput(); err == nil {
+		statusStr := strings.ToLower(string(output))
+		firewallEnabled = strings.Contains(statusStr, "enabled")
 	}
 
 	var autoUpdatesEnabled bool

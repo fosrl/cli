@@ -231,9 +231,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 
 	// Handle detached mode - subprocess self without --attach flag
-	// Skip detached mode if already running as root (we're a subprocess spawned by sudo)
-	isRunningAsRoot := runtime.GOOS != "windows" && os.Geteuid() == 0
-	if !opts.Attached && !isRunningAsRoot {
+	// Skip detached mode if we're a subprocess spawned by the parent process
+	// We use an environment variable to detect this, rather than checking if running as root,
+	// because the user might run "sudo pangolin up" directly and still expect the TUI
+	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
+	if !opts.Attached && !isSubprocess {
 		executable, err := os.Executable()
 		if err != nil {
 			logger.Error("Error: failed to get executable path: %v", err)
@@ -315,18 +317,16 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		// Create command - subprocess should run with elevated permissions
 		var procCmd *exec.Cmd
 		if runtime.GOOS != "windows" {
-			// Use sudo with a shell wrapper to background the subprocess
-			// This allows sudo to exit immediately after starting the subprocess
-			// The subprocess needs root access for network interface creation
 			// Build shell command with proper quoting using printf %q
 			var shellArgs []string
 			shellArgs = append(shellArgs, executable)
 			shellArgs = append(shellArgs, cmdArgs...)
-			// Export environment variable to indicate credentials came from config
-			// This allows subprocess to distinguish between user-provided credentials and stored credentials
-			shellCmd := ""
+			// Export environment variables:
+			// - PANGOLIN_SUBPROCESS=1 to indicate this is a spawned subprocess (not direct user invocation)
+			// - PANGOLIN_CREDENTIALS_FROM_KEYRING=1 to indicate credentials came from config
+			shellCmd := "export PANGOLIN_SUBPROCESS=1 && "
 			if credentialsFromKeyring {
-				shellCmd = "export PANGOLIN_CREDENTIALS_FROM_KEYRING=1 && "
+				shellCmd += "export PANGOLIN_CREDENTIALS_FROM_KEYRING=1 && "
 			}
 			// Build command: nohup executable args >/dev/null 2>&1 &
 			shellCmd += "nohup"
@@ -334,11 +334,21 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				shellCmd += " " + fmt.Sprintf("%q", arg)
 			}
 			shellCmd += " >/dev/null 2>&1 &"
-			procCmd = exec.Command("sudo", "sh", "-c", shellCmd)
-			// Connect stdin/stderr so sudo can prompt for password interactively
-			procCmd.Stdin = os.Stdin
+
+			// If already running as root, skip sudo wrapper to avoid potential issues
+			// with sudo behaving differently when invoked by root
+			if os.Geteuid() == 0 {
+				procCmd = exec.Command("sh", "-c", shellCmd)
+			} else {
+				// Use sudo with a shell wrapper to background the subprocess
+				// This allows sudo to exit immediately after starting the subprocess
+				// The subprocess needs root access for network interface creation
+				procCmd = exec.Command("sudo", "sh", "-c", shellCmd)
+				// Connect stdin/stderr so sudo can prompt for password interactively
+				procCmd.Stdin = os.Stdin
+				procCmd.Stderr = os.Stderr
+			}
 			procCmd.Stdout = nil
-			procCmd.Stderr = os.Stderr
 		} else {
 			err := errors.New("detached mode is not supported on Windows")
 			logger.Error("Error: %v", err)

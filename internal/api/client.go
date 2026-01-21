@@ -802,3 +802,7 @@ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse,
 
 	return &response, message, nil
 }
+
+func (c *Client) ApplyBlueprint(name string, blueprint string) (*ApplyBlueprintResponse, error) {
+	return nil, nil
+}

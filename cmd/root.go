@@ -42,7 +42,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 
 	cmd.AddCommand(auth.AuthCommand())
-	cmd.AddCommand(apply.ApplyBlueprintCommand())
+	cmd.AddCommand(apply.ApplyCommand())
 	cmd.AddCommand(selectcmd.SelectCmd())
 	cmd.AddCommand(up.UpCmd())
 	cmd.AddCommand(down.DownCmd())

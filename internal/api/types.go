@@ -261,6 +261,7 @@ type ServerInfo struct {
 type ApplyBlueprintRequest struct {
 	Name      string `json:"name"`
 	Blueprint string `json:"blueprint"`
+	Source    string `json:"source,omitempty"`
 }
 
 type ApplyBlueprintResponse struct {
@@ -268,7 +269,7 @@ type ApplyBlueprintResponse struct {
 	OrgID       string  `json:"orgId"`
 	Source      string  `json:"source"`
 	Message     *string `json:"message"`
-	BlueprintID string  `json:"blueprintId"`
+	BlueprintID int     `json:"blueprintId"`
 	Succeeded   bool    `json:"succeeded"`
 	Contents    string  `json:"contents"`
 }

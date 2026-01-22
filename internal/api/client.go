@@ -808,6 +808,7 @@ func (c *Client) ApplyBlueprint(orgID string, name string, blueprint string) (*A
 	requestBody := ApplyBlueprintRequest{
 		Name:      name,
 		Blueprint: blueprint,
+		Source:    "CLI",
 	}
 
 	path := fmt.Sprintf("/org/%s/blueprint", orgID)

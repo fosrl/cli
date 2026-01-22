@@ -95,7 +95,65 @@ func (s *AccountStore) ActiveAccount() (*Account, error) {
 		return nil, errors.New("active account missing")
 	}
 
+	if activeAccount.SessionToken == "" {
+		return nil, errors.New("active account missing session token")
+	}
+
 	return &activeAccount, nil
+}
+
+// Set account with the user ID as "inactive"; keeps the Olm
+// credentials for the account, but clear other account state
+// like the session token and selected org ID.
+//
+// This effectively logs out the account.
+func (s *AccountStore) Deactivate(userID string) error {
+	account, exists := s.Accounts[userID]
+	if !exists {
+		return errors.New("account does not exist")
+	}
+
+	account.SessionToken = ""
+	account.OrgID = ""
+
+	s.Accounts[userID] = account
+
+	if s.ActiveUserID == userID {
+		s.ActiveUserID = ""
+	}
+
+	return s.Save()
+}
+
+// Return a list of accounts that are available to use.
+// These accounts are guaranteed to have a valid
+// session token.
+func (s *AccountStore) AvailableAccounts() []Account {
+	available := []Account{}
+
+	for _, account := range s.Accounts {
+		if account.SessionToken != "" {
+			available = append(available, account)
+		}
+	}
+
+	return available
+}
+
+// UpdateActiveAccount updates the active account in the store.
+// This must be called after modifying an account obtained from ActiveAccount()
+// because Go maps return copies of values, not references.
+func (s *AccountStore) UpdateActiveAccount(account *Account) error {
+	if s.ActiveUserID == "" {
+		return errors.New("not logged in")
+	}
+
+	if account.UserID != s.ActiveUserID {
+		return errors.New("account user ID does not match active user ID")
+	}
+
+	s.Accounts[s.ActiveUserID] = *account
+	return nil
 }
 
 func (s *AccountStore) Save() error {

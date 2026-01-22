@@ -260,30 +260,20 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		return err
 	}
 
-	if _, exists := accountStore.Accounts[user.UserID]; exists {
-		logger.Warning("Already logged in as this user; no action needed")
-		return nil
+	var newAccount config.Account
+
+	// Re-use the current account entry in case it exists
+	// This preserves OLM credentials across logout/login cycles
+	if account, exists := accountStore.Accounts[user.UserID]; exists {
+		newAccount = account
 	}
 
-	// Ensure OLM credentials exist and are valid
 	userID := user.UserID
 
-	orgID, err := utils.SelectOrgForm(apiClient, userID)
-	if err != nil {
-		logger.Error("Failed to select organization: %v", err)
-		return err
-	}
-
-	newAccount := config.Account{
-		UserID:       userID,
-		Host:         hostname,
-		Email:        user.Email,
-		SessionToken: sessionToken,
-		OrgID:        orgID,
-		// Credentials will get generated on the
-		// first connection.
-		OlmCredentials: nil,
-	}
+	newAccount.UserID = userID
+	newAccount.Email = user.Email
+	newAccount.Host = hostname
+	newAccount.SessionToken = sessionToken
 
 	// Update account with username and name from user data
 	if user.Username != nil {
@@ -291,6 +281,33 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	}
 	if user.Name != nil {
 		newAccount.Name = user.Name
+	}
+
+	// Ensure new user has an organization selected
+	if newAccount.OrgID == "" {
+		orgID, err := utils.SelectOrgForm(apiClient, userID)
+		if err != nil {
+			logger.Error("Failed to select organization: %v", err)
+			return err
+		}
+
+		newAccount.OrgID = orgID
+	}
+
+	// Ensure OLM credentials exist
+	if newAccount.OlmCredentials == nil {
+		newOlmCreds, err := apiClient.CreateOlm(userID, getDeviceName())
+		if err != nil {
+			logger.Error("Failed to obtain olm credentials: %v", err)
+			return err
+		}
+
+		newAccount.OlmCredentials = &config.OlmCredentials{
+			ID:     newOlmCreds.OlmID,
+			Secret: newOlmCreds.Secret,
+		}
+	} else {
+		logger.Info("Olm credentials already exist for this account, skipping generation")
 	}
 
 	accountStore.Accounts[user.UserID] = newAccount

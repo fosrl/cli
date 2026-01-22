@@ -102,38 +102,26 @@ func logoutMain(cmd *cobra.Command) error {
 		logger.Debug("Failed to logout from server: %v", err)
 	}
 
-	deletedAccount := accountStore.Accounts[accountStore.ActiveUserID]
-	delete(accountStore.Accounts, accountStore.ActiveUserID)
-
-	// If there are still other accounts, then we need to set the active key again.
-	// Automatically set next active user ID to the first account found.
-	if nextUserID, ok := anyKey(accountStore.Accounts); ok {
-		accountStore.ActiveUserID = nextUserID
-	} else {
-		accountStore.ActiveUserID = ""
+	account, err := accountStore.ActiveAccount()
+	if err != nil {
+		logger.Error("Failed to get active account: %v", err)
+		return err
 	}
 
-	if err := accountStore.Save(); err != nil {
+	// Deactivate clears session token and org ID but keeps OLM credentials
+	if err := accountStore.Deactivate(accountStore.ActiveUserID); err != nil {
 		logger.Error("Failed to save account store: %v", err)
 		return err
 	}
 
 	// Print logout message with account name
-	displayName := deletedAccount.Email
-	if deletedAccount.Name != nil && *deletedAccount.Name != "" {
-		displayName = *deletedAccount.Name
-	} else if deletedAccount.Username != nil && *deletedAccount.Username != "" {
-		displayName = *deletedAccount.Username
+	displayName := account.Email
+	if account.Name != nil && *account.Name != "" {
+		displayName = *account.Name
+	} else if account.Username != nil && *account.Username != "" {
+		displayName = *account.Username
 	}
 	logger.Success("Logged out of Pangolin account %s", displayName)
 
 	return nil
-}
-
-func anyKey[K comparable, V any](m map[K]V) (K, bool) {
-	var zero K
-	for k := range m {
-		return k, true
-	}
-	return zero, false
 }

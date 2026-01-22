@@ -14,7 +14,7 @@ func completeAccountFlag(cmd *cobra.Command, args []string, toComplete string) (
 
 	candidateSet := make(map[string]struct{})
 
-	for _, v := range accountStore.Accounts {
+	for _, v := range accountStore.AvailableAccounts() {
 		if strings.HasPrefix(v.Email, toComplete) {
 			candidateSet[v.Email] = struct{}{}
 		}
@@ -28,7 +28,7 @@ func completeHostFlag(cmd *cobra.Command, args []string, toComplete string) ([]s
 
 	candidateSet := make(map[string]struct{})
 
-	for _, v := range accountStore.Accounts {
+	for _, v := range accountStore.AvailableAccounts() {
 		if strings.HasPrefix(v.Host, toComplete) {
 			candidateSet[v.Host] = struct{}{}
 		}

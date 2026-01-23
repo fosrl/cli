@@ -262,7 +262,8 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 
 	var newAccount config.Account
 
-	// Re-use the current account entry in case
+	// Re-use the current account entry in case it exists
+	// This preserves OLM credentials across logout/login cycles
 	if account, exists := accountStore.Accounts[user.UserID]; exists {
 		newAccount = account
 	}
@@ -273,6 +274,14 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	newAccount.Email = user.Email
 	newAccount.Host = hostname
 	newAccount.SessionToken = sessionToken
+
+	// Update account with username and name from user data
+	if user.Username != nil {
+		newAccount.Username = user.Username
+	}
+	if user.Name != nil {
+		newAccount.Name = user.Name
+	}
 
 	// Ensure new user has an organization selected
 	if newAccount.OrgID == "" {
@@ -287,7 +296,7 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 
 	// Ensure OLM credentials exist
 	if newAccount.OlmCredentials == nil {
-		newOlmCreds, err := apiClient.CreateOlm(userID, utils.GetDeviceName())
+		newOlmCreds, err := apiClient.CreateOlm(userID, getDeviceName())
 		if err != nil {
 			logger.Error("Failed to obtain olm credentials: %v", err)
 			return err
@@ -298,7 +307,7 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 			Secret: newOlmCreds.Secret,
 		}
 	} else {
-		// logger.Info("Olm credentials already exist for this account, skipping generation")
+		logger.Info("Olm credentials already exist for this account, skipping generation")
 	}
 
 	accountStore.Accounts[user.UserID] = newAccount
@@ -311,13 +320,35 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		return err
 	}
 
-	// Print logged in message after all setup is complete
-	displayName := user.Email
-	if displayName == "" && user.Username != nil && *user.Username != "" {
-		displayName = *user.Username
+	// Fetch server info after successful authentication
+	apiServerInfo, err := apiClient.GetServerInfo()
+	if err != nil {
+		// Log warning but don't fail login if server info fetch fails
+		logger.Debug("Failed to fetch server info: %v", err)
+	} else if apiServerInfo != nil {
+		// Convert api.ServerInfo to config.ServerInfo
+		serverInfo := &config.ServerInfo{
+			Version:                  apiServerInfo.Version,
+			SupporterStatusValid:     apiServerInfo.SupporterStatusValid,
+			Build:                    apiServerInfo.Build,
+			EnterpriseLicenseValid:   apiServerInfo.EnterpriseLicenseValid,
+			EnterpriseLicenseType:    apiServerInfo.EnterpriseLicenseType,
+		}
+		// Update account with server info
+		account := accountStore.Accounts[user.UserID]
+		account.ServerInfo = serverInfo
+		accountStore.Accounts[user.UserID] = account
+		if err := accountStore.Save(); err != nil {
+			logger.Debug("Failed to save server info: %v", err)
+		}
 	}
-	if displayName != "" {
-		logger.Success("Logged in as %s", displayName)
+
+	// Print logged in message after all setup is complete
+	if user != nil {
+		displayName := utils.UserDisplayName(user)
+		if displayName != "" {
+			logger.Success("Logged in as %s", displayName)
+		}
 	}
 
 	return nil

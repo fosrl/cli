@@ -16,6 +16,7 @@ import (
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/fingerprint"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
@@ -27,7 +28,7 @@ import (
 )
 
 const (
-	defaultDNSServer  = "8.8.8.8"
+	defaultDNSServer  = "1.1.1.1"
 	defaultEnableAPI  = true
 	defaultSocketPath = "/var/run/olm.sock"
 	defaultAgent      = "Pangolin CLI"
@@ -132,6 +133,50 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	credentialsFromKeyring := olmID == "" && olmSecret == ""
 
+	// Determine endpoint early
+	var endpoint string
+	if opts.Endpoint != "" {
+		endpoint = opts.Endpoint
+	} else if credentialsFromKeyring {
+		activeAccount, err := accountStore.ActiveAccount()
+		if err != nil {
+			logger.Error("Error: %v. Run `pangolin login` to login", err)
+			return err
+		}
+		endpoint = activeAccount.Host
+	}
+
+	if endpoint == "" {
+		err := errors.New("endpoint is required")
+		logger.Error("Error: %v", err)
+		logger.Info("Please login with a host or provide the --endpoint flag.")
+		return err
+	}
+
+	// Check server health before doing anything else
+	// If credentials come from keyring, use the configured API client
+	// Otherwise, create a temporary client for the endpoint
+	var healthClient *api.Client
+	if credentialsFromKeyring {
+		healthClient = apiClient
+	} else {
+		// Create a temporary client for health check
+		var err error
+		healthClient, err = api.InitClient(endpoint, "")
+		if err != nil {
+			logger.Error("Error: failed to create API client for health check: %v", err)
+			return err
+		}
+	}
+
+	healthOk, healthErr := healthClient.CheckHealth()
+	if healthErr != nil || !healthOk {
+		err := fmt.Errorf("the server appears to be down: %w", healthErr)
+		logger.Error("Error: %v", err)
+		logger.Info("Please check that the server is running and accessible.")
+		return err
+	}
+
 	if credentialsFromKeyring {
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
@@ -142,11 +187,21 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		// Ensure OLM credentials exist and are valid
 		newCredsGenerated, err := utils.EnsureOlmCredentials(apiClient, activeAccount)
 		if err != nil {
-			logger.Error("Failed to ensure OLM credentials: %v", err)
+			if errors.Is(err, utils.ErrSudoRequired) {
+				logger.Error("%v", err)
+			} else {
+				logger.Error("Failed to ensure OLM credentials: %v", err)
+			}
 			return err
 		}
 
 		if newCredsGenerated {
+			fmt.Println("New creds generated saving them")
+			// Update the account in the store since ActiveAccount() returns a copy
+			if err := accountStore.UpdateActiveAccount(activeAccount); err != nil {
+				logger.Error("Failed to update account in store: %v", err)
+				return err
+			}
 			err := accountStore.Save()
 			if err != nil {
 				logger.Error("Failed to save accounts to store: %v", err)
@@ -172,11 +227,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 
-		if err := utils.EnsureOrgAccess(apiClient, activeAccount); err != nil {
-			logger.Error("%v", err)
-			return err
-		}
-
 		orgID = activeAccount.OrgID
 	}
 
@@ -186,26 +236,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		logFile = cfg.LogFile
 	}
 
-	var endpoint string
-
-	if opts.Endpoint == "" && credentialsFromKeyring {
-		activeAccount, _ := accountStore.ActiveAccount()
-		endpoint = activeAccount.Host
-	} else {
-		endpoint = opts.Endpoint
-	}
-
-	if endpoint == "" {
-		err := errors.New("endpoint is required")
-		logger.Error("Error: %v", err)
-		logger.Info("Please login with a host or provide the --endpoint flag.")
-		return err
-	}
-
 	// Handle detached mode - subprocess self without --attach flag
-	// Skip detached mode if already running as root (we're a subprocess spawned by sudo)
-	isRunningAsRoot := runtime.GOOS != "windows" && os.Geteuid() == 0
-	if !opts.Attached && !isRunningAsRoot {
+	// Skip detached mode if we're a subprocess spawned by the parent process
+	// We use an environment variable to detect this, rather than checking if running as root,
+	// because the user might run "sudo pangolin up" directly and still expect the TUI
+	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
+	if !opts.Attached && !isSubprocess {
 		executable, err := os.Executable()
 		if err != nil {
 			logger.Error("Error: failed to get executable path: %v", err)
@@ -287,18 +323,16 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		// Create command - subprocess should run with elevated permissions
 		var procCmd *exec.Cmd
 		if runtime.GOOS != "windows" {
-			// Use sudo with a shell wrapper to background the subprocess
-			// This allows sudo to exit immediately after starting the subprocess
-			// The subprocess needs root access for network interface creation
 			// Build shell command with proper quoting using printf %q
 			var shellArgs []string
 			shellArgs = append(shellArgs, executable)
 			shellArgs = append(shellArgs, cmdArgs...)
-			// Export environment variable to indicate credentials came from config
-			// This allows subprocess to distinguish between user-provided credentials and stored credentials
-			shellCmd := ""
+			// Export environment variables:
+			// - PANGOLIN_SUBPROCESS=1 to indicate this is a spawned subprocess (not direct user invocation)
+			// - PANGOLIN_CREDENTIALS_FROM_KEYRING=1 to indicate credentials came from config
+			shellCmd := "export PANGOLIN_SUBPROCESS=1 && "
 			if credentialsFromKeyring {
-				shellCmd = "export PANGOLIN_CREDENTIALS_FROM_KEYRING=1 && "
+				shellCmd += "export PANGOLIN_CREDENTIALS_FROM_KEYRING=1 && "
 			}
 			// Build command: nohup executable args >/dev/null 2>&1 &
 			shellCmd += "nohup"
@@ -306,11 +340,21 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				shellCmd += " " + fmt.Sprintf("%q", arg)
 			}
 			shellCmd += " >/dev/null 2>&1 &"
-			procCmd = exec.Command("sudo", "sh", "-c", shellCmd)
-			// Connect stdin/stderr so sudo can prompt for password interactively
-			procCmd.Stdin = os.Stdin
+
+			// If already running as root, skip sudo wrapper to avoid potential issues
+			// with sudo behaving differently when invoked by root
+			if os.Geteuid() == 0 {
+				procCmd = exec.Command("sh", "-c", shellCmd)
+			} else {
+				// Use sudo with a shell wrapper to background the subprocess
+				// This allows sudo to exit immediately after starting the subprocess
+				// The subprocess needs root access for network interface creation
+				procCmd = exec.Command("sudo", "sh", "-c", shellCmd)
+				// Connect stdin/stderr so sudo can prompt for password interactively
+				procCmd.Stdin = os.Stdin
+				procCmd.Stderr = os.Stderr
+			}
 			procCmd.Stdout = nil
-			procCmd.Stderr = os.Stderr
 		} else {
 			err := errors.New("detached mode is not supported on Windows")
 			logger.Error("Error: %v", err)
@@ -336,14 +380,15 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 
 		// Show live log preview and status
-		completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
+		completed, statusError, err := tui.NewLogPreview(tui.LogPreviewConfig{
 			LogFile: logFile,
 			Header:  "Starting up client...",
 			ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {
-				// Exit when interface is registered
-				if status != nil && status.Registered {
+				// Exit when both connected and registered
+				if status != nil && status.Connected && status.Registered {
 					return true, true
 				}
+				// Exit on error before registration (handled in statusUpdateMsg)
 				return false, false
 			},
 			OnEarlyExit: func(client *olm.Client) {
@@ -352,9 +397,23 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 					_, _ = client.Exit()
 				}
 			},
+			OnError: func(client *olm.Client, statusError *olm.StatusError) {
+				// Stop the client on error (error will be printed after TUI exits)
+				if client.IsRunning() {
+					_, _ = client.Exit()
+				}
+			},
 			StatusFormatter: func(isRunning bool, status *olm.StatusResponse) string {
 				if !isRunning || status == nil {
 					return "Starting"
+				}
+				// Show error if present
+				if status.Error != nil {
+					return fmt.Sprintf("Error: %s", status.Error.Message)
+				}
+				// Status is only "Connected" when both connected and registered
+				if status.Connected && status.Registered {
+					return "Connected"
 				} else if status.Registered {
 					return "Registered"
 				}
@@ -364,6 +423,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if err != nil {
 			logger.Error("Error: %v", err)
 			return err
+		}
+
+		// Print error after TUI exits if there was one
+		if statusError != nil {
+			logger.Error("Connection error: %s", statusError.Message)
+			return fmt.Errorf("connection failed: %s", statusError.Message)
 		}
 
 		// Check if the process completed successfully or was killed
@@ -433,11 +498,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	// Create context for signal handling and cleanup
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer olmpkg.Close()
 	defer stop()
 
 	// Create OLM GlobalConfig with hardcoded values from Swift
-	olmInitConfig := olmpkg.GlobalConfig{
+	olmInitConfig := olmpkg.OlmConfig{
 		LogLevel:   opts.LogLevel,
 		EnableAPI:  enableAPI,
 		SocketPath: socketPath,
@@ -460,7 +524,19 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
-	olmConfig := olmpkg.TunnelConfig{
+	initialFp := fingerprint.GatherFingerprintInfo()
+	initialFingerprint := initialFp.ToMap()
+	initialPostures := fingerprint.GatherPostureChecks().ToMap()
+
+	// Write the fingerprint to disk immediately so it's available for other processes
+	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+			_ = os.MkdirAll(fingerprintDir, 0o755)
+		}
+		_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
+	}
+
+	tunnelConfig := olmpkg.TunnelConfig{
 		Endpoint:             endpoint,
 		ID:                   olmID,
 		Secret:               olmSecret,
@@ -475,11 +551,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		OverrideDNS:          opts.OverrideDNS,
 		TunnelDNS:            opts.TunnelDNS,
 		UpstreamDNS:          upstreamDNS,
-	}
-
-	// Add UserToken if we have it (from flag or config)
-	if userToken != "" {
-		olmConfig.UserToken = userToken
+		UserToken:            userToken,
+		InitialFingerprint:   initialFingerprint,
+		InitialPostures:      initialPostures,
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)
@@ -493,11 +567,20 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 	}
 
-	olmpkg.Init(ctx, olmInitConfig)
-	if enableAPI {
-		_ = olmpkg.StartApi()
+	olm, err := olmpkg.Init(ctx, olmInitConfig)
+	if err != nil {
+		logger.Error("Error: failed to init olm: %v", err)
+		return err
 	}
-	olmpkg.StartTunnel(olmConfig)
+	defer olm.Close()
+
+	cancelFingerprinting := startFingerprinting(olm)
+	defer cancelFingerprinting()
+
+	if enableAPI {
+		_ = olm.StartApi()
+	}
+	olm.StartTunnel(tunnelConfig)
 
 	return nil
 }
@@ -581,4 +664,40 @@ func cleanupOldLogFiles(logDir string, daysToKeep int) {
 			}
 		}
 	}
+}
+
+func startFingerprinting(o *olmpkg.Olm) context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		fingerprintFilePath, _ := config.GetFingerprintFilePath()
+		fingerprintDir, _ := config.GetFingerprintDir()
+
+		// Ensure the fingerprint directory exists
+		if fingerprintDir != "" {
+			_ = os.MkdirAll(fingerprintDir, 0o755)
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				fp := fingerprint.GatherFingerprintInfo()
+				postures := fingerprint.GatherPostureChecks()
+
+				if fingerprintFilePath != "" {
+					_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
+				}
+
+				o.SetFingerprint(fp.ToMap())
+				o.SetPostures(postures.ToMap())
+			}
+		}
+	}()
+
+	return cancel
 }

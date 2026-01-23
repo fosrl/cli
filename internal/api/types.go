@@ -152,10 +152,19 @@ type CreateOlmRequest struct {
 
 // CreateOlmResponse represents the response from creating an OLM
 type CreateOlmResponse struct {
-	Id     string `json:"id"`
+	ID     string `json:"id"`
 	OlmID  string `json:"olmId"`
 	Secret string `json:"secret"`
 	Name   string `json:"name"`
+}
+
+type RecoverOlmRequest struct {
+	PlatformFingerprint string `json:"platformFingerprint"`
+}
+
+type RecoverOlmResponse struct {
+	OlmID  string `json:"olmId"`
+	Secret string `json:"secret"`
 }
 
 // EmptyResponse represents an empty API response
@@ -163,7 +172,7 @@ type EmptyResponse struct{}
 
 // GetOrgResponse represents the response for getting an organization
 type GetOrgResponse struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -183,16 +192,16 @@ type OrgPolicies struct {
 
 // MaxSessionLength represents max session length policy
 type MaxSessionLength struct {
-	Compliant             bool `json:"compliant"`
-	MaxSessionLengthHours int  `json:"maxSessionLengthHours"`
-	SessionAgeHours       float64  `json:"sessionAgeHours"`
+	Compliant             bool    `json:"compliant"`
+	MaxSessionLengthHours int     `json:"maxSessionLengthHours"`
+	SessionAgeHours       float64 `json:"sessionAgeHours"`
 }
 
 // PasswordAge represents password age policy
 type PasswordAge struct {
-	Compliant          bool `json:"compliant"`
-	MaxPasswordAgeDays int  `json:"maxPasswordAgeDays"`
-	PasswordAgeDays    float64  `json:"passwordAgeDays"`
+	Compliant          bool    `json:"compliant"`
+	MaxPasswordAgeDays int     `json:"maxPasswordAgeDays"`
+	PasswordAgeDays    float64 `json:"passwordAgeDays"`
 }
 
 // GetClientResponse represents the response for getting a client
@@ -225,10 +234,11 @@ type ResponseOrg struct {
 
 // Olm represents an OLM (Online Management) record
 type Olm struct {
-	OlmID  string  `json:"olmId"`
-	UserID string  `json:"userId"`
-	Name   *string `json:"name,omitempty"`
-	Secret *string `json:"secret,omitempty"`
+	OlmID   string  `json:"olmId"`
+	UserID  string  `json:"userId"`
+	Name    *string `json:"name,omitempty"`
+	Secret  *string `json:"secret,omitempty"`
+	Blocked *bool   `json:"blocked,omitempty"` // Indicates if the OLM is blocked
 }
 
 // MyDeviceResponse represents the response for getting my device
@@ -236,4 +246,30 @@ type MyDeviceResponse struct {
 	User MyDeviceUser  `json:"user"`
 	Orgs []ResponseOrg `json:"orgs"`
 	Olm  *Olm          `json:"olm,omitempty"`
+}
+
+// ServerInfo represents server information including version, build type, and license status
+type ServerInfo struct {
+	Version                string  `json:"version"`
+	SupporterStatusValid   bool    `json:"supporterStatusValid"`
+	Build                  string  `json:"build"` // "oss" | "enterprise" | "saas"
+	EnterpriseLicenseValid bool    `json:"enterpriseLicenseValid"`
+	EnterpriseLicenseType  *string `json:"enterpriseLicenseType,omitempty"`
+}
+
+// ApplyBlueprintRequest represents a new blueprint application request.
+type ApplyBlueprintRequest struct {
+	Name      string `json:"name"`
+	Blueprint string `json:"blueprint"`
+	Source    string `json:"source,omitempty"`
+}
+
+type ApplyBlueprintResponse struct {
+	Name        string  `json:"name"`
+	OrgID       string  `json:"orgId"`
+	Source      string  `json:"source"`
+	Message     *string `json:"message"`
+	BlueprintID int     `json:"blueprintId"`
+	Succeeded   bool    `json:"succeeded"`
+	Contents    string  `json:"contents"`
 }

@@ -88,7 +88,15 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 		}
 	}
 
-	activeAccount.OrgID = selectedOrgID
+	// Update the account in the store's map to persist the change
+	account, exists := accountStore.Accounts[userID]
+	if !exists {
+		logger.Error("Failed to find account in store")
+		return fmt.Errorf("account not found in store")
+	}
+	account.OrgID = selectedOrgID
+	accountStore.Accounts[userID] = account
+	
 	if err := accountStore.Save(); err != nil {
 		logger.Error("Failed to save account to store: %v", err)
 		return err
@@ -120,7 +128,7 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 // monitorOrgSwitch monitors the organization switch process with log preview
 func monitorOrgSwitch(logFile string, orgID string) {
 	// Show live log preview and status during switch
-	completed, err := tui.NewLogPreview(tui.LogPreviewConfig{
+	completed, _, err := tui.NewLogPreview(tui.LogPreviewConfig{
 		LogFile: logFile,
 		Header:  "Switching organization...",
 		ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {

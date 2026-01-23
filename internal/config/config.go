@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/fosrl/cli/internal/logger"
@@ -133,4 +134,27 @@ func defaultLogPath() string {
 
 	logsDir := filepath.Join(pangolinDir, "logs")
 	return filepath.Join(logsDir, "client.log")
+}
+
+// GetFingerprintDir returns the directory for storing the platform fingerprint.
+// On Linux, this uses /etc/pangolin since the fingerprint is machine-specific
+// and needs to be written by a privileged process but readable by all users.
+// On other platforms, it falls back to the user config directory.
+func GetFingerprintDir() (string, error) {
+	// On Linux, prefer /etc/pangolin for system-wide fingerprint storage
+	if runtime.GOOS == "linux" {
+		return "/etc/pangolin", nil
+	}
+
+	// On other platforms, use the user config directory
+	return GetPangolinConfigDir()
+}
+
+// GetFingerprintFilePath returns the full path to the platform fingerprint file.
+func GetFingerprintFilePath() (string, error) {
+	dir, err := GetFingerprintDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "platform_fingerprint"), nil
 }

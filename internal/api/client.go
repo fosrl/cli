@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/fosrl/cli/internal/version"
 )
 
 // ClientConfig holds configuration for creating a new client
@@ -104,11 +106,8 @@ func (c *Client) request(method, endpoint string, payload interface{}, result in
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	// Set User-Agent with agent name
-	userAgent := c.AgentName
-	if userAgent == "" {
-		userAgent = "pangolin-cli"
-	}
+	// Set User-Agent with version
+	userAgent := getUserAgent(c.AgentName)
 	req.Header.Set("User-Agent", userAgent)
 
 	// Set CSRF header if provided
@@ -261,6 +260,16 @@ func (c *Client) GetUser() (*User, error) {
 	return &user, nil
 }
 
+// GetServerInfo retrieves server information including version, build type, and license status
+func (c *Client) GetServerInfo() (*ServerInfo, error) {
+	var serverInfo ServerInfo
+	err := c.Get("/server-info", &serverInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &serverInfo, nil
+}
+
 // ListUserOrgs lists organizations for a user
 func (c *Client) ListUserOrgs(userID string) (*ListUserOrgsResponse, error) {
 	path := fmt.Sprintf("/user/%s/orgs", userID)
@@ -287,14 +296,46 @@ func (c *Client) CreateOlm(userID, name string) (*CreateOlmResponse, error) {
 }
 
 // GetUserOlm gets an OLM for a user by userId and olmId
-func (c *Client) GetUserOlm(userID, olmID string) (*Olm, error) {
+// If orgID is provided, it will be passed as a query parameter
+func (c *Client) GetUserOlm(userID, olmID string, orgID ...string) (*Olm, error) {
 	path := fmt.Sprintf("/user/%s/olm/%s", userID, olmID)
 	var olm Olm
-	err := c.Get(path, &olm)
+
+	var opts []RequestOptions
+	if len(orgID) > 0 && orgID[0] != "" {
+		opts = []RequestOptions{
+			{
+				Query: map[string]string{
+					"orgId": orgID[0],
+				},
+			},
+		}
+	}
+
+	err := c.Get(path, &olm, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &olm, nil
+}
+
+// RecoverOlm attempts to recover an existing olm's secret
+// based on the device's platform fingerprint. This is useful
+// for device reinstalls so that a new device isn't always
+// created on the server side.
+func (c *Client) RecoverOlmFromFingerprint(userID string, platformFingerprint string) (*RecoverOlmResponse, error) {
+	requestBody := RecoverOlmRequest{
+		PlatformFingerprint: platformFingerprint,
+	}
+
+	path := fmt.Sprintf("/user/%s/olm/recover", userID)
+	var response RecoverOlmResponse
+	err := c.Post(path, requestBody, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }
 
 // GetOrg gets an organization by ID
@@ -358,10 +399,7 @@ func (c *Client) TestConnection() (bool, error) {
 		return false, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	userAgent := c.AgentName
-	if userAgent == "" {
-		userAgent = "pangolin-cli"
-	}
+	userAgent := getUserAgent(c.AgentName)
 	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := testClient.Do(req)
@@ -372,6 +410,52 @@ func (c *Client) TestConnection() (bool, error) {
 
 	// Consider 200-299 and 404 as successful connection
 	return (resp.StatusCode >= 200 && resp.StatusCode < 300) || resp.StatusCode == 404, nil
+}
+
+// CheckHealth checks if the server is reachable and responding
+// Returns true if status is 200-299, 401, or 403 (server is up)
+// Returns false with error if server is unreachable or returns other status codes
+func (c *Client) CheckHealth() (bool, error) {
+	// Create a temporary client with shorter timeout for health check
+	testClient := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	// Use GET request to root endpoint
+	fullURL := c.BaseURL
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	userAgent := getUserAgent(c.AgentName)
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "application/json")
+
+	// Set authentication if available
+	if c.Token != "" {
+		cookie := &http.Cookie{
+			Name:  c.SessionCookieName,
+			Value: c.Token,
+		}
+		req.AddCookie(cookie)
+	} else if c.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	}
+
+	resp, err := testClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("server unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Return true for 200-299, 401, or 403 (server is up)
+	// Return false for other status codes (server returned an error)
+	if (resp.StatusCode >= 200 && resp.StatusCode < 300) || resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("server returned status %d", resp.StatusCode)
 }
 
 // Helper functions for API calls
@@ -405,12 +489,9 @@ func buildAPIBaseURL(baseURL string) string {
 	return baseURL
 }
 
-// getUserAgent returns the user agent string, defaulting to "pangolin-cli" if empty
+// getUserAgent returns the user agent string formatted as "pangolin-cli-version"
 func getUserAgent(agentName string) string {
-	if agentName == "" {
-		return "pangolin-cli"
-	}
-	return agentName
+	return fmt.Sprintf("pangolin-cli-%s", version.Version)
 }
 
 // setJSONRequestHeaders sets common headers for JSON API requests
@@ -720,4 +801,22 @@ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse,
 	}
 
 	return &response, message, nil
+}
+
+func (c *Client) ApplyBlueprint(orgID string, name string, blueprint string) (*ApplyBlueprintResponse, error) {
+	// Create request payload with raw YAML content
+	requestBody := ApplyBlueprintRequest{
+		Name:      name,
+		Blueprint: blueprint,
+		Source:    "CLI",
+	}
+
+	path := fmt.Sprintf("/org/%s/blueprint", orgID)
+	var response ApplyBlueprintResponse
+	err := c.Put(path, requestBody, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }

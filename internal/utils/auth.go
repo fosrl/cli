@@ -1,21 +1,18 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
+	"github.com/fosrl/cli/internal/fingerprint"
 )
 
-// GetDeviceName returns a human-readable device name
-func GetDeviceName() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "Unknown Device"
-	}
-	return hostname
-}
+// ErrSudoRequired is returned when the user needs to run the command as sudo for first-time setup
+var ErrSudoRequired = errors.New("Please rerun this command as sudo. This is a one time thing for Pangolin to setup your machine.")
 
 // EnsureOlmCredentials ensures that OLM credentials exist and are valid.
 // It checks if OLM credentials exist locally, verifies them on the server,
@@ -44,7 +41,55 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 		account.OlmCredentials = nil
 	}
 
-	newOlm, err := client.CreateOlm(userID, GetDeviceName())
+	// First, attempt to recover any credentials on any other machines
+	// using the platform fingerprint.
+	//
+	// Use the cached one if it is available, since this is cached
+	// by a privileged process that has access to fingerprinting
+	// attributes like DMI information.
+	cachedPlatfromFingerprintFilename, _ := config.GetFingerprintFilePath()
+
+	// Check if fingerprint file exists
+	_, statErr := os.Stat(cachedPlatfromFingerprintFilename)
+	fingerprintFileExists := statErr == nil
+
+	// If the fingerprint file doesn't exist and we're not running as root on Linux,
+	// we need to prompt the user to run as sudo for the first-time setup
+	if !fingerprintFileExists && runtime.GOOS == "linux" && os.Geteuid() != 0 {
+		return false, ErrSudoRequired
+	}
+
+	if cachedFingerprint, err := os.ReadFile(cachedPlatfromFingerprintFilename); err == nil {
+		if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, string(cachedFingerprint)); err == nil {
+			account.OlmCredentials = &config.OlmCredentials{
+				ID:     recoveredOlm.OlmID,
+				Secret: recoveredOlm.Secret,
+			}
+
+			return true, nil
+		}
+	}
+
+	fp := fingerprint.GatherFingerprintInfo()
+
+	// Write the fingerprint to disk so it's available for future processes
+	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+			_ = os.MkdirAll(fingerprintDir, 0o755)
+		}
+		_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
+	}
+
+	if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint); err == nil {
+		account.OlmCredentials = &config.OlmCredentials{
+			ID:     recoveredOlm.OlmID,
+			Secret: recoveredOlm.Secret,
+		}
+
+		return true, nil
+	}
+
+	newOlm, err := client.CreateOlm(userID, fingerprint.GetDeviceName())
 	if err != nil {
 		return false, fmt.Errorf("failed to create OLM: %w", err)
 	}
@@ -79,4 +124,85 @@ func EnsureOrgAccess(client *api.Client, account *config.Account) error {
 	}
 
 	return nil
+}
+
+// CheckBlockedBeforeConnect checks if the OLM is blocked before attempting to connect.
+// This should only be called when the user attempts to connect, not during authentication.
+// Returns an error if the account is blocked. If the check fails (network error, etc.),
+// returns an error that the caller should log but allow the connection attempt to proceed
+// (the server will reject if truly blocked).
+func CheckBlockedBeforeConnect(client *api.Client, account *config.Account) error {
+	if account.OlmCredentials == nil {
+		// No OLM credentials, can't check blocked status
+		return nil
+	}
+
+	userID := account.UserID
+	olmID := account.OlmCredentials.ID
+	var orgID string
+	if account.OrgID != "" {
+		orgID = account.OrgID
+	}
+
+	// Get OLM with optional orgId parameter
+	var olm *api.Olm
+	var err error
+	if orgID != "" {
+		olm, err = client.GetUserOlm(userID, olmID, orgID)
+	} else {
+		olm, err = client.GetUserOlm(userID, olmID)
+	}
+
+	if err != nil {
+		// If check fails (network error, etc.), log but allow connection attempt
+		// The server will reject if truly blocked
+		return fmt.Errorf("failed to check blocked status: %w", err)
+	}
+
+	// Check if blocked
+	if olm != nil && olm.Blocked != nil && *olm.Blocked {
+		return fmt.Errorf("Your device is blocked in this organization. Contact your admin for more information.")
+	}
+
+	return nil
+}
+
+// UserDisplayName returns a display name for a user with precedence:
+// email > name > username > "User"
+func UserDisplayName(user *api.User) string {
+	if user.Email != "" {
+		return user.Email
+	}
+	if user.Name != nil && *user.Name != "" {
+		return *user.Name
+	}
+	if user.Username != nil && *user.Username != "" {
+		return *user.Username
+	}
+	return "User"
+}
+
+// AccountDisplayName returns a display name for an account with precedence:
+// email > name > username > "Account"
+func AccountDisplayName(account *config.Account) string {
+	if account.Email != "" {
+		return account.Email
+	}
+	if account.Name != nil && *account.Name != "" {
+		return *account.Name
+	}
+	if account.Username != nil && *account.Username != "" {
+		return *account.Username
+	}
+	return "Account"
+}
+
+// AccountDisplayNameWithHost returns a display name for an account with hostname suffix
+// when multiple accounts might share the same email. Format: "displayName @ hostname"
+func AccountDisplayNameWithHost(account *config.Account) string {
+	displayName := AccountDisplayName(account)
+	if account.Host != "" {
+		return fmt.Sprintf("%s @ %s", displayName, account.Host)
+	}
+	return displayName
 }

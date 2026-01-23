@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
+	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -83,7 +86,27 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 		selectedAccount = selected
 	}
 
+	// Optimistic account switching: switch locally first
+	apiClient := api.FromContext(cmd.Context())
+	
+	// 1. Switch account locally first
 	accountStore.ActiveUserID = selectedAccount.UserID
+	
+	// Update API client base URL and token from account
+	apiBaseURL := selectedAccount.Host
+	if apiBaseURL != "" {
+		// Ensure it has /api/v1 suffix
+		if !strings.HasSuffix(apiBaseURL, "/api/v1") {
+			if !strings.HasSuffix(apiBaseURL, "/") {
+				apiBaseURL = apiBaseURL + "/api/v1"
+			} else {
+				apiBaseURL = apiBaseURL + "api/v1"
+			}
+		}
+		apiClient.SetBaseURL(apiBaseURL)
+	}
+	apiClient.SetToken(selectedAccount.SessionToken)
+	
 	if err := accountStore.Save(); err != nil {
 		logger.Error("Error: failed to save account to store: %v", err)
 		return err
@@ -99,7 +122,75 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 		}
 	}
 
-	selectedAccountStr := fmt.Sprintf("%s @ %s", selectedAccount.Email, selectedAccount.Host)
+	// 2. Then validate with server
+	// Check health before fetching user data
+	healthOk, healthErr := apiClient.CheckHealth()
+	if healthErr != nil || !healthOk {
+		logger.Warning("The server appears to be down. Account switched, but unable to verify with server.")
+		// Still show success message using stored account data
+		selectedAccountStr := utils.AccountDisplayNameWithHost(selectedAccount)
+		logger.Success("Successfully selected account: %s", selectedAccountStr)
+		return nil
+	}
+
+	// Health check passed, fetch user data and update account info
+	user, err := apiClient.GetUser()
+	if err != nil {
+		logger.Warning("Failed to fetch user data: %v. Account switched, but user info not updated.", err)
+		// Still show success message using stored account data
+		selectedAccountStr := utils.AccountDisplayNameWithHost(selectedAccount)
+		logger.Success("Successfully selected account: %s", selectedAccountStr)
+		return nil
+	}
+
+	// Update account with username and name from user data
+	if user.Username != nil || user.Name != nil {
+		username := ""
+		name := ""
+		if user.Username != nil {
+			username = *user.Username
+		}
+		if user.Name != nil {
+			name = *user.Name
+		}
+		if err := accountStore.UpdateAccountUserInfo(selectedAccount.UserID, username, name); err != nil {
+			logger.Debug("Failed to update account user info: %v", err)
+		}
+		// Reload selected account to get updated info
+		updatedAccount, exists := accountStore.Accounts[selectedAccount.UserID]
+		if exists {
+			selectedAccount = &updatedAccount
+		}
+	}
+
+	// Fetch server info
+	apiServerInfo, err := apiClient.GetServerInfo()
+	if err != nil {
+		logger.Debug("Failed to fetch server info: %v", err)
+	} else if apiServerInfo != nil {
+		// Convert api.ServerInfo to config.ServerInfo
+		serverInfo := &config.ServerInfo{
+			Version:                  apiServerInfo.Version,
+			SupporterStatusValid:     apiServerInfo.SupporterStatusValid,
+			Build:                    apiServerInfo.Build,
+			EnterpriseLicenseValid:   apiServerInfo.EnterpriseLicenseValid,
+			EnterpriseLicenseType:    apiServerInfo.EnterpriseLicenseType,
+		}
+		// Update account with server info
+		account := accountStore.Accounts[selectedAccount.UserID]
+		account.ServerInfo = serverInfo
+		accountStore.Accounts[selectedAccount.UserID] = account
+		if err := accountStore.Save(); err != nil {
+			logger.Debug("Failed to save server info: %v", err)
+		}
+		// Reload selected account to get updated info
+		updatedAccount, exists := accountStore.Accounts[selectedAccount.UserID]
+		if exists {
+			selectedAccount = &updatedAccount
+		}
+	}
+
+	selectedAccountStr := utils.AccountDisplayNameWithHost(selectedAccount)
 	logger.Success("Successfully selected account: %s", selectedAccountStr)
 
 	return nil
@@ -134,7 +225,7 @@ func selectAccountForm(accounts []config.Account, hostFilter string) (*config.Ac
 
 	var orgOptions []huh.Option[accountOption]
 	for _, account := range filteredAccounts {
-		label := fmt.Sprintf("%s @ %s", account.Email, account.Host)
+		label := utils.AccountDisplayNameWithHost(&account)
 		orgOptions = append(orgOptions, huh.NewOption(label, accountOption{
 			Account: &account,
 			Label:   label,

@@ -23,6 +23,12 @@ type Client struct {
 	httpClient *http.Client
 }
 
+// StatusError represents an error in the status response
+type StatusError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 // OLMStatusResponse represents the status response from OLM API
 type StatusResponse struct {
 	Connected       bool                   `json:"connected"`
@@ -33,6 +39,7 @@ type StatusResponse struct {
 	OrgID           string                 `json:"orgId,omitempty"`
 	PeerStatuses    map[int]*OLMPeerStatus `json:"peers,omitempty"`
 	NetworkSettings map[string]interface{} `json:"networkSettings,omitempty"`
+	Error           *StatusError           `json:"error,omitempty"`
 }
 
 // OLMPeerStatus represents the status of a peer connection

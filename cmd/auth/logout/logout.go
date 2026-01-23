@@ -108,18 +108,20 @@ func logoutMain(cmd *cobra.Command) error {
 		return err
 	}
 
+	// Deactivate clears session token and org ID but keeps OLM credentials
 	if err := accountStore.Deactivate(accountStore.ActiveUserID); err != nil {
 		logger.Error("Failed to save account store: %v", err)
 		return err
 	}
 
-	if err := accountStore.Save(); err != nil {
-		logger.Error("Failed to save account store: %v", err)
-		return err
-	}
-
 	// Print logout message with account name
-	logger.Success("Logged out of Pangolin account %s", account.Email)
+	displayName := account.Email
+	if account.Name != nil && *account.Name != "" {
+		displayName = *account.Name
+	} else if account.Username != nil && *account.Username != "" {
+		displayName = *account.Username
+	}
+	logger.Success("Logged out of Pangolin account %s", displayName)
 
 	return nil
 }

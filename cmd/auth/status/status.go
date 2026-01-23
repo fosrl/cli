@@ -3,10 +3,12 @@ package status
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
+	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -36,14 +38,60 @@ func statusMain(cmd *cobra.Command) error {
 		return err
 	}
 
-	// User info exists in config, try to get user from API
+	// Check health before fetching user data
+	healthOk, healthErr := apiClient.CheckHealth()
+	isServerDown := healthErr != nil || !healthOk
+
+	if isServerDown {
+		logger.Warning("The server appears to be down.")
+		fmt.Println()
+		// Still show account info from stored data
+		logger.Info("Status: logged in (using cached account data)")
+		logger.Info("@ %s", account.Host)
+		fmt.Println()
+
+		// Display account information from stored data
+		displayName := utils.AccountDisplayName(account)
+		if displayName != "" {
+			logger.Info("User: %s", displayName)
+		}
+		if account.UserID != "" {
+			logger.Info("User ID: %s", account.UserID)
+		}
+
+		// Display organization information if available
+		if account.OrgID != "" {
+			logger.Info("Org ID: %s", account.OrgID)
+		}
+
+		return nil
+	}
+
+	// Health check passed, try to get user from API
 	user, err := apiClient.GetUser()
 	if err != nil {
-		// Unable to get user - consider logged out (previously logged in but now not)
-		logger.Info("Status: logged out: %v", err)
-		logger.Info("Your session has expired or is invalid")
-		logger.Info("Run 'pangolin login' to authenticate again")
-		return err
+		// Unable to get user - show error but still display account info
+		logger.Warning("Failed to fetch user data: %v", err)
+		fmt.Println()
+		logger.Info("Status: logged in (using cached account data)")
+		logger.Info("@ %s", account.Host)
+		fmt.Println()
+
+		// Display account information from stored data
+		displayName := utils.AccountDisplayName(account)
+		if displayName != "" {
+			logger.Info("User: %s", displayName)
+		}
+		if account.UserID != "" {
+			logger.Info("User ID: %s", account.UserID)
+		}
+
+		// Display organization information if available
+		if account.OrgID != "" {
+			logger.Info("Org ID: %s", account.OrgID)
+		}
+
+		return nil
 	}
 
 	// Successfully got user - logged in
@@ -53,12 +101,7 @@ func statusMain(cmd *cobra.Command) error {
 	fmt.Println()
 
 	// Display user information
-	displayName := user.Email
-	if user.Username != nil && *user.Username != "" {
-		displayName = *user.Username
-	} else if user.Name != nil && *user.Name != "" {
-		displayName = *user.Name
-	}
+	displayName := utils.UserDisplayName(user)
 	if displayName != "" {
 		logger.Info("User: %s", displayName)
 	}
@@ -67,7 +110,48 @@ func statusMain(cmd *cobra.Command) error {
 	}
 
 	// Display organization information
-	logger.Info("Org ID: %s", account.OrgID)
+	if account.OrgID != "" {
+		logger.Info("Org ID: %s", account.OrgID)
+	}
+
+	// Show watermark messages if server info is available
+	if account.ServerInfo != nil {
+		watermark := getWatermarkMessage(account.ServerInfo)
+		if watermark != "" {
+			fmt.Println()
+			logger.Info(watermark)
+		}
+	}
 
 	return nil
+}
+
+// getWatermarkMessage returns the appropriate watermark message based on server info
+func getWatermarkMessage(serverInfo *config.ServerInfo) string {
+	if serverInfo == nil {
+		return ""
+	}
+
+	build := strings.ToLower(serverInfo.Build)
+	licenseType := ""
+	if serverInfo.EnterpriseLicenseType != nil {
+		licenseType = strings.ToLower(*serverInfo.EnterpriseLicenseType)
+	}
+
+	// Enterprise + Personal License
+	if build == "enterprise" && licenseType == "personal" {
+		return "Licensed for personal use only."
+	}
+
+	// Enterprise + Unlicensed
+	if build == "enterprise" && !serverInfo.EnterpriseLicenseValid {
+		return "This server is unlicensed."
+	}
+
+	// OSS + No Supporter Key
+	if build == "oss" && !serverInfo.SupporterStatusValid {
+		return "Community Edition. Consider supporting."
+	}
+
+	return ""
 }

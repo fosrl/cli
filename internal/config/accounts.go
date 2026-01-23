@@ -18,17 +18,30 @@ type AccountStore struct {
 }
 
 type Account struct {
-	UserID         string          `mapstructure:"userId" json:"userId"`
-	Host           string          `mapstructure:"host" json:"host"`
-	Email          string          `mapstructure:"email" json:"email"`
-	SessionToken   string          `mapstructure:"sessionToken" json:"sessionToken"`
-	OrgID          string          `mapstructure:"orgId" json:"orgId,omitempty"`
+	UserID         string           `mapstructure:"userId" json:"userId"`
+	Host           string           `mapstructure:"host" json:"host"`
+	Email          string           `mapstructure:"email" json:"email"`
+	Username       *string          `mapstructure:"username" json:"username,omitempty"`
+	Name           *string          `mapstructure:"name" json:"name,omitempty"`
+	SessionToken   string           `mapstructure:"sessionToken" json:"sessionToken"`
+	OrgID          string           `mapstructure:"orgId" json:"orgId,omitempty"`
 	OlmCredentials *OlmCredentials `mapstructure:"olmCredentials" json:"olmCredentials,omitempty"`
+	ServerInfo     *ServerInfo     `mapstructure:"serverInfo" json:"serverInfo,omitempty"`
 }
 
 type OlmCredentials struct {
 	ID     string `mapstructure:"id" json:"id"`
 	Secret string `mapstructure:"secret" json:"secret"`
+}
+
+// ServerInfo represents server information including version, build type, and license status
+// This mirrors api.ServerInfo to avoid import cycles
+type ServerInfo struct {
+	Version                  string  `mapstructure:"version" json:"version"`
+	SupporterStatusValid     bool    `mapstructure:"supporterStatusValid" json:"supporterStatusValid"`
+	Build                    string  `mapstructure:"build" json:"build"` // "oss" | "enterprise" | "saas"
+	EnterpriseLicenseValid   bool    `mapstructure:"enterpriseLicenseValid" json:"enterpriseLicenseValid"`
+	EnterpriseLicenseType    *string `mapstructure:"enterpriseLicenseType" json:"enterpriseLicenseType,omitempty"`
 }
 
 func newAccountViper() (*viper.Viper, error) {
@@ -113,7 +126,7 @@ func (s *AccountStore) Deactivate(userID string) error {
 }
 
 // Return a list of accounts that are available to use.
-// These accounts are guaranteed to have a vaild
+// These accounts are guaranteed to have a valid
 // session token.
 func (s *AccountStore) AvailableAccounts() []Account {
 	available := []Account{}
@@ -127,6 +140,22 @@ func (s *AccountStore) AvailableAccounts() []Account {
 	return available
 }
 
+// UpdateActiveAccount updates the active account in the store.
+// This must be called after modifying an account obtained from ActiveAccount()
+// because Go maps return copies of values, not references.
+func (s *AccountStore) UpdateActiveAccount(account *Account) error {
+	if s.ActiveUserID == "" {
+		return errors.New("not logged in")
+	}
+
+	if account.UserID != s.ActiveUserID {
+		return errors.New("account user ID does not match active user ID")
+	}
+
+	s.Accounts[s.ActiveUserID] = *account
+	return nil
+}
+
 func (s *AccountStore) Save() error {
 	// HACK: If there's a better way to write the config all at once
 	// without having to specify each toplevel struct key, that
@@ -136,4 +165,22 @@ func (s *AccountStore) Save() error {
 	s.v.Set("accounts", s.Accounts)
 
 	return s.v.WriteConfig()
+}
+
+// UpdateAccountUserInfo updates the username and name for a specific account
+func (s *AccountStore) UpdateAccountUserInfo(userID, username, name string) error {
+	account, exists := s.Accounts[userID]
+	if !exists {
+		return errors.New("account not found")
+	}
+
+	if username != "" {
+		account.Username = &username
+	}
+	if name != "" {
+		account.Name = &name
+	}
+
+	s.Accounts[userID] = account
+	return s.Save()
 }

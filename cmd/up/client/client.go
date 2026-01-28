@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -55,6 +56,27 @@ type ClientUpCmdOpts struct {
 	UpstreamDNS   []string
 }
 
+// validateDNSIP ensures the given DNS server string is a valid IP address.
+// The input may be "ip" or "ip:port"; only the host part is validated.
+func validateDNSIP(s, field string) error {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return fmt.Errorf("%s: DNS server cannot be empty", field)
+	}
+	host := s
+	if strings.Contains(s, ":") {
+		var err error
+		host, _, err = net.SplitHostPort(s)
+		if err != nil {
+			return fmt.Errorf("%s: invalid address %q: %w", field, s, err)
+		}
+	}
+	if net.ParseIP(host) == nil {
+		return fmt.Errorf("%s: must be a valid IP address, got %q", field, host)
+	}
+	return nil
+}
+
 func ClientUpCmd() *cobra.Command {
 	opts := ClientUpCmdOpts{}
 
@@ -70,6 +92,15 @@ func ClientUpCmd() *cobra.Command {
 
 			if opts.Attached && opts.Silent {
 				return errors.New("--silent and --attached options conflict")
+			}
+
+			if err := validateDNSIP(opts.DNS, "netstack-dns"); err != nil {
+				return err
+			}
+			for i, server := range opts.UpstreamDNS {
+				if err := validateDNSIP(server, fmt.Sprintf("upstream-dns[%d]", i)); err != nil {
+					return err
+				}
 			}
 
 			return nil

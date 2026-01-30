@@ -227,7 +227,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 
 		if newCredsGenerated {
-			fmt.Println("New creds generated saving them")
+			// fmt.Println("New creds generated saving them")
 			// Update the account in the store since ActiveAccount() returns a copy
 			if err := accountStore.UpdateActiveAccount(activeAccount); err != nil {
 				logger.Error("Failed to update account in store: %v", err)

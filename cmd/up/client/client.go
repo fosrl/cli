@@ -516,7 +516,8 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// - User directly passing id/secret (should NOT fetch userToken)
 	var userToken string
 	credentialsFromKeyringEnv := os.Getenv("PANGOLIN_CREDENTIALS_FROM_KEYRING")
-	if credentialsFromKeyringEnv == "1" || credentialsFromKeyring {
+	credentialsFromKeyring = credentialsFromKeyringEnv == "1" || credentialsFromKeyring
+	if credentialsFromKeyring {
 		// Credentials came from config, fetch userToken from secrets
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
@@ -555,16 +556,20 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
-	initialFp := fingerprint.GatherFingerprintInfo()
-	initialFingerprint := initialFp.ToMap()
-	initialPostures := fingerprint.GatherPostureChecks().ToMap()
+	// Only collect fingerprint for user devices; machine clients (id/secret provided) skip it
+	var initialFingerprint, initialPostures map[string]interface{}
+	if credentialsFromKeyring {
+		initialFp := fingerprint.GatherFingerprintInfo()
+		initialFingerprint = initialFp.ToMap()
+		initialPostures = fingerprint.GatherPostureChecks().ToMap()
 
-	// Write the fingerprint to disk immediately so it's available for other processes
-	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
-		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
-			_ = os.MkdirAll(fingerprintDir, 0o755)
+		// Write the fingerprint to disk immediately so it's available for other processes
+		if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+			if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+				_ = os.MkdirAll(fingerprintDir, 0o755)
+			}
+			_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
 		}
-		_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
 	}
 
 	tunnelConfig := olmpkg.TunnelConfig{
@@ -605,8 +610,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 	defer olm.Close()
 
-	cancelFingerprinting := startFingerprinting(olm)
-	defer cancelFingerprinting()
+	// Only run ongoing fingerprint updates for user devices
+	if credentialsFromKeyring {
+		cancelFingerprinting := startFingerprinting(olm)
+		defer cancelFingerprinting()
+	}
 
 	if enableAPI {
 		_ = olm.StartApi()

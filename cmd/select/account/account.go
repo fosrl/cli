@@ -136,7 +136,7 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 	// Health check passed, fetch user data and update account info
 	user, err := apiClient.GetUser()
 	if err != nil {
-		logger.Warning("Failed to fetch user data: %v. Account switched, but user info not updated.", err)
+		logger.Warning("Failed to fetch user data: %v. Account switched, but user info not updated. You may need to log back in.", err)
 		// Still show success message using stored account data
 		selectedAccountStr := utils.AccountDisplayNameWithHost(selectedAccount)
 		logger.Success("Successfully selected account: %s", selectedAccountStr)

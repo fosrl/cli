@@ -166,14 +166,21 @@ jobs:
           echo "Tag ${TAG} not visible after waiting"; exit 1
         shell: bash
 
-      - name: Update version in main.go
+      - name: Update version in consts.go
         run: |
             TAG=${{ env.TAG }}
-            if [ -f main.go ]; then
-            sed -i 's/version_replaceme/'"$TAG"'/' main.go
-            echo "Updated main.go with version $TAG"
+            VERSION_FILE="internal/version/consts.go"
+            if [ -f "$VERSION_FILE" ]; then
+              sed -i 's/const Version = "[^"]*"/const Version = "'"$TAG"'"/' "$VERSION_FILE"
+              if grep -q "const Version = \"$TAG\"" "$VERSION_FILE"; then
+                echo "Updated $VERSION_FILE with version $TAG"
+              else
+                echo "Error: failed to update version in $VERSION_FILE"
+                exit 1
+              fi
             else
-            echo "main.go not found"
+              echo "Error: $VERSION_FILE not found"
+              exit 1
             fi
 
       - name: Ensure repository is at the tagged commit (dispatch only)

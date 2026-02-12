@@ -119,7 +119,7 @@ func statusMain(cmd *cobra.Command) error {
 		watermark := getWatermarkMessage(account.ServerInfo)
 		if watermark != "" {
 			fmt.Println()
-			logger.Info(watermark)
+			logger.Info("%s", watermark)
 		}
 	}
 

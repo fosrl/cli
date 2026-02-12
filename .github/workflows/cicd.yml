@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      DOCKERHUB_IMAGE: docker.io/fosrl/${{ github.event.repository.name }}
+      DOCKERHUB_IMAGE: docker.io/fosrl/pangolin-${{ github.event.repository.name }}
       GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
     steps:
@@ -376,7 +376,7 @@ jobs:
         id: attest-dh
         uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         with:
-          subject-name: index.docker.io/fosrl/${{ github.event.repository.name }}
+          subject-name: index.docker.io/fosrl/pangolin-${{ github.event.repository.name }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
           show-summary: true

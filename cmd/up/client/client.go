@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -55,6 +56,27 @@ type ClientUpCmdOpts struct {
 	UpstreamDNS   []string
 }
 
+// validateDNSIP ensures the given DNS server string is a valid IP address.
+// The input may be "ip" or "ip:port"; only the host part is validated.
+func validateDNSIP(s, field string) error {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return fmt.Errorf("%s: DNS server cannot be empty", field)
+	}
+	host := s
+	if strings.Contains(s, ":") {
+		var err error
+		host, _, err = net.SplitHostPort(s)
+		if err != nil {
+			return fmt.Errorf("%s: invalid address %q: %w", field, s, err)
+		}
+	}
+	if net.ParseIP(host) == nil {
+		return fmt.Errorf("%s: must be a valid IP address, got %q", field, host)
+	}
+	return nil
+}
+
 func ClientUpCmd() *cobra.Command {
 	opts := ClientUpCmdOpts{}
 
@@ -70,6 +92,15 @@ func ClientUpCmd() *cobra.Command {
 
 			if opts.Attached && opts.Silent {
 				return errors.New("--silent and --attached options conflict")
+			}
+
+			if err := validateDNSIP(opts.DNS, "netstack-dns"); err != nil {
+				return err
+			}
+			for i, server := range opts.UpstreamDNS {
+				if err := validateDNSIP(server, fmt.Sprintf("upstream-dns[%d]", i)); err != nil {
+					return err
+				}
 			}
 
 			return nil
@@ -97,8 +128,8 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().DurationVar(&opts.PingTimeout, "ping-timeout", 5*time.Second, "Ping `timeout`")
 	cmd.Flags().BoolVar(&opts.Holepunch, "holepunch", true, "Enable holepunching")
 	cmd.Flags().StringVar(&opts.TlsClientCert, "tls-client-cert", "", "TLS client certificate `path`")
-	cmd.Flags().BoolVar(&opts.OverrideDNS, "override-dns", true, "Override system DNS for resolving internal resource alias")
-	cmd.Flags().BoolVar(&opts.TunnelDNS, "tunnel-dns", false, "Use tunnel DNS for internal resource alias resolution")
+	cmd.Flags().BoolVar(&opts.OverrideDNS, "override-dns", true, "When enabled, the client uses custom DNS servers to resolve internal resources and aliases. This overrides your system's default DNS settings. Queries that cannot be resolved as a Pangolin resource will be forwarded to your configured Upstream DNS Server.")
+	cmd.Flags().BoolVar(&opts.TunnelDNS, "tunnel-dns", false, "When enabled, DNS queries are routed through the tunnel for remote resolution. To ensure queries are tunneled correctly, you must define the DNS server as a Pangolin resource and enter its address as an Upstream DNS Server.")
 	cmd.Flags().StringSliceVar(&opts.UpstreamDNS, "upstream-dns", []string{defaultDNSServer}, "List of DNS servers to use for external DNS resolution if overriding system DNS")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
@@ -196,7 +227,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 
 		if newCredsGenerated {
-			fmt.Println("New creds generated saving them")
+			// fmt.Println("New creds generated saving them")
 			// Update the account in the store since ActiveAccount() returns a copy
 			if err := accountStore.UpdateActiveAccount(activeAccount); err != nil {
 				logger.Error("Failed to update account in store: %v", err)
@@ -485,7 +516,8 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// - User directly passing id/secret (should NOT fetch userToken)
 	var userToken string
 	credentialsFromKeyringEnv := os.Getenv("PANGOLIN_CREDENTIALS_FROM_KEYRING")
-	if credentialsFromKeyringEnv == "1" || credentialsFromKeyring {
+	credentialsFromKeyring = credentialsFromKeyringEnv == "1" || credentialsFromKeyring
+	if credentialsFromKeyring {
 		// Credentials came from config, fetch userToken from secrets
 		activeAccount, err := accountStore.ActiveAccount()
 		if err != nil {
@@ -524,16 +556,20 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		},
 	}
 
-	initialFp := fingerprint.GatherFingerprintInfo()
-	initialFingerprint := initialFp.ToMap()
-	initialPostures := fingerprint.GatherPostureChecks().ToMap()
+	// Only collect fingerprint for user devices; machine clients (id/secret provided) skip it
+	var initialFingerprint, initialPostures map[string]interface{}
+	if credentialsFromKeyring {
+		initialFp := fingerprint.GatherFingerprintInfo()
+		initialFingerprint = initialFp.ToMap()
+		initialPostures = fingerprint.GatherPostureChecks().ToMap()
 
-	// Write the fingerprint to disk immediately so it's available for other processes
-	if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
-		if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
-			_ = os.MkdirAll(fingerprintDir, 0o755)
+		// Write the fingerprint to disk immediately so it's available for other processes
+		if fingerprintFilePath, err := config.GetFingerprintFilePath(); err == nil && fingerprintFilePath != "" {
+			if fingerprintDir, err := config.GetFingerprintDir(); err == nil && fingerprintDir != "" {
+				_ = os.MkdirAll(fingerprintDir, 0o755)
+			}
+			_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
 		}
-		_ = os.WriteFile(fingerprintFilePath, []byte(initialFp.PlatformFingerprint), 0o644)
 	}
 
 	tunnelConfig := olmpkg.TunnelConfig{
@@ -574,8 +610,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 	defer olm.Close()
 
-	cancelFingerprinting := startFingerprinting(olm)
-	defer cancelFingerprinting()
+	// Only run ongoing fingerprint updates for user devices
+	if credentialsFromKeyring {
+		cancelFingerprinting := startFingerprinting(olm)
+		defer cancelFingerprinting()
+	}
 
 	if enableAPI {
 		_ = olm.StartApi()

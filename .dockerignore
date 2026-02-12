@@ -1,0 +1,9 @@
+.gitignore
+.dockerignore
+pangolin-cli
+*.json
+README.md
+Makefile
+public/
+LICENSE
+CONTRIBUTING.md

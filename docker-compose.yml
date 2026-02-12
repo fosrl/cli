@@ -1,0 +1,14 @@
+# To run a machine client
+services:
+  pangolin-cli:
+    image: pangolin-cli:latest
+    container_name: pangolin-cli
+    environment:
+      - PANGOLIN_ENDPOINT=https://app.pangolin.net
+      - CLIENT_ID=5n52gnzfgl3tdox
+      - CLIENT_SECRET=wyael1dhftekp0ii2ni0ym6xczwjnwmucy2vr6u9kgkp8tw9
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped

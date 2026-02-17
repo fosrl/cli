@@ -7,13 +7,15 @@ import (
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
+	"github.com/fosrl/cli/internal/olm"
 	"github.com/spf13/cobra"
 )
 
 var (
 	errHostnameRequired   = errors.New("API did not return a hostname for the connection")
-	errResourceIDRequired = errors.New("resource (alias or identifier) is required")
-	errOrgRequired        = errors.New("organization is required")
+	errResourceIDRequired = errors.New("Resource (alias or identifier) is required")
+	errOrgRequired        = errors.New("Organization is required")
+	errNoClientRunning    = errors.New("No client is currently running. Start the client first with `pangolin up`")
 )
 
 func SSHCmd() *cobra.Command {
@@ -35,6 +37,12 @@ func SSHCmd() *cobra.Command {
 			return nil
 		},
 		Run: func(c *cobra.Command, args []string) {
+			client := olm.NewClient("")
+			if !client.IsRunning() {
+				logger.Error("%v", errNoClientRunning)
+				os.Exit(1)
+			}
+
 			apiClient := api.FromContext(c.Context())
 			accountStore := config.AccountStoreFromContext(c.Context())
 

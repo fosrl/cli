@@ -10,9 +10,10 @@ import (
 	"github.com/fosrl/cli/cmd/auth"
 	"github.com/fosrl/cli/cmd/auth/login"
 	"github.com/fosrl/cli/cmd/auth/logout"
+	"github.com/fosrl/cli/cmd/authdaemon"
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/logs"
-	selectcmd 	"github.com/fosrl/cli/cmd/select"
+	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/ssh"
 	"github.com/fosrl/cli/cmd/status"
 	"github.com/fosrl/cli/cmd/up"
@@ -43,6 +44,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 
 	cmd.AddCommand(auth.AuthCommand())
+	cmd.AddCommand(authdaemon.AuthDaemonCmd())
 	cmd.AddCommand(apply.ApplyCommand())
 	cmd.AddCommand(selectcmd.SelectCmd())
 	cmd.AddCommand(up.UpCmd())

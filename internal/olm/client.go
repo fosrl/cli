@@ -61,7 +61,7 @@ type ExitResponse struct {
 
 // SwitchOrgRequest represents the switch org request
 type SwitchOrgRequest struct {
-	OrgID string `json:"orgId"`
+	OrgID string `json:"org_id"`
 }
 
 // SwitchOrgResponse represents the switch org response

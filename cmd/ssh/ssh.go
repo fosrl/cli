@@ -3,6 +3,7 @@ package ssh
 import (
 	"errors"
 	"os"
+	"runtime"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
@@ -16,6 +17,7 @@ var (
 	errResourceIDRequired = errors.New("Resource (alias or identifier) is required")
 	errOrgRequired        = errors.New("Organization is required")
 	errNoClientRunning    = errors.New("No client is currently running. Start the client first with `pangolin up`")
+	errNoClientRunningWindows = errors.New("No client is currently running. Start the client first in the system tray")
 )
 
 func SSHCmd() *cobra.Command {
@@ -37,10 +39,21 @@ func SSHCmd() *cobra.Command {
 			return nil
 		},
 		Run: func(c *cobra.Command, args []string) {
-			client := olm.NewClient("")
-			if !client.IsRunning() {
-				logger.Error("%v", errNoClientRunning)
-				os.Exit(1)
+			if runtime.GOOS != "windows" {
+				client := olm.NewClient("")
+				if !client.IsRunning() {
+					logger.Error("%v", errNoClientRunning)
+					os.Exit(1)
+				}
+			} else {
+				// check if the named pipe exists by trying to open it. If it doesn't exist, the client is not running.
+				pipePath := `\\.\pipe\pangolin-olm`
+				pipeFile, err := os.Open(pipePath)
+				if err != nil {
+					logger.Error("%v", errNoClientRunningWindows)
+					os.Exit(1)
+				}
+				pipeFile.Close()
 			}
 
 			apiClient := api.FromContext(c.Context())

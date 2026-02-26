@@ -1,3 +1,5 @@
+//go:build linux
+
 package authdaemon
 
 import (
@@ -6,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 
 	"github.com/fosrl/cli/internal/logger"
@@ -38,9 +39,6 @@ func AuthDaemonCmd() *cobra.Command {
 		Short: "Start the auth daemon",
 		Long:  "Start the auth daemon for remote SSH authentication",
 		PreRunE: func(c *cobra.Command, args []string) error {
-			if runtime.GOOS != "linux" {
-				return fmt.Errorf("auth-daemon is only supported on Linux, not %s", runtime.GOOS)
-			}
 			if opts.PreSharedKey == "" {
 				return errPresharedKeyRequired
 			}

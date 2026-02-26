@@ -44,7 +44,9 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 
 	cmd.AddCommand(auth.AuthCommand())
-	cmd.AddCommand(authdaemon.AuthDaemonCmd())
+	if authDaemonCmd := authdaemon.AuthDaemonCmd(); authDaemonCmd != nil {
+		cmd.AddCommand(authDaemonCmd)
+	}
 	cmd.AddCommand(apply.ApplyCommand())
 	cmd.AddCommand(selectcmd.SelectCmd())
 	

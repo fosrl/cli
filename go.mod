@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/creack/pty v1.1.24
 	github.com/fosrl/newt v1.10.0
-	github.com/fosrl/olm v1.4.2
+	github.com/fosrl/olm v1.4.3
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.10.2

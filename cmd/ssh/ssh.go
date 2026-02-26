@@ -85,8 +85,10 @@ func SSHCmd() *cobra.Command {
 				PassThrough:   passThrough,
 			}
 
+			// On Windows, use the system ssh binary by default (better terminal/agent support).
+			useExec := opts.Exec || runtime.GOOS == "windows"
 			var exitCode int
-			if opts.Exec {
+			if useExec {
 				exitCode, err = RunExec(runOpts)
 			} else {
 				exitCode, err = RunNative(runOpts)

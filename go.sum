@@ -50,8 +50,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
-github.com/fosrl/newt v1.10.0 h1:k4bJGcUvGcyoO8QNBi5/RGbLpLC1ZUdau3Hecic+71A=
-github.com/fosrl/newt v1.10.0/go.mod h1:d1+yYMnKqg4oLqAM9zdbjthjj2FQEVouiACjqU468ck=
+github.com/fosrl/newt v1.10.1 h1:3RZqYhJDDBWZHViVeDl4hWwWVJFtvFJB+wL+AF99neA=
+github.com/fosrl/newt v1.10.1/go.mod h1:d1+yYMnKqg4oLqAM9zdbjthjj2FQEVouiACjqU468ck=
 github.com/fosrl/olm v1.4.3 h1:hmAWfrJzpiwtvzw/B6xmCmeqK1OW0BJ2FUbEa7ztlmU=
 github.com/fosrl/olm v1.4.3/go.mod h1:aC1oieI0tadd66zY7RDjXT3PPsR54mYS0FYMsHqFqs8=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=

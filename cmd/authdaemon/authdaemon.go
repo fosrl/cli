@@ -28,10 +28,11 @@ var (
 
 func AuthDaemonCmd() *cobra.Command {
 	opts := struct {
-		PreSharedKey   string
-		Port           int
-		PrincipalsFile string
-		CACertPath     string
+		PreSharedKey           string
+		Port                   int
+		PrincipalsFile         string
+		CACertPath             string
+		GenerateRandomPassword bool
 	}{}
 
 	cmd := &cobra.Command{
@@ -57,6 +58,7 @@ func AuthDaemonCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opts.Port, "port", defaultPort, "TCP listen port for the HTTPS server")
 	cmd.Flags().StringVar(&opts.PrincipalsFile, "principals-file", defaultPrincipalsPath, "Path to the principals file")
 	cmd.Flags().StringVar(&opts.CACertPath, "ca-cert-path", defaultCACertPath, "Path to the CA certificate file")
+	cmd.Flags().BoolVar(&opts.GenerateRandomPassword, "generate-random-password", false, "Generate a random password for authenticated users")
 
 	cmd.AddCommand(PrincipalsCmd())
 
@@ -112,17 +114,19 @@ func runPrincipals(principalsPath, username string) {
 }
 
 func runAuthDaemon(opts struct {
-	PreSharedKey   string
-	Port           int
-	PrincipalsFile string
-	CACertPath     string
+	PreSharedKey           string
+	Port                   int
+	PrincipalsFile         string
+	CACertPath             string
+	GenerateRandomPassword bool
 }) {
 	cfg := authdaemonpkg.Config{
-		Port:               opts.Port,
-		PresharedKey:       opts.PreSharedKey,
-		PrincipalsFilePath: opts.PrincipalsFile,
-		CACertPath:         opts.CACertPath,
-		Force:              true,
+		Port:                   opts.Port,
+		PresharedKey:           opts.PreSharedKey,
+		PrincipalsFilePath:     opts.PrincipalsFile,
+		CACertPath:             opts.CACertPath,
+		Force:                  true,
+		GenerateRandomPassword: opts.GenerateRandomPassword,
 	}
 
 	srv, err := authdaemonpkg.NewServer(cfg)

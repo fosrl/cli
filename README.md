@@ -1,6 +1,6 @@
 # [Pangolin](https://pangolin.net) CLI
 
-This is the official Pangolin CLI tool and VPN client for Unix devices. Pangolin CLI is currently only available on macOS and Linux. Windows support is coming soon.
+This is the official Pangolin CLI tool.
 
 Since there isn't an official GUI application for Linux, this CLI serves as the official way to connect to Pangolin VPN on Linux.
 

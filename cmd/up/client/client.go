@@ -619,7 +619,14 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	if enableAPI {
 		_ = olm.StartApi()
 	}
-	olm.StartTunnel(tunnelConfig)
+	
+	// Run StartTunnel in a goroutine so org switching can restart it
+	// without causing the CLI process to exit
+	go olm.StartTunnel(tunnelConfig)
+	
+	// Block on context to keep process alive
+	<-ctx.Done()
+	logger.Info("Received shutdown signal, stopping tunnel")
 
 	return nil
 }

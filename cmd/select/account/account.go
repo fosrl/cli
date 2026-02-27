@@ -112,13 +112,16 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 		return err
 	}
 
-	// Check if olmClient is running and if we need to shut it down
+	// Shut down running client only if it was started by this CLI
 	olmClient := olm.NewClient("")
 	if olmClient.IsRunning() {
-		logger.Info("Shutting down running client")
-		_, err := olmClient.Exit()
-		if err != nil {
-			logger.Warning("Failed to shut down OLM client: %s; you may need to do so manually.", err)
+		status, err := olmClient.GetStatus()
+		if err == nil && status != nil && status.Agent == olm.AgentName {
+			logger.Info("Shutting down running client")
+			_, err := olmClient.Exit()
+			if err != nil {
+				logger.Warning("Failed to shut down OLM client: %s; you may need to do so manually.", err)
+			}
 		}
 	}
 

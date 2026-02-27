@@ -360,6 +360,26 @@ func (c *Client) CheckOrgUserAccess(orgID, userID string) (*CheckOrgUserAccessRe
 	return &response, nil
 }
 
+// SignSSHKey signs an SSH public key for the given org and resource.
+func (c *Client) SignSSHKey(orgID string, req SignSSHKeyRequest) (*SignSSHKeyData, error) {
+	path := fmt.Sprintf("/org/%s/ssh/sign-key", orgID)
+	var data SignSSHKeyData
+	if err := c.Post(path, req, &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// GetRoundTripMessage polls the round-trip message endpoint for status and optional result.
+func (c *Client) GetRoundTripMessage(messageID int64) (*RoundTripMessage, error) {
+	path := fmt.Sprintf("/ws/round-trip-message/%d", messageID)
+	var msg RoundTripMessage
+	if err := c.Get(path, &msg); err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
 // GetClient gets a client by ID
 func (c *Client) GetClient(clientID int) (*GetClientResponse, error) {
 	path := fmt.Sprintf("/client/%d", clientID)

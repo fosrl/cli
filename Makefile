@@ -55,7 +55,8 @@ go-build-release: \
     go-build-release-linux-amd64 \
     go-build-release-linux-riscv64 \
     go-build-release-darwin-arm64 \
-    go-build-release-darwin-amd64
+    go-build-release-darwin-amd64 \
+    go-build-release-windows-amd64
 
 go-build-release-linux-arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/pangolin-cli_linux_arm64
@@ -77,3 +78,6 @@ go-build-release-darwin-arm64:
 
 go-build-release-darwin-amd64:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o bin/pangolin-cli_darwin_amd64
+
+go-build-release-windows-amd64:
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o bin/pangolin-cli_windows_amd64.exe

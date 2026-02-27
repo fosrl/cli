@@ -76,6 +76,11 @@ func SwitchActiveClientOrg(orgID string) bool {
 		return false
 	}
 
+	// Only switch if the client was started by this CLI
+	if currentStatus != nil && currentStatus.Agent != olm.AgentName {
+		return false
+	}
+
 	// If already on the target org, no need to switch
 	if currentStatus != nil && currentStatus.OrgID == orgID {
 		return false

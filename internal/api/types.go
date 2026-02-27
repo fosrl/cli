@@ -273,3 +273,34 @@ type ApplyBlueprintResponse struct {
 	Succeeded   bool    `json:"succeeded"`
 	Contents    string  `json:"contents"`
 }
+
+type SignSSHKeyRequest struct {
+	PublicKey string `json:"publicKey"`
+	Resource  string `json:"resource"`
+}
+
+type SignSSHKeyData struct {
+	MessageID        int64    `json:"messageId"`
+	Certificate      string   `json:"certificate"`
+	KeyID            string   `json:"keyId"`
+	ValidPrincipals  []string `json:"validPrincipals"`
+	ValidAfter       string   `json:"validAfter"`
+	ValidBefore      string   `json:"validBefore"`
+	ExpiresInSeconds int      `json:"expiresIn"`
+	Hostname         string   `json:"sshHost"`     // hostname for SSH connection (returned by API)
+	User             string   `json:"sshUsername"` // user for SSH connection (returned by API)
+}
+
+type RoundTripMessage struct {
+	MessageID   int64   `json:"messageId"`
+	Complete    bool    `json:"complete"`
+	SentAt      int64   `json:"sentAt"`     // epoch seconds
+	ReceivedAt  int64   `json:"receivedAt"`  // epoch seconds
+	Error       *string `json:"error,omitempty"`
+}
+
+type SignSSHKeyResponse struct {
+	Success bool           `json:"success"`
+	Error   *string        `json:"error,omitempty"`
+	Data    SignSSHKeyData `json:"data"`
+}

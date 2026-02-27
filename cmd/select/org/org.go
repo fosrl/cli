@@ -96,29 +96,17 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 	}
 	account.OrgID = selectedOrgID
 	accountStore.Accounts[userID] = account
-	
+
 	if err := accountStore.Save(); err != nil {
 		logger.Error("Failed to save account to store: %v", err)
 		return err
 	}
 
-	// Switch active client if running
-	utils.SwitchActiveClientOrg(selectedOrgID)
-
-	// Check if olmClient is running and if we need to monitor a switch
-	olmClient := olm.NewClient("")
-	if olmClient.IsRunning() {
-		// Get current status - if it doesn't match the new org, monitor the switch
-		currentStatus, err := olmClient.GetStatus()
-		if err == nil && currentStatus != nil && currentStatus.OrgID != selectedOrgID {
-			// Switch was sent, monitor the switch process
-			monitorOrgSwitch(cfg.LogFile, selectedOrgID)
-		} else {
-			// Already on the correct org or no status available
-			logger.Success("Successfully selected organization: %s", selectedOrgID)
-		}
+	// Switch active client if running (and started by this CLI)
+	switched := utils.SwitchActiveClientOrg(selectedOrgID)
+	if switched {
+		monitorOrgSwitch(cfg.LogFile, selectedOrgID)
 	} else {
-		// Client not running, no switch needed
 		logger.Success("Successfully selected organization: %s", selectedOrgID)
 	}
 

@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+
+	"golang.org/x/sys/windows"
 )
 
 // execSSHSearchPaths are fallback locations for the ssh executable on Windows.
@@ -77,6 +79,59 @@ func RunExec(opts RunOpts) (int, error) {
 	return 0, nil
 }
 
+// setWindowsFileOwnerOnly sets the file's ACL so that only the current user has access.
+// This is required for SSH private keys on Windows, as OpenSSH checks that the key
+// is not accessible by other users.
+func setWindowsFileOwnerOnly(path string) error {
+	// Get the current process token to find the user's SID
+	var token windows.Token
+	proc := windows.CurrentProcess()
+	err := windows.OpenProcessToken(proc, windows.TOKEN_QUERY, &token)
+	if err != nil {
+		return err
+	}
+	defer token.Close()
+
+	// Get the token user (contains the SID)
+	tokenUser, err := token.GetTokenUser()
+	if err != nil {
+		return err
+	}
+	userSID := tokenUser.User.Sid
+
+	// Build an explicit access entry for the current user only (full control)
+	access := []windows.EXPLICIT_ACCESS{
+		{
+			AccessPermissions: windows.GENERIC_ALL,
+			AccessMode:        windows.SET_ACCESS,
+			Inheritance:       windows.NO_INHERITANCE,
+			Trustee: windows.TRUSTEE{
+				TrusteeForm:  windows.TRUSTEE_IS_SID,
+				TrusteeType:  windows.TRUSTEE_IS_USER,
+				TrusteeValue: windows.TrusteeValueFromSID(userSID),
+			},
+		},
+	}
+
+	// Create a new ACL with only our access entry using the public API
+	acl, err := windows.ACLFromEntries(access, nil)
+	if err != nil {
+		return err
+	}
+
+	// Set the security info: owner + DACL, with PROTECTED_DACL to block inheritance
+	secInfo := windows.SECURITY_INFORMATION(windows.OWNER_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION)
+	return windows.SetNamedSecurityInfo(
+		path,
+		windows.SE_FILE_OBJECT,
+		secInfo,
+		userSID,
+		nil,
+		acl,
+		nil,
+	)
+}
+
 func writeExecKeyFilesWindows(opts RunOpts) (keyPath, certPath string, cleanup func(), err error) {
 	if opts.PrivateKeyPEM == "" {
 		return "", "", nil, errors.New("private key required (JIT flow)")
@@ -90,12 +145,13 @@ func writeExecKeyFilesWindows(opts RunOpts) (keyPath, certPath string, cleanup f
 		os.Remove(keyFile.Name())
 		return "", "", nil, err
 	}
-	if err := keyFile.Chmod(0o600); err != nil {
-		keyFile.Close()
+	if err := keyFile.Close(); err != nil {
 		os.Remove(keyFile.Name())
 		return "", "", nil, err
 	}
-	if err := keyFile.Close(); err != nil {
+
+	// Set Windows ACL to restrict access to only the current user
+	if err := setWindowsFileOwnerOnly(keyFile.Name()); err != nil {
 		os.Remove(keyFile.Name())
 		return "", "", nil, err
 	}

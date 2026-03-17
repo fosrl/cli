@@ -120,7 +120,7 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.OrgID, "org", "", "Organization ID (default: selected organization if logged in)")
 	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Client endpoint (required if not logged in)")
 	cmd.Flags().IntVar(&opts.MTU, "mtu", 1280, "Maximum transmission unit")
-	cmd.Flags().StringVar(&opts.DNS, "netstack-dns", defaultDNSServer, "DNS `server` to use for Netstack")
+	cmd.Flags().StringVar(&opts.DNS, "netstack-dns", defaultDNSServer, "DNS `server` to use for Netstack. This handles DNS resolution outside of the upstream servers.")
 	cmd.Flags().StringVar(&opts.InterfaceName, "interface-name", "pangolin", "Interface `name`")
 	cmd.Flags().StringVar(&opts.LogLevel, "log-level", "info", "Log level")
 	cmd.Flags().StringVar(&opts.HTTPAddr, "http-addr", "", "HTTP address for API server")

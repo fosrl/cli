@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         target:
-          - local
           - docker-build
           - go-build-release-darwin-amd64
           - go-build-release-darwin-arm64

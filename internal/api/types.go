@@ -290,6 +290,7 @@ type SignSSHKeyData struct {
 	Hostname         string   `json:"sshHost"`     // hostname for SSH connection (returned by API)
 	User             string   `json:"sshUsername"` // user for SSH connection (returned by API)
 	ResourceID       int      `json:"resourceId"`  // resource ID for SSH connection (returned by API)
+	SiteIDs          []int    `json:"siteIds"`     // site ID for SSH connection (returned by API)
 	SiteID           int      `json:"siteId"`      // site ID for SSH connection (returned by API)
 }
 

@@ -72,23 +72,35 @@ func SSHCmd() *cobra.Command {
 			
 			// logger.Info("signData: %+v", signData)
 			
-			if signData.SiteID != 0 { // older versions of the server did not send back the site id so we need to check for backward compatibility
-				deadline := time.Now().Add(15 * time.Second)
-				connected := false
-				for time.Now().Before(deadline) {
-					status, err := client.GetStatus()
-					if err == nil {
-						if peer, ok := status.PeerStatuses[signData.SiteID]; ok && peer.Connected {
-							connected = true
-							// logger.Info("site is connected")
-							break
-						}
-					}
-					time.Sleep(500 * time.Millisecond)
+			siteIDs := []int{}
+			if signData.SiteID != 0 {
+				siteIDs = append(siteIDs, signData.SiteID)
+			}
+			for _, id := range signData.SiteIDs {
+				if id != 0 {
+					siteIDs = append(siteIDs, id)
 				}
-				if !connected {
-					logger.Error("site is not connected; timed out waiting for connection")
-					os.Exit(1)
+			}
+
+			if len(siteIDs) > 0 { // older versions of the server did not send back the site id so we need to check for backward compatibility
+				for _, siteID := range siteIDs {
+					deadline := time.Now().Add(15 * time.Second)
+					connected := false
+					for time.Now().Before(deadline) {
+						status, err := client.GetStatus()
+						if err == nil {
+							if peer, ok := status.PeerStatuses[siteID]; ok && peer.Connected {
+								connected = true
+								// logger.Info("site is connected")
+								break
+							}
+						}
+						time.Sleep(500 * time.Millisecond)
+					}
+					if !connected {
+						logger.Error("site %d is not connected; timed out waiting for connection", siteID)
+						os.Exit(1)
+					}
 				}
 			}
 

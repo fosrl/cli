@@ -280,6 +280,7 @@ type SignSSHKeyRequest struct {
 }
 
 type SignSSHKeyData struct {
+	MessageIDs       []int64  `json:"messageIds"`
 	MessageID        int64    `json:"messageId"`
 	Certificate      string   `json:"certificate"`
 	KeyID            string   `json:"keyId"`

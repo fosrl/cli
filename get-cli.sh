@@ -1,8 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
 # Get Pangolin - Cross-platform installation script
-# Usage:
-#   curl -fsSL https://raw.githubusercontent.com/fosrl/cli/refs/heads/main/get-cli.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/fosrl/cli/refs/heads/main/get-cli.sh | sh
 
 set -e
 
@@ -18,20 +17,20 @@ GITHUB_API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 
 # Output helpers
 print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    printf '%b[INFO]%b %s\n' "${GREEN}" "${NC}" "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    printf '%b[WARN]%b %s\n' "${YELLOW}" "${NC}" "$1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    printf '%b[ERROR]%b %s\n' "${RED}" "${NC}" "$1"
 }
 
 # Fetch latest version from GitHub API
 get_latest_version() {
-    local latest_info
+    latest_info=""
     if command -v curl >/dev/null 2>&1; then
         latest_info=$(curl -fsSL "$GITHUB_API_URL" 2>/dev/null)
     elif command -v wget >/dev/null 2>&1; then
@@ -46,20 +45,20 @@ get_latest_version() {
         exit 1
     fi
 
-    local version
-    version=$(echo "$latest_info" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+    version=$(printf '%s' "$latest_info" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
     if [ -z "$version" ]; then
         print_error "Could not parse version from GitHub API response"
         exit 1
     fi
 
-    version=$(echo "$version" | sed 's/^v//')
-    echo "$version"
+    version=$(printf '%s' "$version" | sed 's/^v//')
+    printf '%s' "$version"
 }
 
 # Detect OS and architecture
 detect_platform() {
-    local os arch
+    os=""
+    arch=""
     case "$(uname -s)" in
         Linux*) os="linux" ;;
         Darwin*) os="darwin" ;;
@@ -89,39 +88,66 @@ detect_platform() {
         *) print_error "Unsupported architecture: $(uname -m)"; exit 1 ;;
     esac
 
-    echo "${os}_${arch}"
+    printf '%s_%s' "$os" "$arch"
 }
 
 # Determine installation directory
 get_install_dir() {
-    if [ "$OS" = "windows" ]; then
-        echo "$HOME/bin"
-    else
-        if echo "$PATH" | grep -q "/usr/local/bin" && [ -w "/usr/local/bin" ]; then
+    case "$PLATFORM" in
+        *windows*)
+            echo "$HOME/bin"
+            ;;
+        *)
+            # Prefer /usr/local/bin for system-wide installation
             echo "/usr/local/bin"
+            ;;
+    esac
+}
+
+# Check if we need sudo for installation
+needs_sudo() {
+    install_dir="$1"
+    if [ -w "$install_dir" ] 2>/dev/null; then
+        return 1  # No sudo needed
+    else
+        return 0  # Sudo needed
+    fi
+}
+
+# Get the appropriate command prefix (sudo or empty)
+get_sudo_cmd() {
+    install_dir="$1"
+    if needs_sudo "$install_dir"; then
+        if command -v sudo >/dev/null 2>&1; then
+            echo "sudo"
         else
-            echo "$HOME/.local/bin"
+            print_error "Cannot write to ${install_dir} and sudo is not available."
+            print_error "Please run this script as root or install sudo."
+            exit 1
         fi
+    else
+        echo ""
     fi
 }
 
 # Download and install Pangolin
 install_pangolin() {
-    local platform="$1"
-    local install_dir="$2"
-    local asset_name="pangolin-cli_${platform}"
-    local exe_suffix=""
-    local final_name="pangolin"
+    platform="$1"
+    install_dir="$2"
+    sudo_cmd="$3"
+    asset_name="pangolin-cli_${platform}"
+    final_name="pangolin"
 
-    if [[ "$platform" == *"windows"* ]]; then
-        asset_name="${asset_name}.exe"
-        exe_suffix=".exe"
-        final_name="pangolin.exe"
-    fi
+    case "$platform" in
+        *windows*)
+            asset_name="${asset_name}.exe"
+            final_name="pangolin.exe"
+            ;;
+    esac
 
-    local download_url="${BASE_URL}/${asset_name}"
-    local temp_file="/tmp/${final_name}"
-    local final_path="${install_dir}/${final_name}"
+    download_url="${BASE_URL}/${asset_name}"
+    temp_file="/tmp/${final_name}"
+    final_path="${install_dir}/${final_name}"
 
     print_status "Downloading Pangolin from ${download_url}"
 
@@ -134,12 +160,22 @@ install_pangolin() {
         exit 1
     fi
 
-    mkdir -p "$install_dir"
-    mv "$temp_file" "$final_path"
-    chmod +x "$final_path"
+    # Make executable before moving
+    chmod +x "$temp_file"
+
+    # Create install directory if it doesn't exist and move binary
+    if [ -n "$sudo_cmd" ]; then
+        $sudo_cmd mkdir -p "$install_dir"
+        print_status "Using sudo to install to ${install_dir}"
+        $sudo_cmd mv "$temp_file" "$final_path"
+    else
+        mkdir -p "$install_dir"
+        mv "$temp_file" "$final_path"
+    fi
 
     print_status "Pangolin installed to ${final_path}"
 
+    # Check if install directory is in PATH
     if ! echo "$PATH" | grep -q "$install_dir"; then
         print_warning "Install directory ${install_dir} is not in your PATH."
         print_warning "Add it with:"
@@ -149,17 +185,18 @@ install_pangolin() {
 
 # Verify installation
 verify_installation() {
-    local install_dir="$1"
-    local exe_suffix=""
+    install_dir="$1"
+    exe_suffix=""
 
-    if [[ "$PLATFORM" == *"windows"* ]]; then
-        exe_suffix=".exe"
-    fi
+    case "$PLATFORM" in
+        *windows*) exe_suffix=".exe" ;;
+    esac
 
-    local pangolin_path="${install_dir}/pangolin${exe_suffix}"
+    pangolin_path="${install_dir}/pangolin${exe_suffix}"
+
     if [ -x "$pangolin_path" ]; then
         print_status "Installation successful!"
-        print_status "pangolin version: $("$pangolin_path" version 2>/dev/null || echo "unknown")"
+        print_status "pangolin version: $("$pangolin_path" version 2>/dev/null || printf 'unknown')"
         return 0
     else
         print_error "Installation failed. Binary not found or not executable."
@@ -183,7 +220,13 @@ main() {
     INSTALL_DIR=$(get_install_dir)
     print_status "Install directory: ${INSTALL_DIR}"
 
-    install_pangolin "$PLATFORM" "$INSTALL_DIR"
+    # Check if we need sudo
+    SUDO_CMD=$(get_sudo_cmd "$INSTALL_DIR")
+    if [ -n "$SUDO_CMD" ]; then
+        print_status "Root privileges required for installation to ${INSTALL_DIR}"
+    fi
+
+    install_pangolin "$PLATFORM" "$INSTALL_DIR" "$SUDO_CMD"
 
     if verify_installation "$INSTALL_DIR"; then
         print_status "Pangolin is ready to use!"

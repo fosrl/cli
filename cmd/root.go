@@ -12,6 +12,7 @@ import (
 	"github.com/fosrl/cli/cmd/auth/logout"
 	"github.com/fosrl/cli/cmd/authdaemon"
 	"github.com/fosrl/cli/cmd/down"
+	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/ssh"
@@ -49,7 +50,8 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 	cmd.AddCommand(apply.ApplyCommand())
 	cmd.AddCommand(selectcmd.SelectCmd())
-	
+	cmd.AddCommand(list.ListCmd())
+
 	// Platform-specific commands - nil on unsupported platforms
 	if upCmd := up.UpCmd(); upCmd != nil {
 		cmd.AddCommand(upCmd)
@@ -63,7 +65,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	if statusCmd := status.StatusCmd(); statusCmd != nil {
 		cmd.AddCommand(statusCmd)
 	}
-	
+
 	cmd.AddCommand(ssh.SSHCmd())
 	cmd.AddCommand(update.UpdateCmd())
 	cmd.AddCommand(version.VersionCmd())

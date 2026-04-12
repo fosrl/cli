@@ -10,14 +10,15 @@ import (
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
+	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
 var (
-	errHostnameRequired   = errors.New("API did not return a hostname for the connection")
-	errResourceIDRequired = errors.New("Resource (alias or identifier) is required; example: pangolin ssh my-server.internal")
-	errOrgRequired        = errors.New("Organization is required")
-	errNoClientRunning    = errors.New("No client is currently running. Start the client first with `pangolin up`")
+	errHostnameRequired       = errors.New("API did not return a hostname for the connection")
+	errResourceIDRequired     = errors.New("Resource (alias or identifier) is required; example: pangolin ssh my-server.internal")
+	errNoClientRunning        = errors.New("No client is currently running. Start the client first with `pangolin up`")
+	errNoClientRunningWindows = errors.New("No client is currently running. Start the client first in the system tray")
 )
 
 func SSHCmd() *cobra.Command {
@@ -54,7 +55,7 @@ func SSHCmd() *cobra.Command {
 				logger.Warning("%v", err) // we pass through this warning for backward compatibility with older olm api servers
 			}
 
-			orgID, err := ResolveOrgID(accountStore, "")
+			orgID, err := utils.ResolveOrgID(accountStore, "")
 			if err != nil {
 				logger.Error("%v", err)
 				os.Exit(1)

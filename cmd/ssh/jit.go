@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/fosrl/cli/internal/api"
-	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/sshkeys"
 )
 
@@ -63,19 +62,4 @@ func GenerateAndSignKey(client *api.Client, orgID string, resourceID string) (pr
 	}
 
 	return "", "", "", nil, fmt.Errorf("SSH error: timed out waiting for round-trip message")
-}
-
-// ResolveOrgID returns orgID from the flag or the active account. Returns empty string and nil error if both are empty.
-func ResolveOrgID(accountStore *config.AccountStore, flagOrgID string) (string, error) {
-	if flagOrgID != "" {
-		return flagOrgID, nil
-	}
-	active, err := accountStore.ActiveAccount()
-	if err != nil || active == nil {
-		return "", errOrgRequired
-	}
-	if active.OrgID == "" {
-		return "", errOrgRequired
-	}
-	return active.OrgID, nil
 }

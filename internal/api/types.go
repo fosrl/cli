@@ -308,3 +308,16 @@ type SignSSHKeyResponse struct {
 	Error   *string        `json:"error,omitempty"`
 	Data    SignSSHKeyData `json:"data"`
 }
+
+// ListUserResourceAliasesData is the inner `data` of GET /org/:orgId/user-resource-aliases.
+type ListUserResourceAliasesData struct {
+	Aliases    []string          `json:"aliases"`
+	Pagination AliasesPagination `json:"pagination"`
+}
+
+// AliasesPagination matches the paginated API envelope for user-resource-aliases.
+type AliasesPagination struct {
+	Total    int `json:"total"`
+	PageSize int `json:"pageSize"`
+	Page     int `json:"page"`
+}

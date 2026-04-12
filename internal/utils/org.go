@@ -1,13 +1,33 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 )
+
+// ErrOrgRequired is returned when an org ID is needed but the active account has none set.
+var ErrOrgRequired = errors.New("Organization is required")
+
+// ResolveOrgID returns orgID from flagOrgID when non-empty; otherwise the active account's org ID.
+func ResolveOrgID(accountStore *config.AccountStore, flagOrgID string) (string, error) {
+	if flagOrgID != "" {
+		return flagOrgID, nil
+	}
+	active, err := accountStore.ActiveAccount()
+	if err != nil || active == nil {
+		return "", ErrOrgRequired
+	}
+	if active.OrgID == "" {
+		return "", ErrOrgRequired
+	}
+	return active.OrgID, nil
+}
 
 // SelectOrgForm lists organizations for a user and prompts them to select one.
 // It returns the selected org ID and any error.

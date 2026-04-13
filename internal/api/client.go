@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -358,6 +359,22 @@ func (c *Client) CheckOrgUserAccess(orgID, userID string) (*CheckOrgUserAccessRe
 		return nil, err
 	}
 	return &response, nil
+}
+
+// ListUserResourceAliases returns one page of host-mode private site resource aliases for the user in the org.
+func (c *Client) ListUserResourceAliases(orgID string, page, pageSize int) (*ListUserResourceAliasesData, error) {
+	path := fmt.Sprintf("/org/%s/user-resource-aliases", url.PathEscape(orgID))
+	var data ListUserResourceAliasesData
+	opts := RequestOptions{
+		Query: map[string]string{
+			"page":     strconv.Itoa(page),
+			"pageSize": strconv.Itoa(pageSize),
+		},
+	}
+	if err := c.Get(path, &data, opts); err != nil {
+		return nil, err
+	}
+	return &data, nil
 }
 
 // SignSSHKey signs an SSH public key for the given org and resource.

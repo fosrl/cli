@@ -4,18 +4,19 @@ import (
 	"errors"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
+	"github.com/fosrl/cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
 var (
 	errHostnameRequired       = errors.New("API did not return a hostname for the connection")
 	errResourceIDRequired     = errors.New("Resource (alias or identifier) is required; example: pangolin ssh my-server.internal")
-	errOrgRequired            = errors.New("Organization is required")
 	errNoClientRunning        = errors.New("No client is currently running. Start the client first with `pangolin up`")
 	errNoClientRunningWindows = errors.New("No client is currently running. Start the client first in the system tray")
 )
@@ -39,27 +40,22 @@ func SSHCmd() *cobra.Command {
 			return nil
 		},
 		Run: func(c *cobra.Command, args []string) {
-			if runtime.GOOS != "windows" {
-				client := olm.NewClient("")
-				if !client.IsRunning() {
-					logger.Error("%v", errNoClientRunning)
-					os.Exit(1)
-				}
-			} else {
-				// check if the named pipe exists by trying to open it. If it doesn't exist, the client is not running.
-				pipePath := `\\.\pipe\pangolin-olm`
-				pipeFile, err := os.Open(pipePath)
-				if err != nil {
-					logger.Error("%v", errNoClientRunningWindows)
-					os.Exit(1)
-				}
-				pipeFile.Close()
+			client := olm.NewClient("")
+			if !client.IsRunning() {
+				logger.Error("%v", errNoClientRunning)
+				os.Exit(1)
 			}
 
 			apiClient := api.FromContext(c.Context())
 			accountStore := config.AccountStoreFromContext(c.Context())
 
-			orgID, err := ResolveOrgID(accountStore, "")
+			// init a jit connection to the site if we need to because we might not be connected
+			_, err := client.JITConnectByResourceID(opts.ResourceID)
+			if err != nil {
+				logger.Warning("%v", err) // we pass through this warning for backward compatibility with older olm api servers
+			}
+
+			orgID, err := utils.ResolveOrgID(accountStore, "")
 			if err != nil {
 				logger.Error("%v", err)
 				os.Exit(1)
@@ -73,6 +69,40 @@ func SSHCmd() *cobra.Command {
 			if signData == nil || signData.Hostname == "" {
 				logger.Error("%v", errHostnameRequired)
 				os.Exit(1)
+			}
+			
+			// logger.Info("signData: %+v", signData)
+			
+			siteIDs := []int{}
+			if signData.SiteID != 0 {
+				siteIDs = append(siteIDs, signData.SiteID)
+			}
+			for _, id := range signData.SiteIDs {
+				if id != 0 {
+					siteIDs = append(siteIDs, id)
+				}
+			}
+
+			if len(siteIDs) > 0 { // older versions of the server did not send back the site id so we need to check for backward compatibility
+				for _, siteID := range siteIDs {
+					deadline := time.Now().Add(15 * time.Second)
+					connected := false
+					for time.Now().Before(deadline) {
+						status, err := client.GetStatus()
+						if err == nil {
+							if peer, ok := status.PeerStatuses[siteID]; ok && peer.Connected {
+								connected = true
+								// logger.Info("site is connected")
+								break
+							}
+						}
+						time.Sleep(500 * time.Millisecond)
+					}
+					if !connected {
+						logger.Error("site %d is not connected; timed out waiting for connection", siteID)
+						os.Exit(1)
+					}
+				}
 			}
 
 			passThrough := args[1:]

@@ -280,6 +280,7 @@ type SignSSHKeyRequest struct {
 }
 
 type SignSSHKeyData struct {
+	MessageIDs       []int64  `json:"messageIds"`
 	MessageID        int64    `json:"messageId"`
 	Certificate      string   `json:"certificate"`
 	KeyID            string   `json:"keyId"`
@@ -289,18 +290,34 @@ type SignSSHKeyData struct {
 	ExpiresInSeconds int      `json:"expiresIn"`
 	Hostname         string   `json:"sshHost"`     // hostname for SSH connection (returned by API)
 	User             string   `json:"sshUsername"` // user for SSH connection (returned by API)
+	ResourceID       int      `json:"resourceId"`  // resource ID for SSH connection (returned by API)
+	SiteIDs          []int    `json:"siteIds"`     // site ID for SSH connection (returned by API)
+	SiteID           int      `json:"siteId"`      // site ID for SSH connection (returned by API)
 }
 
 type RoundTripMessage struct {
-	MessageID   int64   `json:"messageId"`
-	Complete    bool    `json:"complete"`
-	SentAt      int64   `json:"sentAt"`     // epoch seconds
-	ReceivedAt  int64   `json:"receivedAt"`  // epoch seconds
-	Error       *string `json:"error,omitempty"`
+	MessageID  int64   `json:"messageId"`
+	Complete   bool    `json:"complete"`
+	SentAt     int64   `json:"sentAt"`     // epoch seconds
+	ReceivedAt int64   `json:"receivedAt"` // epoch seconds
+	Error      *string `json:"error,omitempty"`
 }
 
 type SignSSHKeyResponse struct {
 	Success bool           `json:"success"`
 	Error   *string        `json:"error,omitempty"`
 	Data    SignSSHKeyData `json:"data"`
+}
+
+// ListUserResourceAliasesData is the inner `data` of GET /org/:orgId/user-resource-aliases.
+type ListUserResourceAliasesData struct {
+	Aliases    []string          `json:"aliases"`
+	Pagination AliasesPagination `json:"pagination"`
+}
+
+// AliasesPagination matches the paginated API envelope for user-resource-aliases.
+type AliasesPagination struct {
+	Total    int `json:"total"`
+	PageSize int `json:"pageSize"`
+	Page     int `json:"page"`
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/fosrl/cli/internal/api"
-	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/sshkeys"
 )
 
@@ -29,8 +28,14 @@ func GenerateAndSignKey(client *api.Client, orgID string, resourceID string) (pr
 	if err != nil {
 		return "", "", "", nil, fmt.Errorf("SSH error: %w", err)
 	}
-	messageID := initResp.MessageID
-	if messageID == 0 {
+	
+	// Collect all message IDs to poll (support both single and multiple).
+	var messageIDs []int64
+	if len(initResp.MessageIDs) > 0 {
+		messageIDs = initResp.MessageIDs
+	} else if initResp.MessageID != 0 {
+		messageIDs = []int64{initResp.MessageID}
+	} else {
 		return "", "", "", nil, fmt.Errorf("SSH error: API did not return a message ID")
 	}
 
@@ -38,35 +43,23 @@ func GenerateAndSignKey(client *api.Client, orgID string, resourceID string) (pr
 
 	interval := pollStartInterval
 	for i := 0; i <= pollBackoffSteps; i++ {
-		msg, pollErr := client.GetRoundTripMessage(messageID)
-		if pollErr != nil {
-			return "", "", "", nil, fmt.Errorf("SSH error: poll: %w", pollErr)
-		}
-		if msg.Complete {
-			if msg.Error != nil && *msg.Error != "" {
-				return "", "", "", nil, fmt.Errorf("SSH error: %s", *msg.Error)
+		for _, messageID := range messageIDs {
+			msg, pollErr := client.GetRoundTripMessage(messageID)
+			if pollErr != nil {
+				return "", "", "", nil, fmt.Errorf("SSH error: poll: %w", pollErr)
 			}
-			return privPEM, pubKey, initResp.Certificate, initResp, nil
+			if msg.Complete {
+				if msg.Error != nil && *msg.Error != "" {
+					return "", "", "", nil, fmt.Errorf("SSH error: %s", *msg.Error)
+				}
+				return privPEM, pubKey, initResp.Certificate, initResp, nil
+			}
 		}
 		if i < pollBackoffSteps {
 			time.Sleep(interval)
 			interval *= 2
 		}
 	}
-	return "", "", "", nil, fmt.Errorf("SSH error: timed out waiting for round-trip message")
-}
 
-// ResolveOrgID returns orgID from the flag or the active account. Returns empty string and nil error if both are empty.
-func ResolveOrgID(accountStore *config.AccountStore, flagOrgID string) (string, error) {
-	if flagOrgID != "" {
-		return flagOrgID, nil
-	}
-	active, err := accountStore.ActiveAccount()
-	if err != nil || active == nil {
-		return "", errOrgRequired
-	}
-	if active.OrgID == "" {
-		return "", errOrgRequired
-	}
-	return active.OrgID, nil
+	return "", "", "", nil, fmt.Errorf("SSH error: timed out waiting for round-trip message")
 }

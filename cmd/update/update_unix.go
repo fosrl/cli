@@ -28,8 +28,17 @@ func UpdateCmd() *cobra.Command {
 func updateMain() error {
 	logger.Info("Updating Pangolin CLI...")
 
-	// Execute: curl -fsSL https://pangolin.net/get-cli.sh | bash
-	updateCmd := exec.Command("sh", "-c", "curl -fsSL https://static.pangolin.net/get-cli.sh | bash")
+	// Get the path of the current running binary
+	execPath, err := os.Executable()
+	if err != nil {
+		logger.Error("Failed to get current executable path: %v", err)
+		return err
+	}
+	
+	logger.Debug("Current executable path: %s", execPath)
+
+	// Execute: curl -fsSL https://static.pangolin.net/get-cli.sh | bash -s -- --path /current/binary/path
+	updateCmd := exec.Command("sh", "-c", "curl -fsSL https://static.pangolin.net/get-cli.sh | bash -s -- --path "+execPath)
 	updateCmd.Stdin = os.Stdin
 	updateCmd.Stdout = os.Stdout
 	updateCmd.Stderr = os.Stderr

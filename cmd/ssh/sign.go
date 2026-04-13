@@ -42,7 +42,7 @@ func SignCmd() *cobra.Command {
 			apiClient := api.FromContext(c.Context())
 			accountStore := config.AccountStoreFromContext(c.Context())
 
-			orgID, err := ResolveOrgID(accountStore, "")
+			orgID, err := utils.ResolveOrgID(accountStore, "")
 			if err != nil {
 				logger.Error("%v", err)
 				os.Exit(1)

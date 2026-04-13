@@ -2,19 +2,15 @@ package olm
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"os"
 	"time"
 )
 
 const (
-	defaultSocketPath = "/var/run/olm.sock"
-	AgentName         = "Pangolin CLI"
+	AgentName = "Pangolin CLI"
 )
 
 // Client handles communication with the OLM process via Unix socket
@@ -69,6 +65,18 @@ type SwitchOrgResponse struct {
 	Status string `json:"status"`
 }
 
+// JITConnectionRequest represents a Just-In-Time connection request.
+// Exactly one of SiteID or ResourceID must be set.
+type JITConnectionRequest struct {
+	Site     string `json:"site,omitempty"`
+	Resource string `json:"resource,omitempty"`
+}
+
+// JITConnectionResponse represents the response from a JIT connection request
+type JITConnectionResponse struct {
+	Status string `json:"status"`
+}
+
 // NewClient creates a new OLM socket client
 func NewClient(socketPath string) *Client {
 	if socketPath == "" {
@@ -78,28 +86,19 @@ func NewClient(socketPath string) *Client {
 	return &Client{
 		socketPath: socketPath,
 		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
-			Transport: &http.Transport{
-				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-					return net.Dial("unix", socketPath)
-				},
-			},
+			Timeout:   5 * time.Second,
+			Transport: newHTTPTransport(socketPath),
 		},
 	}
 }
 
-// getDefaultSocketPath returns the default socket path
-func getDefaultSocketPath() string {
-	return defaultSocketPath
-}
-
-// GetDefaultSocketPath returns the default socket path (exported for use in other packages)
-func GetDefaultSocketPath() string {
-	return getDefaultSocketPath()
-}
-
 // doRequest performs an HTTP request and handles common error cases
 func (c *Client) doRequest(method, path string, body io.Reader, headers map[string]string) (*http.Response, error) {
+	return c.doRequestExpecting(method, path, body, headers, http.StatusOK)
+}
+
+// doRequestExpecting performs an HTTP request and treats the given status code as success
+func (c *Client) doRequestExpecting(method, path string, body io.Reader, headers map[string]string, expectedStatus int) (*http.Response, error) {
 	req, err := http.NewRequest(method, "http://localhost"+path, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -111,14 +110,13 @@ func (c *Client) doRequest(method, path string, body io.Reader, headers map[stri
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		// Check if socket file exists
-		if _, statErr := os.Stat(c.socketPath); os.IsNotExist(statErr) {
+		if !socketExists(c.socketPath) {
 			return nil, fmt.Errorf("socket does not exist: %s (is the client running?)", c.socketPath)
 		}
 		return nil, fmt.Errorf("failed to connect to socket: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != expectedStatus {
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
@@ -183,12 +181,51 @@ func (c *Client) SwitchOrg(orgID string) (*SwitchOrgResponse, error) {
 	return &switchOrgResp, nil
 }
 
+// jitConnect is the shared implementation for JIT connection requests
+func (c *Client) jitConnect(req JITConnectionRequest) (*JITConnectionResponse, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	resp, err := c.doRequestExpecting("POST", "/jit-connect", bytes.NewBuffer(jsonData), map[string]string{
+		"Content-Type": "application/json",
+	}, http.StatusAccepted)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var jitResp JITConnectionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&jitResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &jitResp, nil
+}
+
+// JITConnectBySiteID initiates a dynamic Just-In-Time connection to the given site
+func (c *Client) JITConnectBySiteID(siteID string) (*JITConnectionResponse, error) {
+	if siteID == "" {
+		return nil, fmt.Errorf("siteID must not be empty")
+	}
+	return c.jitConnect(JITConnectionRequest{Site: siteID})
+}
+
+// JITConnectByResourceID initiates a dynamic Just-In-Time connection to the site
+// that serves the given resource
+func (c *Client) JITConnectByResourceID(resourceID string) (*JITConnectionResponse, error) {
+	if resourceID == "" {
+		return nil, fmt.Errorf("resourceID must not be empty")
+	}
+	return c.jitConnect(JITConnectionRequest{Resource: resourceID})
+}
+
 // IsRunning checks if the OLM process is running by checking if the socket exists
 // and making a health check request to verify the service is responding
 func (c *Client) IsRunning() bool {
 	// First check if socket exists
-	_, err := os.Stat(c.socketPath)
-	if err != nil {
+	if !socketExists(c.socketPath) {
 		return false
 	}
 

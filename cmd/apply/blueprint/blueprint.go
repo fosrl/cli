@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/fosrl/cli/internal/api"
@@ -86,6 +87,8 @@ func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
 		return err
 	}
 
+	blueprintContents = interpolateBlueprint(blueprintContents)
+
 	_, err = api.ApplyBlueprint(account.OrgID, opts.Name, string(blueprintContents))
 	if err != nil {
 		logger.Error("Error: failed to apply blueprint: %v", err)
@@ -95,4 +98,26 @@ func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
 	logger.Info("Successfully applied blueprint!")
 
 	return nil
+}
+
+// interpolateBlueprint finds all {{...}} tokens in the raw blueprint bytes and
+// replaces recognised schemes with their resolved values. Currently supported:
+//
+//   - env.<VAR>  – replaced with the value of the named environment variable
+//
+// Any token that does not match a supported scheme is left as-is so that
+// future schemes are preserved rather than silently dropped.
+func interpolateBlueprint(data []byte) []byte {
+	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
+	return re.ReplaceAllFunc(data, func(match []byte) []byte {
+		inner := strings.TrimSpace(string(match[2 : len(match)-2]))
+
+		if strings.HasPrefix(inner, "env.") {
+			varName := strings.TrimPrefix(inner, "env.")
+			return []byte(os.Getenv(varName))
+		}
+
+		// unrecognised scheme – leave the token untouched
+		return match
+	})
 }

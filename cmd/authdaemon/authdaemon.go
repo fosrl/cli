@@ -41,6 +41,9 @@ func AuthDaemonCmd() *cobra.Command {
 		Long:  "Start the auth daemon for remote SSH authentication",
 		PreRunE: func(c *cobra.Command, args []string) error {
 			if opts.PreSharedKey == "" {
+				opts.PreSharedKey = os.Getenv("AUTH_DAEMON_PRE_SHARED_KEY")
+			}
+			if opts.PreSharedKey == "" {
 				return errPresharedKeyRequired
 			}
 			if os.Geteuid() != 0 {
@@ -53,8 +56,7 @@ func AuthDaemonCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.PreSharedKey, "pre-shared-key", "", "Preshared key required for all requests to the auth daemon (required)")
-	cmd.MarkFlagRequired("pre-shared-key")
+	cmd.Flags().StringVar(&opts.PreSharedKey, "pre-shared-key", "", "Preshared key required for all requests to the auth daemon (required). Can also be set via AUTH_DAEMON_PRE_SHARED_KEY env var")
 	cmd.Flags().IntVar(&opts.Port, "port", defaultPort, "TCP listen port for the HTTPS server")
 	cmd.Flags().StringVar(&opts.PrincipalsFile, "principals-file", defaultPrincipalsPath, "Path to the principals file")
 	cmd.Flags().StringVar(&opts.CACertPath, "ca-cert-path", defaultCACertPath, "Path to the CA certificate file")

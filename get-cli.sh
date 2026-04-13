@@ -104,6 +104,26 @@ get_install_dir() {
     esac
 }
 
+# Parse --path argument from args
+# Returns the value after --path, or empty string if not provided
+parse_path_arg() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --path)
+                if [ -n "$2" ]; then
+                    printf '%s' "$2"
+                    return
+                fi
+                ;;
+            --path=*)
+                printf '%s' "${1#--path=}"
+                return
+                ;;
+        esac
+        shift
+    done
+}
+
 # Check if we need sudo for installation
 needs_sudo() {
     install_dir="$1"
@@ -135,6 +155,7 @@ install_pangolin() {
     platform="$1"
     install_dir="$2"
     sudo_cmd="$3"
+    custom_path="$4"
     asset_name="pangolin-cli_${platform}"
     final_name="pangolin"
 
@@ -147,7 +168,14 @@ install_pangolin() {
 
     download_url="${BASE_URL}/${asset_name}"
     temp_file="/tmp/${final_name}"
-    final_path="${install_dir}/${final_name}"
+
+    # If a custom path is provided, use it directly; otherwise use install_dir/final_name
+    if [ -n "$custom_path" ]; then
+        final_path="$custom_path"
+        install_dir=$(dirname "$final_path")
+    else
+        final_path="${install_dir}/${final_name}"
+    fi
 
     print_status "Downloading Pangolin from ${download_url}"
 
@@ -206,7 +234,14 @@ verify_installation() {
 
 # Main function
 main() {
-    print_status "Installing latest version of Pangolin..."
+    # Check for --path argument
+    CUSTOM_PATH=$(parse_path_arg "$@")
+
+    if [ -n "$CUSTOM_PATH" ]; then
+        print_status "Installing latest version of Pangolin to ${CUSTOM_PATH}..."
+    else
+        print_status "Installing latest version of Pangolin..."
+    fi
 
     print_status "Fetching latest version..."
     VERSION=$(get_latest_version)
@@ -217,7 +252,11 @@ main() {
     PLATFORM=$(detect_platform)
     print_status "Detected platform: ${PLATFORM}"
 
-    INSTALL_DIR=$(get_install_dir)
+    if [ -n "$CUSTOM_PATH" ]; then
+        INSTALL_DIR=$(dirname "$CUSTOM_PATH")
+    else
+        INSTALL_DIR=$(get_install_dir)
+    fi
     print_status "Install directory: ${INSTALL_DIR}"
 
     # Check if we need sudo
@@ -226,9 +265,18 @@ main() {
         print_status "Root privileges required for installation to ${INSTALL_DIR}"
     fi
 
-    install_pangolin "$PLATFORM" "$INSTALL_DIR" "$SUDO_CMD"
+    install_pangolin "$PLATFORM" "$INSTALL_DIR" "$SUDO_CMD" "$CUSTOM_PATH"
 
-    if verify_installation "$INSTALL_DIR"; then
+    if [ -n "$CUSTOM_PATH" ]; then
+        if [ -x "$CUSTOM_PATH" ]; then
+            print_status "Installation successful!"
+            print_status "pangolin version: $("$CUSTOM_PATH" version 2>/dev/null || printf 'unknown')"
+            print_status "Pangolin is ready to use!"
+        else
+            print_error "Installation failed. Binary not found or not executable at ${CUSTOM_PATH}."
+            exit 1
+        fi
+    elif verify_installation "$INSTALL_DIR"; then
         print_status "Pangolin is ready to use!"
         print_status "Run 'pangolin --help' to get started."
     else

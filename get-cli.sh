@@ -91,7 +91,7 @@ detect_platform() {
     printf '%s_%s' "$os" "$arch"
 }
 
-# Determine installation directory
+# Determine installation directory (default fallback)
 get_install_dir() {
     case "$PLATFORM" in
         *windows*)
@@ -122,6 +122,29 @@ parse_path_arg() {
         esac
         shift
     done
+}
+
+# Detect an existing pangolin binary location.
+# Tries unprivileged which first, then sudo which (for binaries only visible to root).
+# Returns the full path of the binary, or empty string if not found.
+detect_existing_binary() {
+    existing=""
+
+    # Try unprivileged which first
+    existing=$(command -v pangolin 2>/dev/null || true)
+    if [ -n "$existing" ]; then
+        printf '%s' "$existing"
+        return
+    fi
+
+    # Try sudo which — some installations land in paths only root can see in $PATH
+    if command -v sudo >/dev/null 2>&1; then
+        existing=$(sudo which pangolin 2>/dev/null || true)
+        if [ -n "$existing" ]; then
+            printf '%s' "$existing"
+            return
+        fi
+    fi
 }
 
 # Check if we need sudo for installation
@@ -234,11 +257,11 @@ verify_installation() {
 
 # Main function
 main() {
-    # Check for --path argument
+    # --path explicitly overrides everything
     CUSTOM_PATH=$(parse_path_arg "$@")
 
     if [ -n "$CUSTOM_PATH" ]; then
-        print_status "Installing latest version of Pangolin to ${CUSTOM_PATH}..."
+        print_status "Installing latest version of Pangolin to ${CUSTOM_PATH} (--path override)..."
     else
         print_status "Installing latest version of Pangolin..."
     fi
@@ -253,10 +276,21 @@ main() {
     print_status "Detected platform: ${PLATFORM}"
 
     if [ -n "$CUSTOM_PATH" ]; then
+        # --path wins; derive INSTALL_DIR from it
         INSTALL_DIR=$(dirname "$CUSTOM_PATH")
     else
-        INSTALL_DIR=$(get_install_dir)
+        # Try to find an existing installation so we update the right place
+        EXISTING_BINARY=$(detect_existing_binary)
+        if [ -n "$EXISTING_BINARY" ]; then
+            print_status "Found existing Pangolin binary at ${EXISTING_BINARY}"
+            CUSTOM_PATH="$EXISTING_BINARY"
+            INSTALL_DIR=$(dirname "$EXISTING_BINARY")
+            print_status "Will update existing installation at ${INSTALL_DIR}"
+        else
+            INSTALL_DIR=$(get_install_dir)
+        fi
     fi
+
     print_status "Install directory: ${INSTALL_DIR}"
 
     # Check if we need sudo

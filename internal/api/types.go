@@ -9,13 +9,10 @@ import (
 
 // Client represents the API client configuration
 type Client struct {
-	BaseURL           string
-	AgentName         string
-	APIKey            string
-	Token             string
-	SessionCookieName string
-	CSRFToken         string
-	HTTPClient        *HTTPClient
+	BaseURL    string
+	AgentName  string
+	Session    ClientSession
+	HTTPClient *HTTPClient
 }
 
 // HTTPClient wraps the standard http.Client with additional configuration

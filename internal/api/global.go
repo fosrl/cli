@@ -31,3 +31,4 @@ func InitClient(hostname string, token string) (*Client, error) {
 
 	return client, nil
 }
+

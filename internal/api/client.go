@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/fosrl/cli/internal/version"
+	yaml "go.yaml.in/yaml/v3"
 )
 
 // ClientConfig holds configuration for creating a new client
@@ -33,22 +35,26 @@ func NewClient(config ClientConfig) (*Client, error) {
 		baseURL = "https://" + baseURL
 	}
 
-	// Default session cookie name
-	sessionCookieName := config.SessionCookieName
-	if sessionCookieName == "" {
-		sessionCookieName = "p_session_token"
+	var session ClientSession
+	if config.APIKey != "" {
+		session = NewIntegrationAPIKeySession()
+		session.APIKey = config.APIKey
+	} else {
+		session = NewUserClientSession()
+		session.SessionToken = config.Token
+	}
+	if config.SessionCookieName != "" {
+		session.SessionCookieName = config.SessionCookieName
+	}
+	if config.CSRFToken != "" {
+		session.CSRFToken = config.CSRFToken
 	}
 
 	client := &Client{
-		BaseURL:           strings.TrimSuffix(baseURL, "/"),
-		AgentName:         config.AgentName,
-		APIKey:            config.APIKey,
-		Token:             config.Token,
-		SessionCookieName: sessionCookieName,
-		CSRFToken:         config.CSRFToken,
-		HTTPClient: &HTTPClient{
-			Timeout: 30 * time.Second,
-		},
+		BaseURL:    strings.TrimSuffix(baseURL, "/"),
+		AgentName:  config.AgentName,
+		Session:    session,
+		HTTPClient: &HTTPClient{Timeout: 30 * time.Second},
 	}
 
 	return client, nil
@@ -111,23 +117,7 @@ func (c *Client) request(method, endpoint string, payload interface{}, result in
 	userAgent := getUserAgent(c.AgentName)
 	req.Header.Set("User-Agent", userAgent)
 
-	// Set CSRF header if provided
-	if c.CSRFToken != "" {
-		req.Header.Set("X-CSRF-Token", c.CSRFToken)
-	}
-
-	// Set authentication
-	if c.Token != "" {
-		// Token is sent as a cookie
-		cookie := &http.Cookie{
-			Name:  c.SessionCookieName,
-			Value: c.Token,
-		}
-		req.AddCookie(cookie)
-	} else if c.APIKey != "" {
-		// API key is sent as Bearer token
-		req.Header.Set("Authorization", "Bearer "+c.APIKey)
-	}
+	c.Session.ApplyToRequest(req)
 
 	// Apply custom headers from options
 	if len(opts) > 0 && opts[0].Headers != nil {
@@ -238,7 +228,30 @@ func (c *Client) SetBaseURL(baseURL string) {
 
 // SetToken updates the token for the client
 func (c *Client) SetToken(token string) {
-	c.Token = token
+	c.Session = NewUserClientSession()
+	c.Session.SessionToken = token
+}
+
+// WithIntegrationAPIKey clones the current client and switches it to use
+// integration API key authentication against the provided endpoint.
+func (c *Client) WithIntegrationAPIKey(hostname, apiKey string) (*Client, error) {
+	baseURL := hostname
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
+
+	sess := NewIntegrationAPIKeySession()
+	sess.APIKey = apiKey
+	sess.SessionCookieName = c.Session.SessionCookieName
+	sess.CSRFToken = c.Session.CSRFToken
+
+	return &Client{
+		BaseURL:    baseURL,
+		AgentName:  c.AgentName,
+		Session:    sess,
+		HTTPClient: c.HTTPClient,
+	}, nil
 }
 
 // Logout logs out the current user
@@ -469,16 +482,7 @@ func (c *Client) CheckHealth() (bool, error) {
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept", "application/json")
 
-	// Set authentication if available
-	if c.Token != "" {
-		cookie := &http.Cookie{
-			Name:  c.SessionCookieName,
-			Value: c.Token,
-		}
-		req.AddCookie(cookie)
-	} else if c.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+c.APIKey)
-	}
+	c.Session.ApplyToRequest(req)
 
 	resp, err := testClient.Do(req)
 	if err != nil {
@@ -640,12 +644,7 @@ func LoginWithCookie(client *Client, req LoginRequest) (*LoginResponse, string, 
 	userAgent := getUserAgent(client.AgentName)
 	setJSONRequestHeaders(httpReq, userAgent)
 
-	// Set CSRF token header
-	csrfToken := client.CSRFToken
-	if csrfToken == "" {
-		csrfToken = "x-csrf-protection"
-	}
-	httpReq.Header.Set("X-CSRF-Token", csrfToken)
+	client.Session.ApplyToRequest(httpReq)
 
 	// Execute request
 	httpClient := createHTTPClient(client.HTTPClient.Timeout)
@@ -657,7 +656,7 @@ func LoginWithCookie(client *Client, req LoginRequest) (*LoginResponse, string, 
 
 	// Extract session cookie
 	for _, cookie := range resp.Cookies() {
-		if cookie.Name == client.SessionCookieName || cookie.Name == "p_session" {
+		if cookie.Name == client.Session.SessionCookieName || cookie.Name == "p_session" {
 			sessionToken = cookie.Value
 			break
 		}
@@ -732,12 +731,7 @@ func StartDeviceWebAuth(client *Client, req DeviceWebAuthStartRequest) (*DeviceW
 	userAgent := getUserAgent(client.AgentName)
 	setJSONRequestHeaders(httpReq, userAgent)
 
-	// Set CSRF token header
-	csrfToken := client.CSRFToken
-	if csrfToken == "" {
-		csrfToken = "x-csrf-protection"
-	}
-	httpReq.Header.Set("X-CSRF-Token", csrfToken)
+	client.Session.ApplyToRequest(httpReq)
 
 	// Execute request
 	httpClient := createHTTPClient(client.HTTPClient.Timeout)
@@ -795,12 +789,7 @@ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse,
 	userAgent := getUserAgent(client.AgentName)
 	setJSONResponseHeaders(httpReq, userAgent)
 
-	// Set CSRF token header
-	csrfToken := client.CSRFToken
-	if csrfToken == "" {
-		csrfToken = "x-csrf-protection"
-	}
-	httpReq.Header.Set("X-CSRF-Token", csrfToken)
+	client.Session.ApplyToRequest(httpReq)
 
 	// Execute request
 	httpClient := createHTTPClient(client.HTTPClient.Timeout)
@@ -840,20 +829,45 @@ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse,
 	return &response, message, nil
 }
 
+// ApplyBlueprint applies a blueprint for the given org. Behavior depends on [Client.Session]:
+// user session clients use the app API with YAML in the body; integration API key clients use
+// the integration host with a base64-encoded JSON payload. The name is only used for user
+// session mode.
 func (c *Client) ApplyBlueprint(orgID string, name string, blueprint string) (*ApplyBlueprintResponse, error) {
-	// Create request payload with raw YAML content
+	if strings.TrimSpace(orgID) == "" {
+		return nil, fmt.Errorf("org id is required")
+	}
+
+	path := fmt.Sprintf("/org/%s/blueprint", orgID)
+
+	if c.Session.IsIntegrationAPIKey() {
+		var parsed interface{}
+		if err := yaml.Unmarshal([]byte(blueprint), &parsed); err != nil {
+			return nil, fmt.Errorf("failed to parse blueprint yaml: %w", err)
+		}
+		jsonBytes, err := json.Marshal(parsed)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert blueprint to json: %w", err)
+		}
+		requestBody := map[string]string{
+			"blueprint": base64.StdEncoding.EncodeToString(jsonBytes),
+		}
+		var response EmptyResponse
+		if err := c.Put(path, requestBody, &response); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
 	requestBody := ApplyBlueprintRequest{
 		Name:      name,
 		Blueprint: blueprint,
 		Source:    "CLI",
 	}
-
-	path := fmt.Sprintf("/org/%s/blueprint", orgID)
 	var response ApplyBlueprintResponse
-	err := c.Put(path, requestBody, &response)
-	if err != nil {
+	if err := c.Put(path, requestBody, &response); err != nil {
 		return nil, err
 	}
-
 	return &response, nil
 }
+

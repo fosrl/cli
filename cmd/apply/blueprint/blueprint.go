@@ -2,6 +2,7 @@ package blueprint
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,8 +15,11 @@ import (
 )
 
 type BlueprintCmdOpts struct {
-	Name string
-	Path string
+	Name     string
+	Path     string
+	APIKey   string
+	Endpoint string
+	OrgID    string
 }
 
 func BlueprintCmd() *cobra.Command {
@@ -26,77 +30,80 @@ func BlueprintCmd() *cobra.Command {
 		Short: "Apply a blueprint",
 		Long:  "Apply a YAML blueprint to the Pangolin server",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if opts.Path == "" {
-				return errors.New("--file is required")
+			// Integration API: any of the three flags implies all three are required (avoids silent session fallback).
+			integration := opts.APIKey != "" || opts.Endpoint != "" || opts.OrgID != ""
+			if integration && (opts.APIKey == "" || opts.Endpoint == "" || opts.OrgID == "") {
+				return errors.New("integration API mode requires --api-key, --endpoint, and --org together; omit all three to use your logged-in session and selected org")
 			}
-
-			if _, err := os.Stat(opts.Path); err != nil {
-				return err
-			}
-
-			// Strip file extension and use file basename path as name
-			if opts.Name == "" {
-				filename := filepath.Base(opts.Path)
-				if before, ok := strings.CutSuffix(filename, ".yaml"); ok {
-					opts.Name = before
-				} else if before, ok := strings.CutSuffix(filename, ".yml"); ok {
-					opts.Name = before
-				} else {
-					opts.Name = filename
-				}
-			}
-
-			if len(opts.Name) < 1 || len(opts.Name) > 255 {
-				return errors.New("name must be between 1-255 characters")
-			}
-
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := applyBlueprintMain(cmd, opts); err != nil {
-				os.Exit(1)
+				return err
 			}
+			logger.Info("Successfully applied blueprint!")
+			return nil
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.Path, "file", "f", "", "Path to blueprint file (required)")
-	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Name of blueprint (default: filename, without extension)")
+	cmd.Flags().StringVarP(&opts.Path, "file", "f", "", "Blueprint YAML file")
+	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Blueprint name (default: filename without extension)")
+	cmd.Flags().StringVar(&opts.APIKey, "api-key", "", "Integration API key (id.secret)")
+	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Integration API host URL")
+	cmd.Flags().StringVar(&opts.OrgID, "org", "", "Organization ID")
 	cmd.MarkFlagRequired("file")
 
 	return cmd
 }
 
 func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
-	api := api.FromContext(cmd.Context())
+	name := opts.Name
+	if name == "" {
+		filename := filepath.Base(opts.Path)
+		switch ext := strings.ToLower(filepath.Ext(filename)); ext {
+		case ".yaml", ".yml":
+			name = strings.TrimSuffix(filename, ext)
+		default:
+			name = filename
+		}
+	}
+	if len(name) < 1 || len(name) > 255 {
+		return errors.New("name must be between 1-255 characters")
+	}
+
+	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
-
-	account, err := accountStore.ActiveAccount()
-	if err != nil {
-		logger.Error("Error: %v", err)
-		return err
-	}
-
-	if account.OrgID == "" {
-		logger.Error("Error: no organization selected. Run 'pangolin select org' first.")
-		return errors.New("no organization selected")
-	}
 
 	blueprintContents, err := os.ReadFile(opts.Path)
 	if err != nil {
-		logger.Error("Error: failed to read blueprint file: %v", err)
-		return err
+		return fmt.Errorf("failed to read blueprint file: %w", err)
 	}
 
 	blueprintContents = interpolateBlueprint(blueprintContents)
 
-	_, err = api.ApplyBlueprint(account.OrgID, opts.Name, string(blueprintContents))
-	if err != nil {
-		logger.Error("Error: failed to apply blueprint: %v", err)
-		return err
+	client := apiClient
+	orgID := opts.OrgID
+
+	if opts.APIKey != "" {
+		client, err = apiClient.WithIntegrationAPIKey(opts.Endpoint, opts.APIKey)
+		if err != nil {
+			return fmt.Errorf("failed to initialize api key client: %w", err)
+		}
+	} else {
+		account, errAcc := accountStore.ActiveAccount()
+		if errAcc != nil {
+			return errAcc
+		}
+		if account.OrgID == "" {
+			return errors.New("no organization selected")
+		}
+		orgID = account.OrgID
 	}
 
-	logger.Info("Successfully applied blueprint!")
-
+	_, err = client.ApplyBlueprint(orgID, name, string(blueprintContents))
+	if err != nil {
+		return fmt.Errorf("failed to apply blueprint: %w", err)
+	}
 	return nil
 }
 

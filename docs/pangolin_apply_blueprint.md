@@ -13,12 +13,9 @@ pangolin apply blueprint [flags]
 ### Options
 
 ```
-      --api-key string    Integration API key (<id>.<secret>)
-      --endpoint string   Integration API host URL (required with --api-key, e.g. https://pangolin-api.example.com)
   -f, --file string   Path to blueprint file (required)
   -h, --help          help for blueprint
   -n, --name string   Name of blueprint (default: filename, without extension)
-      --org string        Organization ID (required with --api-key)
 ```
 
 ### SEE ALSO

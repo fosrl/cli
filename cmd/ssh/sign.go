@@ -96,6 +96,7 @@ func SignCmd() *cobra.Command {
 			}
 			fmt.Println("Usage with system ssh (scp, tunnels, etc.):")
 			fmt.Printf("  ssh -i %q -o CertificateFile=%q %s@%s\n", keyPath, certPath, user, hostname)
+			fmt.Printf("  ssh -i %q -o CertificateFile=%q -L 8080:127.0.0.1:80 -N %s@%s\n", keyPath, certPath, user, hostname)
 			fmt.Printf("  scp -i %q -o CertificateFile=%q ...\n", keyPath, certPath)
 		},
 	}

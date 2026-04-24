@@ -3,7 +3,6 @@ package ssh
 import (
 	"errors"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/fosrl/cli/internal/api"
@@ -24,14 +23,21 @@ var (
 func SSHCmd() *cobra.Command {
 	opts := struct {
 		ResourceID string
-		Exec       bool
+		Builtin    bool
 		Port       int
 	}{}
 
 	cmd := &cobra.Command{
 		Use:   "ssh <resource alias or identifier>",
 		Short: "Run an interactive SSH session",
-		Long:  `Run an SSH client in the terminal. Generates a key pair and signs it just-in-time, then connects to the target resource.`,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true, // -L, -R, and other ssh(1) flags are forwarded to the system OpenSSH client
+		},
+		Long: `Run an SSH client in the terminal. Generates a key pair and signs it just-in-time, then connects to the target resource.
+
+By default the system OpenSSH client is used on every platform. You can pass the same options as ssh(1) after the resource name (for example port forwards: -L, -R, -D, and -N), then an optional remote command. Example: pangolin ssh <resource> -L 8080:127.0.0.1:80 -N
+
+Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on all platforms.`,
 		PreRunE: func(c *cobra.Command, args []string) error {
 			if len(args) < 1 || args[0] == "" {
 				return errResourceIDRequired
@@ -70,9 +76,7 @@ func SSHCmd() *cobra.Command {
 				logger.Error("%v", errHostnameRequired)
 				os.Exit(1)
 			}
-			
-			// logger.Info("signData: %+v", signData)
-			
+
 			siteIDs := []int{}
 			if signData.SiteID != 0 {
 				siteIDs = append(siteIDs, signData.SiteID)
@@ -105,26 +109,26 @@ func SSHCmd() *cobra.Command {
 				}
 			}
 
-			passThrough := args[1:]
+			passThrough := mergePassThrough(os.Args, opts.ResourceID, args[1:])
+			pt := ParseOpenSSHPassThrough(passThrough)
 			runOpts := RunOpts{
-				User:          signData.User,
-				Hostname:      signData.Hostname,
-				Port:          opts.Port,
-				PrivateKeyPEM: privPEM,
-				Certificate:   cert,
-				PassThrough:   passThrough,
+				User:           signData.User,
+				Hostname:       signData.Hostname,
+				Port:           opts.Port,
+				PrivateKeyPEM:  privPEM,
+				Certificate:    cert,
+				SSHPassthrough: pt,
 			}
 
-			// On Windows, use the system ssh binary by default (better terminal/agent support).
-			useExec := opts.Exec || runtime.GOOS == "windows"
-			if len(passThrough) > 0 && !useExec {
-				logger.Warning("Passthrough arguments are ignored by the built-in client. Use --exec to pass them to the system ssh.")
+			useBuiltin := opts.Builtin
+			if len(passThrough) > 0 && useBuiltin {
+				logger.Warning("Extra arguments after the resource are ignored by the built-in client (port forwarding, remote commands, and other ssh(1) options). Omit --builtin to use the system OpenSSH client.")
 			}
 			var exitCode int
-			if useExec {
-				exitCode, err = RunExec(runOpts)
-			} else {
+			if useBuiltin {
 				exitCode, err = RunNative(runOpts)
+			} else {
+				exitCode, err = RunExec(runOpts)
 			}
 			if err != nil {
 				logger.Error("%v", err)
@@ -134,8 +138,8 @@ func SSHCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&opts.Exec, "exec", false, "Use system ssh binary instead of the built-in client")
-	cmd.Flags().IntVarP(&opts.Port, "port", "p", 0, "SSH port (default: 22)")
+	cmd.Flags().BoolVar(&opts.Builtin, "builtin", false, "Use the built-in SSH client instead of the system OpenSSH binary (interactive shell only)")
+	cmd.Flags().IntVarP(&opts.Port, "port", "p", 0, "Remote SSH port (default: 22)")
 
 	cmd.AddCommand(SignCmd())
 

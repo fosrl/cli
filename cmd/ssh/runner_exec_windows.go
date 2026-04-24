@@ -5,9 +5,9 @@ package ssh
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 
 	"golang.org/x/sys/windows"
 )
@@ -18,6 +18,16 @@ var execSSHSearchPaths = []string{
 }
 
 func findExecSSHPathWindows() (string, error) {
+	if p, ok := sshBinaryFromEnv(); ok {
+		info, err := os.Stat(p)
+		if err != nil {
+			return "", fmt.Errorf("%s=%q: %w", envSSHBinary, p, err)
+		}
+		if info.IsDir() {
+			return "", fmt.Errorf("%s=%q: is a directory", envSSHBinary, p)
+		}
+		return p, nil
+	}
 	if path, err := exec.LookPath("ssh"); err == nil {
 		return path, nil
 	}
@@ -39,20 +49,8 @@ func execExitCode(err error) int {
 	return 1
 }
 
-// RunOpts is shared by both the exec and native SSH runners.
-// PrivateKeyPEM and Certificate are set just-in-time (JIT) before connect; no file paths.
-// Port is optional: 0 means use default (22 or whatever is in Hostname); >0 overrides.
-type RunOpts struct {
-	User          string
-	Hostname      string
-	Port          int    // optional; 0 = default
-	PrivateKeyPEM string // in-memory private key (PEM, OpenSSH format)
-	Certificate   string // in-memory certificate from sign-key API
-	PassThrough   []string
-}
-
 // RunExec runs an interactive SSH session by executing the system ssh binary.
-// On Windows the system SSH has better support (e.g. terminal, agent). Requires ssh to be installed.
+// Requires ssh to be installed (e.g. OpenSSH on Windows in PATH or System32).
 // opts.PrivateKeyPEM and opts.Certificate must be set (JIT key + signed cert).
 func RunExec(opts RunOpts) (int, error) {
 	sshPath, err := findExecSSHPathWindows()
@@ -68,7 +66,7 @@ func RunExec(opts RunOpts) (int, error) {
 		defer cleanup()
 	}
 
-	argv := buildExecSSHArgsWindows(sshPath, opts.User, opts.Hostname, opts.Port, keyPath, certPath, opts.PassThrough)
+	argv := buildExecSSHArgs(sshPath, opts.User, opts.Hostname, opts.Port, keyPath, certPath, opts.SSHPassthrough)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -184,23 +182,4 @@ func writeExecKeyFilesWindows(opts RunOpts) (keyPath, certPath string, cleanup f
 		}
 	}
 	return keyPath, certPath, cleanup, nil
-}
-
-func buildExecSSHArgsWindows(sshPath, user, hostname string, port int, keyPath, certPath string, passThrough []string) []string {
-	args := []string{sshPath}
-	if user != "" {
-		args = append(args, "-l", user)
-	}
-	if keyPath != "" {
-		args = append(args, "-i", keyPath)
-	}
-	if certPath != "" {
-		args = append(args, "-o", "CertificateFile="+certPath)
-	}
-	if port > 0 {
-		args = append(args, "-p", strconv.Itoa(port))
-	}
-	args = append(args, hostname)
-	args = append(args, passThrough...)
-	return args
 }

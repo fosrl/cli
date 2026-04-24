@@ -28,7 +28,7 @@ func GenerateAndSignKey(client *api.Client, orgID string, resourceID string) (pr
 	if err != nil {
 		return "", "", "", nil, fmt.Errorf("SSH error: %w", err)
 	}
-	
+
 	// Collect all message IDs to poll (support both single and multiple).
 	var messageIDs []int64
 	if len(initResp.MessageIDs) > 0 {

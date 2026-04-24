@@ -3,6 +3,7 @@ package blueprint
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -46,7 +47,7 @@ func BlueprintCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.Path, "file", "f", "", "Blueprint YAML file")
+	cmd.Flags().StringVarP(&opts.Path, "file", "f", "", "Blueprint YAML file path (use '-' for stdin)")
 	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Blueprint name (default: filename without extension)")
 	cmd.Flags().StringVar(&opts.APIKey, "api-key", "", "Integration API key (id.secret)")
 	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Integration API host URL")
@@ -57,6 +58,10 @@ func BlueprintCmd() *cobra.Command {
 }
 
 func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
+	if opts.Path == "-" && strings.TrimSpace(opts.Name) == "" {
+		return errors.New("name is required when using --file -")
+	}
+
 	name := opts.Name
 	if name == "" {
 		filename := filepath.Base(opts.Path)
@@ -74,9 +79,9 @@ func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
-	blueprintContents, err := os.ReadFile(opts.Path)
+	blueprintContents, err := readBlueprint(opts.Path)
 	if err != nil {
-		return fmt.Errorf("failed to read blueprint file: %w", err)
+		return err
 	}
 
 	blueprintContents = interpolateBlueprint(blueprintContents)
@@ -105,6 +110,33 @@ func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
 		return fmt.Errorf("failed to apply blueprint: %w", err)
 	}
 	return nil
+}
+
+func readBlueprint(path string) ([]byte, error) {
+	if path == "-" {
+		fileInfo, err := os.Stdin.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to inspect stdin: %w", err)
+		}
+		if (fileInfo.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
+			return nil, errors.New("the option --file - is intended to work with pipes")
+		}
+
+		contents, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read blueprint from stdin: %w", err)
+		}
+		if len(contents) == 0 {
+			return nil, errors.New("blueprint input is empty")
+		}
+		return contents, nil
+	}
+
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read blueprint file: %w", err)
+	}
+	return contents, nil
 }
 
 // interpolateBlueprint finds all {{...}} tokens in the raw blueprint bytes and

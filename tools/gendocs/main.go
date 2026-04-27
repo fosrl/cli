@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fosrl/cli/cmd"
+	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
 
@@ -22,6 +23,13 @@ url: %s
 ---
 
 `
+
+func disableCobraAutogenFooter(cmd *cobra.Command) {
+	cmd.DisableAutoGenTag = true
+	for _, c := range cmd.Commands() {
+		disableCobraAutogenFooter(c)
+	}
+}
 
 func main() {
 	var (
@@ -38,6 +46,7 @@ func main() {
 
 	// Get the root command
 	rootCmd, _ := cmd.RootCommand(false)
+	disableCobraAutogenFooter(rootCmd)
 
 	var err error
 	if *withFrontMatter {

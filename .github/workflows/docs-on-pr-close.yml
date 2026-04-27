@@ -1,4 +1,4 @@
-name: Update docs (PR merged to main)
+name: Update docs
 
 on:
   pull_request:
@@ -7,13 +7,14 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: update-docs-main
   cancel-in-progress: false
 
 jobs:
-  generate-and-push:
+  generate-docs-pr:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
@@ -32,10 +33,18 @@ jobs:
       - name: Generate markdown documentation
         run: make docs
 
-      - name: Commit and push if docs changed
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+      - name: Open or update pull request for doc changes
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          commit_message: "chore: regenerate CLI documentation"
-          branch: main
-          file_pattern: "docs/*.md"
-          disable_globbing: true
+          add-paths: |
+            docs
+          commit-message: "chore: regenerate CLI documentation"
+          branch: chore/bot-regenerate-cli-docs
+          base: main
+          delete-branch: true
+          title: "chore: regenerate CLI documentation"
+          body: |
+            Regenerated Cobra command markdown in `docs/` after a merge to `main`.
+
+            Merge this when you want the public docs in sync, or close if the changes are already included elsewhere.
+          draft: false

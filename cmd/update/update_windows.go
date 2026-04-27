@@ -66,8 +66,8 @@ func updateMain(repo string) error {
 		return err
 	}
 
-	logger.Info("This will download %s from GitHub (%s) to a temporary folder and then start the Windows installer.", windowsInstallerAssetName, repo)
-	logger.Info("Press Enter to continue...")
+	logger.Info("This will download the latest version to a temporary folder, then start the Windows installer.")
+	logger.Info("Press Enter to confirm...")
 	if err := waitForEnter(); err != nil {
 		logger.Error("Failed to read confirmation input: %v", err)
 		return err

@@ -9,8 +9,8 @@ require (
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/creack/pty v1.1.24
-	github.com/fosrl/newt v1.12.0-rc.1
-	github.com/fosrl/olm v1.4.4
+	github.com/fosrl/newt v1.12.0
+	github.com/fosrl/olm v1.5.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.10.2

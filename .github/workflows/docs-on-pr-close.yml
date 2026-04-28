@@ -5,6 +5,9 @@ on:
     types: [closed]
     branches: [main]
 
+env:
+  DOCS_PR_BRANCH: chore/bot-regenerate-cli-docs
+
 permissions:
   contents: write
   pull-requests: write
@@ -15,7 +18,7 @@ concurrency:
 
 jobs:
   generate-docs-pr:
-    if: github.event.pull_request.merged == true
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.ref != env.DOCS_PR_BRANCH }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -39,7 +42,7 @@ jobs:
           add-paths: |
             docs
           commit-message: "chore: regenerate CLI documentation"
-          branch: chore/bot-regenerate-cli-docs
+          branch: ${{ env.DOCS_PR_BRANCH }}
           base: main
           delete-branch: true
           title: "chore: regenerate CLI documentation"

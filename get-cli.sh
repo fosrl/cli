@@ -261,7 +261,7 @@ main() {
     CUSTOM_PATH=$(parse_path_arg "$@")
 
     if [ -n "$CUSTOM_PATH" ]; then
-        print_status "Installing latest version of Pangolin to ${CUSTOM_PATH} (--path override)..."
+        print_status "Installing latest version of Pangolin to ${CUSTOM_PATH}..."
     else
         print_status "Installing latest version of Pangolin..."
     fi

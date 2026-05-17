@@ -143,6 +143,7 @@ func loginWithWeb(hostname string) (string, error) {
 
 type LoginCmdOpts struct {
 	Hostname string
+	OrgID    string
 }
 
 func LoginCmd() *cobra.Command {
@@ -170,7 +171,61 @@ func LoginCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&opts.OrgID, "org-id", "", "Select an organization by ID without prompting")
+
 	return cmd
+}
+
+func resolveOrgForLogin(client *api.Client, userID, orgID string) (string, error) {
+	orgsResp, err := client.ListUserOrgs(userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to list organizations: %w", err)
+	}
+
+	for _, org := range orgsResp.Orgs {
+		if org.OrgID == orgID {
+			return orgID, nil
+		}
+	}
+
+	if len(orgsResp.Orgs) == 0 {
+		return "", fmt.Errorf("organization %q not found; authenticated user has no organizations", orgID)
+	}
+
+	return "", fmt.Errorf("organization %q not found for authenticated user; available organizations: %s", orgID, formatOrgChoices(orgsResp.Orgs))
+}
+
+func orgExistsForLogin(client *api.Client, userID, orgID string) (bool, error) {
+	if orgID == "" {
+		return false, nil
+	}
+
+	orgsResp, err := client.ListUserOrgs(userID)
+	if err != nil {
+		return false, fmt.Errorf("failed to list organizations: %w", err)
+	}
+
+	for _, org := range orgsResp.Orgs {
+		if org.OrgID == orgID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func formatOrgChoices(orgs []api.Org) string {
+	choices := make([]string, 0, len(orgs))
+	for _, org := range orgs {
+		if org.Name == "" {
+			choices = append(choices, org.OrgID)
+			continue
+		}
+
+		choices = append(choices, fmt.Sprintf("%s (%s)", org.OrgID, org.Name))
+	}
+
+	return strings.Join(choices, ", ")
 }
 
 func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
@@ -283,8 +338,17 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		newAccount.Name = user.Name
 	}
 
-	// Ensure new user has an organization selected
-	if newAccount.OrgID == "" {
+	// Ensure new user has an organization selected.
+	orgIDFlag := strings.TrimSpace(opts.OrgID)
+	if orgIDFlag != "" {
+		orgID, err := resolveOrgForLogin(apiClient, userID, orgIDFlag)
+		if err != nil {
+			logger.Error("Failed to select organization: %v", err)
+			return err
+		}
+
+		newAccount.OrgID = orgID
+	} else if newAccount.OrgID == "" {
 		orgID, err := utils.SelectOrgForm(apiClient, userID)
 		if err != nil {
 			logger.Error("Failed to select organization: %v", err)
@@ -292,6 +356,22 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 		}
 
 		newAccount.OrgID = orgID
+	} else {
+		validOrg, err := orgExistsForLogin(apiClient, userID, newAccount.OrgID)
+		if err != nil {
+			logger.Error("Failed to validate organization: %v", err)
+			return err
+		}
+
+		if !validOrg {
+			orgID, err := utils.SelectOrgForm(apiClient, userID)
+			if err != nil {
+				logger.Error("Failed to select organization: %v", err)
+				return err
+			}
+
+			newAccount.OrgID = orgID
+		}
 	}
 
 	// Ensure OLM credentials exist
@@ -328,11 +408,11 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	} else if apiServerInfo != nil {
 		// Convert api.ServerInfo to config.ServerInfo
 		serverInfo := &config.ServerInfo{
-			Version:                  apiServerInfo.Version,
-			SupporterStatusValid:     apiServerInfo.SupporterStatusValid,
-			Build:                    apiServerInfo.Build,
-			EnterpriseLicenseValid:   apiServerInfo.EnterpriseLicenseValid,
-			EnterpriseLicenseType:    apiServerInfo.EnterpriseLicenseType,
+			Version:                apiServerInfo.Version,
+			SupporterStatusValid:   apiServerInfo.SupporterStatusValid,
+			Build:                  apiServerInfo.Build,
+			EnterpriseLicenseValid: apiServerInfo.EnterpriseLicenseValid,
+			EnterpriseLicenseType:  apiServerInfo.EnterpriseLicenseType,
 		}
 		// Update account with server info
 		account := accountStore.Accounts[user.UserID]

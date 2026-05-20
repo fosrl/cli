@@ -140,7 +140,8 @@ jobs:
     runs-on: [self-hosted, linux, x64]
     timeout-minutes: 120
     env:
-      DOCKERHUB_IMAGE: docker.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+      DOCKERHUB_IMAGE: docker.io/fosrl/cli
+      DOCKERHUB_IMAGE2: docker.io/fosrl/pangolin-cli
       GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
       IMAGE_LICENSE: ${{ github.event.repository.license.spdx_id || 'NOASSERTION' }}
       IMAGE_CREATED: ${{ needs.pre-run.outputs.image_created }}
@@ -257,6 +258,7 @@ jobs:
           set -euo pipefail
           echo "GHCR_IMAGE=${GHCR_IMAGE,,}" >> "$GITHUB_ENV"
           echo "DOCKERHUB_IMAGE=${DOCKERHUB_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "DOCKERHUB_IMAGE2=${DOCKERHUB_IMAGE2,,}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -273,6 +275,7 @@ jobs:
           tags: |
             ${{ env.GHCR_IMAGE }}:amd64-${{ env.TAG }}
             ${{ env.DOCKERHUB_IMAGE }}:amd64-${{ env.TAG }}
+            ${{ env.DOCKERHUB_IMAGE2 }}:amd64-${{ env.TAG }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.version=${{ env.TAG }}
@@ -298,7 +301,8 @@ jobs:
     runs-on: [self-hosted, linux, arm64] # NOTE: ensure label exists on runner
     timeout-minutes: 120
     env:
-      DOCKERHUB_IMAGE: docker.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+      DOCKERHUB_IMAGE: docker.io/fosrl/cli
+      DOCKERHUB_IMAGE2: docker.io/fosrl/pangolin-cli
       GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
       IMAGE_LICENSE: ${{ github.event.repository.license.spdx_id || 'NOASSERTION' }}
       IMAGE_CREATED: ${{ needs.pre-run.outputs.image_created }}
@@ -382,6 +386,7 @@ jobs:
           set -euo pipefail
           echo "GHCR_IMAGE=${GHCR_IMAGE,,}" >> "$GITHUB_ENV"
           echo "DOCKERHUB_IMAGE=${DOCKERHUB_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "DOCKERHUB_IMAGE2=${DOCKERHUB_IMAGE2,,}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -398,6 +403,7 @@ jobs:
           tags: |
             ${{ env.GHCR_IMAGE }}:arm64-${{ env.TAG }}
             ${{ env.DOCKERHUB_IMAGE }}:arm64-${{ env.TAG }}
+            ${{ env.DOCKERHUB_IMAGE2 }}:arm64-${{ env.TAG }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.version=${{ env.TAG }}
@@ -423,7 +429,8 @@ jobs:
     runs-on: [self-hosted, linux, arm64]
     timeout-minutes: 120
     env:
-      DOCKERHUB_IMAGE: docker.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+      DOCKERHUB_IMAGE: docker.io/fosrl/cli
+      DOCKERHUB_IMAGE2: docker.io/fosrl/pangolin-cli
       GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
       IMAGE_LICENSE: ${{ github.event.repository.license.spdx_id || 'NOASSERTION' }}
       IMAGE_CREATED: ${{ needs.pre-run.outputs.image_created }}
@@ -497,6 +504,7 @@ jobs:
           set -euo pipefail
           echo "GHCR_IMAGE=${GHCR_IMAGE,,}" >> "$GITHUB_ENV"
           echo "DOCKERHUB_IMAGE=${DOCKERHUB_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "DOCKERHUB_IMAGE2=${DOCKERHUB_IMAGE2,,}" >> "$GITHUB_ENV"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
@@ -515,6 +523,7 @@ jobs:
           tags: |
             ${{ env.GHCR_IMAGE }}:armv7-${{ env.TAG }}
             ${{ env.DOCKERHUB_IMAGE }}:armv7-${{ env.TAG }}
+            ${{ env.DOCKERHUB_IMAGE2 }}:armv7-${{ env.TAG }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.version=${{ env.TAG }}
@@ -540,7 +549,8 @@ jobs:
     runs-on: [self-hosted, linux, x64] # NOTE: ensure label exists on runner
     timeout-minutes: 30
     env:
-      DOCKERHUB_IMAGE: docker.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+      DOCKERHUB_IMAGE: docker.io/fosrl/cli
+      DOCKERHUB_IMAGE2: docker.io/fosrl/pangolin-cli
       GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
       TAG: ${{ needs.build-amd.outputs.tag }}
       IS_RC: ${{ needs.build-amd.outputs.is_rc }}
@@ -570,6 +580,7 @@ jobs:
           set -euo pipefail
           echo "GHCR_IMAGE=${GHCR_IMAGE,,}" >> "$GITHUB_ENV"
           echo "DOCKERHUB_IMAGE=${DOCKERHUB_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "DOCKERHUB_IMAGE2=${DOCKERHUB_IMAGE2,,}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx (needed for imagetools)
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -594,6 +605,16 @@ jobs:
             "${DOCKERHUB_IMAGE}:arm64-${TAG}" \
             "${DOCKERHUB_IMAGE}:armv7-${TAG}"
 
+      - name: Create & push multi-arch index (Docker Hub pangolin-cli :TAG) via imagetools
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            -t "${DOCKERHUB_IMAGE2}:${TAG}" \
+            "${DOCKERHUB_IMAGE2}:amd64-${TAG}" \
+            "${DOCKERHUB_IMAGE2}:arm64-${TAG}" \
+            "${DOCKERHUB_IMAGE2}:armv7-${TAG}"
+
       # Additional tags for non-RC releases: latest, major, minor (always)
       - name: Publish additional tags (non-RC only) via imagetools
         if: ${{ env.IS_RC != 'true' }}
@@ -617,6 +638,13 @@ jobs:
               "${DOCKERHUB_IMAGE}:amd64-${TAG}" \
               "${DOCKERHUB_IMAGE}:arm64-${TAG}" \
               "${DOCKERHUB_IMAGE}:armv7-${TAG}"
+
+            echo "Publishing Docker Hub pangolin-cli tag ${t} -> ${TAG}"
+            docker buildx imagetools create \
+              -t "${DOCKERHUB_IMAGE2}:${t}" \
+              "${DOCKERHUB_IMAGE2}:amd64-${TAG}" \
+              "${DOCKERHUB_IMAGE2}:arm64-${TAG}" \
+              "${DOCKERHUB_IMAGE2}:armv7-${TAG}"
           done
 
   # ---------------------------------------------------------------------------
@@ -629,7 +657,8 @@ jobs:
     runs-on: [self-hosted, linux, x64] # NOTE: ensure label exists on runner
     timeout-minutes: 120
     env:
-      DOCKERHUB_IMAGE: docker.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+      DOCKERHUB_IMAGE: docker.io/fosrl/cli
+      DOCKERHUB_IMAGE2: docker.io/fosrl/pangolin-cli
       GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
       TAG: ${{ needs.build-amd.outputs.tag }}
       IS_RC: ${{ needs.build-amd.outputs.is_rc }}
@@ -675,6 +704,7 @@ jobs:
           set -euo pipefail
           echo "GHCR_IMAGE=${GHCR_IMAGE,,}" >> "$GITHUB_ENV"
           echo "DOCKERHUB_IMAGE=${DOCKERHUB_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "DOCKERHUB_IMAGE2=${DOCKERHUB_IMAGE2,,}" >> "$GITHUB_ENV"
 
       - name: Ensure jq is installed
         shell: bash
@@ -724,6 +754,11 @@ jobs:
             echo "DH_REF=${DOCKERHUB_IMAGE}@${DH_DIGEST}" >> "$GITHUB_ENV"
             echo "DH_DIGEST=${DH_DIGEST}" >> "$GITHUB_ENV"
             echo "Resolved DH_REF=${DOCKERHUB_IMAGE}@${DH_DIGEST}"
+
+            DH2_DIGEST="$(get_digest "${DOCKERHUB_IMAGE2}:${TAG}")"
+            echo "DH2_REF=${DOCKERHUB_IMAGE2}@${DH2_DIGEST}" >> "$GITHUB_ENV"
+            echo "DH2_DIGEST=${DH2_DIGEST}" >> "$GITHUB_ENV"
+            echo "Resolved DH2_REF=${DOCKERHUB_IMAGE2}@${DH2_DIGEST}"
           fi
 
       - name: Attest build provenance (GHCR) (digest)
@@ -739,8 +774,18 @@ jobs:
         if: ${{ env.DH_DIGEST != '' }}
         uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
         with:
-          subject-name: index.docker.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          subject-name: index.docker.io/fosrl/cli
           subject-digest: ${{ env.DH_DIGEST }}
+          push-to-registry: true
+          show-summary: true
+
+      - name: Attest build provenance (Docker Hub pangolin-cli)
+        continue-on-error: true
+        if: ${{ env.DH2_DIGEST != '' }}
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        with:
+          subject-name: index.docker.io/fosrl/pangolin-cli
+          subject-digest: ${{ env.DH2_DIGEST }}
           push-to-registry: true
           show-summary: true
 
@@ -814,6 +859,22 @@ jobs:
             --predicate sbom.spdx.json \
             "${DH_REF}"
 
+      - name: Create SBOM attestation (Docker Hub pangolin-cli, key)
+        continue-on-error: true
+        env:
+          COSIGN_YES: "true"
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD:    ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_DOCKER_MEDIA_TYPES: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          cosign attest \
+            --key env://COSIGN_PRIVATE_KEY \
+            --type spdxjson \
+            --predicate sbom.spdx.json \
+            "${DH2_REF}"
+
       - name: Keyless sign & verify GHCR digest (OIDC)
         env:
           COSIGN_YES: "true"
@@ -855,6 +916,18 @@ jobs:
           set -euo pipefail
           cosign sign --key env://COSIGN_PRIVATE_KEY --recursive "${DH_REF}"
 
+      - name: Sign Docker Hub pangolin-cli digest (key, recursive)
+        continue-on-error: true
+        env:
+          COSIGN_YES: "true"
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD:    ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_DOCKER_MEDIA_TYPES: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          cosign sign --key env://COSIGN_PRIVATE_KEY --recursive "${DH2_REF}"
+
       - name: Keyless sign & verify Docker Hub digest (OIDC)
         continue-on-error: true
         if: ${{ env.DH_REF != '' }}
@@ -871,6 +944,22 @@ jobs:
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             "${DH_REF}" -o text
 
+      - name: Keyless sign & verify Docker Hub pangolin-cli digest (OIDC)
+        continue-on-error: true
+        if: ${{ env.DH2_REF != '' }}
+        env:
+          COSIGN_YES: "true"
+          ISSUER: https://token.actions.githubusercontent.com
+          COSIGN_DOCKER_MEDIA_TYPES: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          cosign sign --rekor-url https://rekor.sigstore.dev --recursive "${DH2_REF}"
+          cosign verify \
+            --certificate-oidc-issuer "${ISSUER}" \
+            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
+            "${DH2_REF}" -o text
+
       - name: Verify signature (public key) Docker Hub digest + tag
         continue-on-error: true
         if: ${{ env.DH_REF != '' }}
@@ -882,6 +971,18 @@ jobs:
           set -euo pipefail
           cosign verify --key env://COSIGN_PUBLIC_KEY "${DH_REF}" -o text
           cosign verify --key env://COSIGN_PUBLIC_KEY "${DOCKERHUB_IMAGE}:${TAG}" -o text
+
+      - name: Verify signature (public key) Docker Hub pangolin-cli digest + tag
+        continue-on-error: true
+        if: ${{ env.DH2_REF != '' }}
+        env:
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          COSIGN_DOCKER_MEDIA_TYPES: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          cosign verify --key env://COSIGN_PUBLIC_KEY "${DH2_REF}" -o text
+          cosign verify --key env://COSIGN_PUBLIC_KEY "${DOCKERHUB_IMAGE2}:${TAG}" -o text
 
       - name: Build binaries
         env:
@@ -905,7 +1006,7 @@ jobs:
           body: |
             ## Container Images
             - GHCR: `${{ env.GHCR_REF }}`
-            - Docker Hub: `${{ env.DH_REF || 'N/A' }}`
+            - Docker Hub: `${{ env.DH2_REF || env.DH_REF || 'N/A' }}`
             **Tag:** `${{ env.TAG }}`
 
   # ---------------------------------------------------------------------------

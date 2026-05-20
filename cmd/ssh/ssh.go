@@ -3,7 +3,6 @@ package ssh
 import (
 	"errors"
 	"os"
-	"time"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
@@ -87,24 +86,9 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 			}
 
 			if len(siteIDs) > 0 { // older versions of the server did not send back the site id so we need to check for backward compatibility
-				for _, siteID := range siteIDs {
-					deadline := time.Now().Add(15 * time.Second)
-					connected := false
-					for time.Now().Before(deadline) {
-						status, err := client.GetStatus()
-						if err == nil {
-							if peer, ok := status.PeerStatuses[siteID]; ok && peer.Connected {
-								connected = true
-								// logger.Info("site is connected")
-								break
-							}
-						}
-						time.Sleep(500 * time.Millisecond)
-					}
-					if !connected {
-						logger.Error("site %d is not connected; timed out waiting for connection", siteID)
-						os.Exit(1)
-					}
+				if err := waitForAnySiteConnection(client, siteIDs); err != nil {
+					logger.Error("%v", err)
+					os.Exit(1)
 				}
 			}
 

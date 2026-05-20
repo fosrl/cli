@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   generate-docs-pr:
-    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.ref != env.DOCS_PR_BRANCH }}
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.ref != 'chore/bot-regenerate-cli-docs' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main

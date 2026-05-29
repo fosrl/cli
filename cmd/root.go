@@ -12,7 +12,6 @@ import (
 	"github.com/fosrl/cli/cmd/auth/logout"
 	"github.com/fosrl/cli/cmd/authdaemon"
 	"github.com/fosrl/cli/cmd/down"
-	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/ssh"
@@ -50,7 +49,6 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 	cmd.AddCommand(apply.ApplyCommand())
 	cmd.AddCommand(selectcmd.SelectCmd())
-	cmd.AddCommand(list.ListCmd())
 
 	// Platform-specific commands - nil on unsupported platforms
 	if upCmd := up.UpCmd(); upCmd != nil {
@@ -117,16 +115,15 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 }
 
 func mainCommandPreRun(cmd *cobra.Command, args []string) error {
-	cfg := config.ConfigFromContext(cmd.Context())
-
-	// Skip init/update check for version and update commands
-	// Check both the command name and if it's one of these specific commands
-	cmdName := cmd.Name()
-	if cmdName == "version" || cmdName == "update" {
+	if shouldSkipRuntimeInit(cmd) {
 		return nil
 	}
 
-	ensureRuntimeDirs(cfg)
+	cfg := config.ConfigFromContext(cmd.Context())
+
+	if err := ensureRuntimeDirs(cfg); err != nil {
+		return err
+	}
 
 	// Check for updates asynchronously
 	if !cfg.DisableUpdateCheck {
@@ -140,34 +137,44 @@ func mainCommandPreRun(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Make sure all required directories exist once
-// before executing any subcommands.
-func ensureRuntimeDirs(cfg *config.Config) {
+// shouldSkipRuntimeInit returns true for commands that must not touch runtime
+// directories or emit diagnostics to stdout (for example shell completion).
+func shouldSkipRuntimeInit(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		switch c.Name() {
+		case "completion", "version", "update":
+			return true
+		}
+	}
+	return false
+}
+
+// Make sure all required directories exist once before executing subcommands.
+func ensureRuntimeDirs(cfg *config.Config) error {
 	configDir, err := config.GetPangolinConfigDir()
 	if err != nil {
-		logger.Warning("failed to create pangolin configuration directory: %v", err)
-	} else {
-		err = os.MkdirAll(configDir, 0o755)
-		if err != nil {
-			logger.Warning("failed to create %s: %v", configDir, err)
-		}
+		return fmt.Errorf("failed to create pangolin configuration directory: %w", err)
+	}
+
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create %s: %w", configDir, err)
 	}
 
 	if cfg.LogFile != "" {
 		logPathDirname := filepath.Dir(cfg.LogFile)
-
-		err = os.MkdirAll(logPathDirname, 0o755)
-		if err != nil {
-			logger.Warning("failed to create %s: %v", logPathDirname, err)
+		if err := os.MkdirAll(logPathDirname, 0o755); err != nil {
+			return fmt.Errorf("failed to create %s: %w", logPathDirname, err)
 		}
 	}
+
+	return nil
 }
 
 // Execute is called by main.go
 func Execute() {
 	cmd, err := RootCommand(true)
 	if err != nil {
-		logger.Error("%v", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 

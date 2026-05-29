@@ -163,10 +163,8 @@ func LoginCmd() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := loginMain(cmd, &opts); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return loginMain(cmd, &opts)
 		},
 	}
 

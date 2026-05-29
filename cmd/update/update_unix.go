@@ -15,10 +15,8 @@ func UpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update Pangolin CLI to the latest version",
 		Long:  "Update Pangolin CLI to the latest version by downloading and running the installation script",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := updateMain(); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return updateMain()
 		},
 	}
 

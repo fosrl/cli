@@ -2,7 +2,6 @@ package logout
 
 import (
 	"errors"
-	"os"
 	"time"
 
 	"github.com/charmbracelet/huh"
@@ -18,10 +17,8 @@ func LogoutCmd() *cobra.Command {
 		Use:   "logout",
 		Short: "Logout from Pangolin",
 		Long:  "Logout and clear your session",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := logoutMain(cmd); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return logoutMain(cmd)
 		},
 	}
 

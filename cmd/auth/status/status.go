@@ -2,7 +2,6 @@ package status
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/fosrl/cli/internal/api"
@@ -17,10 +16,8 @@ func StatusCmd() *cobra.Command {
 		Use:   "status",
 		Short: "Check authentication status",
 		Long:  "Check if you are logged in and view your account information",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := statusMain(cmd); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return statusMain(cmd)
 		},
 	}
 

@@ -2,7 +2,6 @@ package org
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
@@ -24,10 +23,8 @@ func OrgCmd() *cobra.Command {
 		Use:   "org",
 		Short: "Select an organization",
 		Long:  "List your organizations and select one to use",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := orgMain(cmd, &opts); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return orgMain(cmd, &opts)
 		},
 	}
 

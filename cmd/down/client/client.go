@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"os"
 
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
@@ -16,10 +15,8 @@ func ClientDownCmd() *cobra.Command {
 		Use:   "client",
 		Short: "Stop the client connection",
 		Long:  "Stop the currently running client connection",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := clientDownMain(cmd); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return clientDownMain(cmd)
 		},
 	}
 

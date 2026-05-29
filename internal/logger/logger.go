@@ -121,9 +121,9 @@ func (l *Logger) Error(format string, args ...any) {
 func (l *Logger) Warning(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	// icon := colorWarningStyle.Render(iconWarning)
-	fmt.Printf("%s", message)
+	fmt.Fprintf(os.Stderr, "%s", message)
 	if !strings.HasSuffix(message, "\n") {
-		fmt.Println()
+		fmt.Fprintln(os.Stderr)
 	}
 }
 

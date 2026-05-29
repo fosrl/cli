@@ -39,10 +39,8 @@ func UpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update Pangolin CLI to the latest version",
 		Long:  "Update Pangolin CLI to the latest version by downloading the new installer from GitHub",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := updateMain(windowsUpdateRepo); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return updateMain(windowsUpdateRepo)
 		},
 	}
 	cmd.Flags().StringVar(&windowsUpdateRepo, "repo", windowsUpdateRepo, "GitHub repository in owner/name format")

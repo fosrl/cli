@@ -26,10 +26,8 @@ func ClientLogsCmd() *cobra.Command {
 		Use:   "client",
 		Short: "View client logs",
 		Long:  "View client logs. Use -f to follow log output.",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := clientLogsMain(cmd, &opts); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return clientLogsMain(cmd, &opts)
 		},
 	}
 

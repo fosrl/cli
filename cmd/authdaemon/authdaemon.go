@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/fosrl/cli/internal/logger"
 	authdaemonpkg "github.com/fosrl/newt/authdaemon"
 	"github.com/spf13/cobra"
 )
@@ -51,8 +50,8 @@ func AuthDaemonCmd() *cobra.Command {
 			}
 			return nil
 		},
-		Run: func(c *cobra.Command, args []string) {
-			runAuthDaemon(opts)
+		RunE: func(c *cobra.Command, args []string) error {
+			return runAuthDaemon(opts)
 		},
 	}
 
@@ -84,12 +83,12 @@ func PrincipalsCmd() *cobra.Command {
 			}
 			return nil
 		},
-		Run: func(c *cobra.Command, args []string) {
+		RunE: func(c *cobra.Command, args []string) error {
 			path := opts.PrincipalsFile
 			if path == "" {
 				path = defaultPrincipalsPath
 			}
-			runPrincipals(path, opts.Username)
+			return runPrincipals(path, opts.Username)
 		},
 	}
 
@@ -100,19 +99,19 @@ func PrincipalsCmd() *cobra.Command {
 	return cmd
 }
 
-func runPrincipals(principalsPath, username string) {
+func runPrincipals(principalsPath, username string) error {
 	list, err := authdaemonpkg.GetPrincipals(principalsPath, username)
 	if err != nil {
-		logger.Error("%v", err)
-		os.Exit(1)
+		return err
 	}
 	if len(list) == 0 {
 		fmt.Println("")
-		return
+		return nil
 	}
 	for _, principal := range list {
 		fmt.Println(principal)
 	}
+	return nil
 }
 
 func runAuthDaemon(opts struct {
@@ -121,7 +120,7 @@ func runAuthDaemon(opts struct {
 	PrincipalsFile         string
 	CACertPath             string
 	GenerateRandomPassword bool
-}) {
+}) error {
 	cfg := authdaemonpkg.Config{
 		Port:                   opts.Port,
 		PresharedKey:           opts.PreSharedKey,
@@ -133,15 +132,11 @@ func runAuthDaemon(opts struct {
 
 	srv, err := authdaemonpkg.NewServer(cfg)
 	if err != nil {
-		logger.Error("%v", err)
-		os.Exit(1)
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := srv.Run(ctx); err != nil {
-		logger.Error("%v", err)
-		os.Exit(1)
-	}
+	return srv.Run(ctx)
 }

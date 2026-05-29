@@ -105,10 +105,8 @@ func ClientUpCmd() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := clientUpMain(cmd, &opts, args); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return clientUpMain(cmd, &opts, args)
 		},
 	}
 

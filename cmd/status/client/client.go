@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/fosrl/cli/internal/logger"
@@ -23,10 +22,8 @@ func ClientStatusCmd() *cobra.Command {
 		Use:   "client",
 		Short: "Show client status",
 		Long:  "Display current client connection status and peer information",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := clientStatusMain(&opts); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return clientStatusMain(&opts)
 		},
 	}
 

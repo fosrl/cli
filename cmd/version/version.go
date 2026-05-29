@@ -13,8 +13,9 @@ func VersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version number",
 		Long:  "Print the version number and check for updates",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			versionMain()
+			return nil
 		},
 	}
 

@@ -38,66 +38,8 @@ func SignCmd() *cobra.Command {
 			opts.ResourceID = args[0]
 			return nil
 		},
-		Run: func(c *cobra.Command, args []string) {
-			apiClient := api.FromContext(c.Context())
-			accountStore := config.AccountStoreFromContext(c.Context())
-
-			orgID, err := utils.ResolveOrgID(accountStore, "")
-			if err != nil {
-				logger.Error("%v", err)
-				os.Exit(1)
-			}
-
-			privPEM, _, cert, signData, err := GenerateAndSignKey(apiClient, orgID, opts.ResourceID)
-			if err != nil {
-				logger.Error("%v", err)
-				os.Exit(1)
-			}
-
-			keyPath, err := filepath.Abs(opts.KeyFile)
-			if err != nil {
-				keyPath = opts.KeyFile
-			}
-			certPath := opts.CertFile
-			if certPath == "" {
-				certPath = keyPath + "-cert.pub"
-			} else {
-				certPath, err = filepath.Abs(certPath)
-				if err != nil {
-					certPath = opts.CertFile
-				}
-			}
-
-			if err := os.WriteFile(keyPath, []byte(privPEM), 0o600); err != nil {
-				logger.Error("write key file: %v", err)
-				os.Exit(1)
-			}
-			if err := os.WriteFile(certPath, []byte(cert), 0o644); err != nil {
-				os.Remove(keyPath)
-				logger.Error("write certificate file: %v", err)
-				os.Exit(1)
-			}
-
-			logger.Success("Private key: %s", keyPath)
-			logger.Success("Certificate: %s", certPath)
-			fmt.Println()
-
-			// Certificate details table
-			utils.PrintTable([]string{"Field", "Value"}, signCertTableRows(signData))
-			fmt.Println()
-
-			hostname := signData.Hostname
-			if hostname == "" {
-				hostname = "<hostname>"
-			}
-			user := signData.User
-			if user == "" {
-				user = "<user>"
-			}
-			fmt.Println("Usage with system ssh (scp, tunnels, etc.):")
-			fmt.Printf("  ssh -i %q -o CertificateFile=%q %s@%s\n", keyPath, certPath, user, hostname)
-			fmt.Printf("  ssh -i %q -o CertificateFile=%q -L 8080:127.0.0.1:80 -N %s@%s\n", keyPath, certPath, user, hostname)
-			fmt.Printf("  scp -i %q -o CertificateFile=%q ...\n", keyPath, certPath)
+		RunE: func(c *cobra.Command, args []string) error {
+			return signRun(c, &opts)
 		},
 	}
 
@@ -106,6 +48,70 @@ func SignCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.CertFile, "cert-file", "", "Path to write the certificate (default: <key-file>-cert.pub)")
 
 	return cmd
+}
+
+func signRun(c *cobra.Command, opts *struct {
+	ResourceID string
+	KeyFile    string
+	CertFile   string
+}) error {
+	apiClient := api.FromContext(c.Context())
+	accountStore := config.AccountStoreFromContext(c.Context())
+
+	orgID, err := utils.ResolveOrgID(accountStore, "")
+	if err != nil {
+		return err
+	}
+
+	privPEM, _, cert, signData, err := GenerateAndSignKey(apiClient, orgID, opts.ResourceID)
+	if err != nil {
+		return err
+	}
+
+	keyPath, err := filepath.Abs(opts.KeyFile)
+	if err != nil {
+		keyPath = opts.KeyFile
+	}
+	certPath := opts.CertFile
+	if certPath == "" {
+		certPath = keyPath + "-cert.pub"
+	} else {
+		certPath, err = filepath.Abs(certPath)
+		if err != nil {
+			certPath = opts.CertFile
+		}
+	}
+
+	if err := os.WriteFile(keyPath, []byte(privPEM), 0o600); err != nil {
+		return fmt.Errorf("write key file: %w", err)
+	}
+	if err := os.WriteFile(certPath, []byte(cert), 0o644); err != nil {
+		os.Remove(keyPath)
+		return fmt.Errorf("write certificate file: %w", err)
+	}
+
+	logger.Success("Private key: %s", keyPath)
+	logger.Success("Certificate: %s", certPath)
+	fmt.Println()
+
+	// Certificate details table
+	utils.PrintTable([]string{"Field", "Value"}, signCertTableRows(signData))
+	fmt.Println()
+
+	hostname := signData.Hostname
+	if hostname == "" {
+		hostname = "<hostname>"
+	}
+	user := signData.User
+	if user == "" {
+		user = "<user>"
+	}
+	fmt.Println("Usage with system ssh (scp, tunnels, etc.):")
+	fmt.Printf("  ssh -i %q -o CertificateFile=%q %s@%s\n", keyPath, certPath, user, hostname)
+	fmt.Printf("  ssh -i %q -o CertificateFile=%q -L 8080:127.0.0.1:80 -N %s@%s\n", keyPath, certPath, user, hostname)
+	fmt.Printf("  scp -i %q -o CertificateFile=%q ...\n", keyPath, certPath)
+
+	return nil
 }
 
 // signCertTableRows builds table rows for certificate metadata (Key ID, principals, valid after/before, expires in).

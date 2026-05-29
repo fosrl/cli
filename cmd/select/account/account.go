@@ -3,7 +3,6 @@ package account
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -27,10 +26,8 @@ func AccountCmd() *cobra.Command {
 		Use:   "account",
 		Short: "Select an account",
 		Long:  "List your logged-in accounts and select active one",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := accountMain(cmd, &opts); err != nil {
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return accountMain(cmd, &opts)
 		},
 	}
 

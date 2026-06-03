@@ -69,14 +69,12 @@ func loginWithWeb(hostname string) (string, error) {
 	// Calculate expiry time from relative seconds
 	expiresAt := time.Now().Add(time.Duration(startResp.ExpiresInSeconds) * time.Second)
 
-	// Build the base login URL (without query parameter) for display
-	baseLoginURL := fmt.Sprintf("%s/auth/login/device", strings.TrimSuffix(hostname, "/"))
-	// Build the login URL with code as query parameter for browser
-	loginURL := fmt.Sprintf("%s?code=%s", baseLoginURL, code)
+	// Build the device login URL with the one-time code
+	loginURL := fmt.Sprintf("%s/auth/login/device?code=%s", strings.TrimSuffix(hostname, "/"), code)
 
 	// Display code and instructions (similar to GH CLI format)
 	logger.Info("First copy your one-time code: %s", code)
-	logger.Info("Press Enter to open %s in your browser...", baseLoginURL)
+	logger.Info("Press Enter to open %s in your browser...", loginURL)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -85,7 +83,7 @@ func loginWithWeb(hostname string) (string, error) {
 	if isatty.IsTerminal(os.Stdin.Fd()) {
 		stdin, err := cancelreader.NewReader(os.Stdin)
 		if err != nil {
-			logger.Info("Visit %s?code=%s to authorize this device", baseLoginURL, code)
+			logger.Info("Visit %s to authorize this device", loginURL)
 		} else {
 			go func() {
 				<-ctx.Done()
@@ -103,7 +101,7 @@ func loginWithWeb(hostname string) (string, error) {
 			}()
 		}
 	} else {
-		logger.Info("Visit %s?code=%s to authorize this device", baseLoginURL, code)
+		logger.Info("Visit %s to authorize this device", loginURL)
 	}
 
 	browserOpened := false
@@ -114,7 +112,7 @@ func loginWithWeb(hostname string) (string, error) {
 		browserOpened = true
 		if err := browser.OpenURL(loginURL); err != nil {
 			logger.Warning("Failed to open browser automatically")
-			logger.Info("Please manually visit: %s?code=%s", baseLoginURL, code)
+			logger.Info("Please manually visit: %s", loginURL)
 		}
 	}
 

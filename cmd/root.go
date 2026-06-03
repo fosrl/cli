@@ -11,6 +11,7 @@ import (
 	"github.com/fosrl/cli/cmd/auth/login"
 	"github.com/fosrl/cli/cmd/auth/logout"
 	"github.com/fosrl/cli/cmd/authdaemon"
+	"github.com/fosrl/cli/cmd/cleanup"
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
@@ -59,6 +60,9 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 	if downCmd := down.DownCmd(); downCmd != nil {
 		cmd.AddCommand(downCmd)
+	}
+	if cleanupCmd := cleanup.CleanupCmd(); cleanupCmd != nil {
+		cmd.AddCommand(cleanupCmd)
 	}
 	if logsCmd := logs.LogsCmd(); logsCmd != nil {
 		cmd.AddCommand(logsCmd)

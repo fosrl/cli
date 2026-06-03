@@ -19,6 +19,7 @@ import (
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/fingerprint"
 	"github.com/fosrl/cli/internal/logger"
+	"github.com/fosrl/cli/internal/olmdns"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/fosrl/cli/internal/utils"
@@ -601,6 +602,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			logger.Info("Please run with sudo or use detached mode (default) to run the subprocess elevated.")
 			return err
 		}
+	}
+
+	// Clean up DNS left from an unclean shutdown before any network operations.
+	if err := olmdns.CleanupStaleState(opts.InterfaceName); err != nil {
+		logger.Warning("Failed to clean up stale DNS configuration: %v", err)
 	}
 
 	olm, err := olmpkg.Init(ctx, olmInitConfig)

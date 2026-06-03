@@ -6,27 +6,32 @@ import (
 
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
+	"github.com/fosrl/cli/internal/olmdns"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
 	"github.com/spf13/cobra"
 )
 
 func ClientDownCmd() *cobra.Command {
+	interfaceName := olmdns.DefaultInterfaceName
+
 	cmd := &cobra.Command{
 		Use:   "client",
 		Short: "Stop the client connection",
 		Long:  "Stop the currently running client connection",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clientDownMain(cmd); err != nil {
+			if err := clientDownMain(cmd, interfaceName); err != nil {
 				os.Exit(1)
 			}
 		},
 	}
 
+	cmd.Flags().StringVar(&interfaceName, "interface-name", olmdns.DefaultInterfaceName, "WireGuard interface `name` used when the tunnel was active")
+
 	return cmd
 }
 
-func clientDownMain(cmd *cobra.Command) error {
+func clientDownMain(cmd *cobra.Command, interfaceName string) error {
 	cfg := config.ConfigFromContext(cmd.Context())
 
 	// Get socket path from config or use default
@@ -86,6 +91,10 @@ func clientDownMain(cmd *cobra.Command) error {
 		logger.Success("Client shutdown completed")
 	} else {
 		logger.Info("Client shutdown initiated: %s", exitResp.Status)
+	}
+
+	if err := olmdns.CleanupStaleState(interfaceName); err != nil {
+		logger.Warning("Failed to clean up stale DNS configuration: %v", err)
 	}
 
 	return nil

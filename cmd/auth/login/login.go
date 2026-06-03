@@ -2,6 +2,7 @@ package login
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -13,6 +14,8 @@ import (
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/utils"
+	"github.com/mattn/go-isatty"
+	"github.com/muesli/cancelreader"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
@@ -75,29 +78,58 @@ func loginWithWeb(hostname string) (string, error) {
 	logger.Info("First copy your one-time code: %s", code)
 	logger.Info("Press Enter to open %s in your browser...", baseLoginURL)
 
-	// Wait for Enter in a goroutine (non-blocking) and open browser when pressed
-	go func() {
-		reader := bufio.NewReader(os.Stdin)
-		_, err := reader.ReadString('\n')
-		if err == nil {
-			// User pressed Enter, open browser
-			if err := browser.OpenURL(loginURL); err != nil {
-				// Don't fail if browser can't be opened, just warn
-				logger.Warning("Failed to open browser automatically")
-				logger.Info("Please manually visit: %s", baseLoginURL)
-			}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	enterCh := make(chan struct{}, 1)
+	if isatty.IsTerminal(os.Stdin.Fd()) {
+		stdin, err := cancelreader.NewReader(os.Stdin)
+		if err != nil {
+			logger.Info("Visit %s?code=%s to authorize this device", baseLoginURL, code)
+		} else {
+			go func() {
+				<-ctx.Done()
+				stdin.Cancel()
+			}()
+			go func() {
+				_, err := bufio.NewReader(stdin).ReadString('\n')
+				if err != nil {
+					return
+				}
+				select {
+				case enterCh <- struct{}{}:
+				case <-ctx.Done():
+				}
+			}()
 		}
-	}()
+	} else {
+		logger.Info("Visit %s?code=%s to authorize this device", baseLoginURL, code)
+	}
+
+	browserOpened := false
+	openBrowserOnce := func() {
+		if browserOpened {
+			return
+		}
+		browserOpened = true
+		if err := browser.OpenURL(loginURL); err != nil {
+			logger.Warning("Failed to open browser automatically")
+			logger.Info("Please manually visit: %s?code=%s", baseLoginURL, code)
+		}
+	}
 
 	// Poll for verification (starts immediately, doesn't wait for Enter)
 	pollInterval := 1 * time.Second
 	startTime := time.Now()
 	maxPollDuration := 5 * time.Minute
 
-	var token string
-
 	for {
-		// print
+		select {
+		case <-enterCh:
+			openBrowserOnce()
+		default:
+		}
+
 		logger.Debug("Polling for device web auth verification...")
 		// Check if code has expired
 		if time.Now().After(expiresAt) {
@@ -122,12 +154,11 @@ func loginWithWeb(hostname string) (string, error) {
 
 		// Check verification status
 		if pollResp.Verified {
-			token = pollResp.Token
-			if token == "" {
+			if pollResp.Token == "" {
 				logger.Error("Verification succeeded but no token received")
 				return "", fmt.Errorf("verification succeeded but no token received")
 			}
-			return token, nil
+			return pollResp.Token, nil
 		}
 
 		// Check for expired or not found messages

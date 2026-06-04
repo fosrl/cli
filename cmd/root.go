@@ -14,6 +14,7 @@ import (
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
+	"github.com/fosrl/cli/cmd/scp"
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/ssh"
 	"github.com/fosrl/cli/cmd/status"
@@ -67,6 +68,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 
 	cmd.AddCommand(ssh.SSHCmd())
+	cmd.AddCommand(scp.SCPCmd())
 	cmd.AddCommand(update.UpdateCmd())
 	cmd.AddCommand(version.VersionCmd())
 	cmd.AddCommand(login.LoginCmd())

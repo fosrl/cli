@@ -3,6 +3,7 @@ package ssh
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
@@ -13,20 +14,22 @@ import (
 )
 
 var (
-	errHostnameRequired       = errors.New("API did not return a hostname for the connection")
-	errResourceIDRequired     = errors.New("Resource (alias or identifier) is required; example: pangolin ssh my-server.internal")
-	errNoClientRunning        = errors.New("No client is currently running. Start the client first.")
+	errHostnameRequired   = errors.New("API did not return a hostname for the connection")
+	errResourceIDRequired = errors.New("Resource (alias or identifier) is required; example: pangolin ssh my-server.internal or pangolin ssh user@my-server.internal")
+	errNoClientRunning    = errors.New("No client is currently running. Start the client first.")
 )
 
 func SSHCmd() *cobra.Command {
 	opts := struct {
-		ResourceID string
-		Builtin    bool
-		Port       int
+		ResourceID   string
+		Username     string
+		TargetArgRaw string
+		Builtin      bool
+		Port         int
 	}{}
 
 	cmd := &cobra.Command{
-		Use:   "ssh <resource alias or identifier>",
+		Use:   "ssh <resource alias or identifier | username@resource>",
 		Short: "Run an interactive SSH session",
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true, // -L, -R, and other ssh(1) flags are forwarded to the system OpenSSH client
@@ -40,7 +43,18 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 			if len(args) < 1 || args[0] == "" {
 				return errResourceIDRequired
 			}
-			opts.ResourceID = args[0]
+
+			opts.TargetArgRaw = args[0]
+			if user, resource, hasAt := strings.Cut(args[0], "@"); hasAt {
+				if resource == "" {
+					return errResourceIDRequired
+				}
+				opts.Username = user
+				opts.ResourceID = resource
+			} else {
+				opts.Username = ""
+				opts.ResourceID = args[0]
+			}
 			return nil
 		},
 		Run: func(c *cobra.Command, args []string) {
@@ -65,7 +79,7 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 				os.Exit(1)
 			}
 
-			privPEM, _, cert, signData, err := GenerateAndSignKey(apiClient, orgID, opts.ResourceID)
+			privPEM, _, cert, signData, err := GenerateAndSignKey(apiClient, orgID, opts.ResourceID, opts.Username)
 			if err != nil {
 				logger.Error("%v", err)
 				os.Exit(1)
@@ -92,7 +106,7 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 				}
 			}
 
-			passThrough := mergePassThrough(os.Args, opts.ResourceID, args[1:])
+			passThrough := mergePassThrough(os.Args, opts.TargetArgRaw, args[1:])
 			pt := ParseOpenSSHPassThrough(passThrough)
 			runOpts := RunOpts{
 				User:           signData.User,

@@ -274,6 +274,7 @@ type ApplyBlueprintResponse struct {
 type SignSSHKeyRequest struct {
 	PublicKey string `json:"publicKey"`
 	Resource  string `json:"resource"`
+	Username  string `json:"username,omitempty"`
 }
 
 type SignSSHKeyData struct {

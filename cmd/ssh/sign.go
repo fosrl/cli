@@ -48,7 +48,7 @@ func SignCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			privPEM, _, cert, signData, err := GenerateAndSignKey(apiClient, orgID, opts.ResourceID)
+			privPEM, _, cert, signData, err := GenerateAndSignKey(apiClient, orgID, opts.ResourceID, "") // username is not used because we are signing a key which means we are using push mode
 			if err != nil {
 				logger.Error("%v", err)
 				os.Exit(1)

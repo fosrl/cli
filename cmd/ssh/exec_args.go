@@ -16,6 +16,18 @@ func buildExecSSHArgs(sshPath, user, hostname string, port int, keyPath, certPat
 	if certPath != "" {
 		args = append(args, "-o", "CertificateFile="+certPath)
 	}
+	// JIT cert-based auth should not fall back to interactive password prompts.
+	args = append(args,
+		"-o", "PubkeyAuthentication=yes",
+		"-o", "PreferredAuthentications=publickey",
+		"-o", "IdentitiesOnly=yes",
+		"-o", "PasswordAuthentication=no",
+		"-o", "KbdInteractiveAuthentication=no",
+	)
+	// The built-in SSH server generates a fresh ephemeral host key on every
+	// restart, so skip known_hosts checking to avoid spurious MITM warnings.
+	// LogLevel=ERROR suppresses the "Permanently added ..." informational line.
+	args = append(args, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR")
 	if port > 0 {
 		args = append(args, "-p", strconv.Itoa(port))
 	}

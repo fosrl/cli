@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"runtime"
 	"syscall"
 
 	"github.com/creack/pty"
@@ -48,9 +47,6 @@ func isExecutable(path string) bool {
 	if err != nil || info.IsDir() {
 		return false
 	}
-	if runtime.GOOS == "windows" {
-		return true
-	}
 	return info.Mode()&0o111 != 0
 }
 
@@ -84,7 +80,7 @@ func RunExec(opts RunOpts) (int, error) {
 	argv := buildExecSSHArgs(sshPath, opts.User, opts.Hostname, opts.Port, keyPath, certPath, opts.SSHPassthrough)
 	cmd := exec.Command(argv[0], argv[1:]...)
 
-	usePTY := runtime.GOOS != "windows" && isatty.IsTerminal(os.Stdin.Fd())
+	usePTY := isatty.IsTerminal(os.Stdin.Fd())
 
 	if usePTY {
 		return runExecWithPTY(cmd)

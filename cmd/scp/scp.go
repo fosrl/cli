@@ -106,6 +106,16 @@ Set PANGOLIN_SCP_BINARY to the full path of scp(1) to override PATH lookup on al
 
 			pt := sshcmd.ParseOpenSSHPassThrough(args)
 
+			// When the auth daemon is the native SSH server, restrict
+			// pass-through options to the subset it actually supports.
+			if signData.AuthDaemonMode == "native" {
+				var stripped []string
+				pt, stripped = sshcmd.FilterForNativeSCPMode(pt)
+				if len(stripped) > 0 {
+					logger.Warning("The following options are not supported by the native SSH server and were ignored: %s", sshcmd.NativeStrippedWarning(stripped))
+				}
+			}
+
 			runOpts := RunOpts{
 				User:          signData.User,
 				Hostname:      signData.Hostname,

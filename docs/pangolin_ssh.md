@@ -11,7 +11,7 @@ By default the system OpenSSH client is used on every platform. You can pass the
 Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on all platforms.
 
 ```
-pangolin ssh <resource alias or identifier> [flags]
+pangolin ssh <resource alias or identifier | username@resource> [flags]
 ```
 
 ### Options

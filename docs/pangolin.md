@@ -18,6 +18,7 @@ Pangolin CLI
 * [pangolin login](pangolin_login.md)	 - Login to Pangolin
 * [pangolin logout](pangolin_logout.md)	 - Logout from Pangolin
 * [pangolin logs](pangolin_logs.md)	 - View client logs
+* [pangolin scp](pangolin_scp.md)	 - Run scp using just-in-time SSH certificates
 * [pangolin select](pangolin_select.md)	 - Select account information to use
 * [pangolin ssh](pangolin_ssh.md)	 - Run an interactive SSH session
 * [pangolin status](pangolin_status.md)	 - Status commands

@@ -16,13 +16,14 @@ func buildExecSSHArgs(sshPath, user, hostname string, port int, keyPath, certPat
 	if certPath != "" {
 		args = append(args, "-o", "CertificateFile="+certPath)
 	}
-	// JIT cert-based auth should not fall back to interactive password prompts.
+	// Prefer JIT cert/publickey auth first, but allow interactive fallback
+	// (password/keyboard-interactive) when the server supports it.
 	args = append(args,
 		"-o", "PubkeyAuthentication=yes",
-		"-o", "PreferredAuthentications=publickey",
+		"-o", "PreferredAuthentications=publickey,keyboard-interactive,password",
 		"-o", "IdentitiesOnly=yes",
-		"-o", "PasswordAuthentication=no",
-		"-o", "KbdInteractiveAuthentication=no",
+		"-o", "PasswordAuthentication=yes",
+		"-o", "KbdInteractiveAuthentication=yes",
 	)
 	// The built-in SSH server generates a fresh ephemeral host key on every
 	// restart, so skip known_hosts checking to avoid spurious MITM warnings.

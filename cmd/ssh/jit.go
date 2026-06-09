@@ -68,8 +68,10 @@ func GenerateAndSignKey(client *api.Client, orgID string, resourceID string, use
 	} else if initResp.MessageID != 0 {
 		messageIDs = []int64{initResp.MessageID}
 	} else {
-		if err := validateSignedCert(pubKey, initResp.Certificate); err != nil {
-			return "", "", "", nil, fmt.Errorf("SSH error: invalid certificate: %w", err)
+		if initResp.AuthDaemonMode != "native" {
+			if err := validateSignedCert(pubKey, initResp.Certificate); err != nil {
+				return "", "", "", nil, fmt.Errorf("SSH error: invalid certificate: %w", err)
+			}
 		}
 		// return the data as this is okay
 		return privPEM, pubKey, initResp.Certificate, initResp, nil
@@ -88,8 +90,10 @@ func GenerateAndSignKey(client *api.Client, orgID string, resourceID string, use
 				if msg.Error != nil && *msg.Error != "" {
 					return "", "", "", nil, fmt.Errorf("SSH error: %s", *msg.Error)
 				}
-				if err := validateSignedCert(pubKey, initResp.Certificate); err != nil {
-					return "", "", "", nil, fmt.Errorf("SSH error: invalid certificate: %w", err)
+				if initResp.AuthDaemonMode != "native" {
+					if err := validateSignedCert(pubKey, initResp.Certificate); err != nil {
+						return "", "", "", nil, fmt.Errorf("SSH error: invalid certificate: %w", err)
+					}
 				}
 				return privPEM, pubKey, initResp.Certificate, initResp, nil
 			}

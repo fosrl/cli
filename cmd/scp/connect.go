@@ -27,6 +27,7 @@ type siteConnectTimedOutMsg struct{}
 type connectSpinnerModel struct {
 	spinner  spinner.Model
 	timedOut bool
+	canceled bool
 }
 
 func newConnectSpinnerModel() connectSpinnerModel {
@@ -41,12 +42,17 @@ func (m connectSpinnerModel) Init() tea.Cmd {
 }
 
 func (m connectSpinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case siteConnectedMsg:
 		return m, tea.Quit
 	case siteConnectTimedOutMsg:
 		m.timedOut = true
 		return m, tea.Quit
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			m.canceled = true
+			return m, tea.Quit
+		}
 	}
 	var cmd tea.Cmd
 	m.spinner, cmd = m.spinner.Update(msg)
@@ -117,6 +123,10 @@ func waitForAnySiteConnection(client *olm.Client, siteIDs []int) error {
 
 	if finalModel.(connectSpinnerModel).timedOut {
 		return fmt.Errorf("Timed out waiting for site to connect. Please disconnect (down) then reconnect (up) the client and try again.")
+	}
+
+	if finalModel.(connectSpinnerModel).canceled {
+		return fmt.Errorf("connection canceled")
 	}
 
 	return nil

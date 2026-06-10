@@ -14,6 +14,7 @@ import (
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
+	"github.com/fosrl/cli/cmd/resetdns"
 	"github.com/fosrl/cli/cmd/scp"
 	selectcmd "github.com/fosrl/cli/cmd/select"
 	"github.com/fosrl/cli/cmd/ssh"
@@ -21,6 +22,7 @@ import (
 	"github.com/fosrl/cli/cmd/up"
 	"github.com/fosrl/cli/cmd/update"
 	"github.com/fosrl/cli/cmd/version"
+	"github.com/fosrl/cli/cmd/watchdog"
 	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
@@ -65,6 +67,12 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 	if statusCmd := status.StatusCmd(); statusCmd != nil {
 		cmd.AddCommand(statusCmd)
+	}
+	if resetDNSCmd := resetdns.ResetDNSCmd(); resetDNSCmd != nil {
+		cmd.AddCommand(resetDNSCmd)
+	}
+	if watchdogCmd := watchdog.WatchdogCmd(); watchdogCmd != nil {
+		cmd.AddCommand(watchdogCmd)
 	}
 
 	cmd.AddCommand(ssh.SSHCmd())

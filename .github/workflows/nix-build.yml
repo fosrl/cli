@@ -19,5 +19,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
 
       - name: Build flake package
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
         run: |
-          nix build .#pangolin-cli -L
+          nix build .#pangolin-cli -L --impure

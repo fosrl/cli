@@ -108,6 +108,18 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 
 			passThrough := mergePassThrough(os.Args, opts.TargetArgRaw, args[1:])
 			pt := ParseOpenSSHPassThrough(passThrough)
+
+			// When the auth daemon is the native SSH server, restrict
+			// pass-through options to the subset it actually supports.
+			// An undefined or non-"native" mode imposes no restriction.
+			if signData.AuthDaemonMode == "native" {
+				var stripped []string
+				pt, stripped = FilterForNativeMode(pt)
+				if len(stripped) > 0 {
+					logger.Warning("The following options are not supported by the native SSH server and were ignored: %s", NativeStrippedWarning(stripped))
+				}
+			}
+
 			runOpts := RunOpts{
 				User:           signData.User,
 				Hostname:       signData.Hostname,

@@ -44,11 +44,15 @@ Examples:
 
 Set PANGOLIN_SCP_BINARY to the full path of scp(1) to override PATH lookup on all platforms.`,
 		PreRunE: func(c *cobra.Command, args []string) error {
-			if len(args) < 2 {
-				return errScpOperands
-			}
-			username, resourceID, found := parseSCPRemoteHost(args)
+			// Use os.Args directly so that unknown boolean scp flags (e.g. -r,
+			// -p, -v) do not cause pflag to swallow the following operand as a
+			// flag value.
+			rawArgs := rawSCPArgs()
+			username, resourceID, found := parseSCPRemoteHost(rawArgs)
 			if !found {
+				if countSCPOperands(rawArgs) < 2 {
+					return errScpOperands
+				}
 				return errNoRemoteOperand
 			}
 			opts.Username = username
@@ -104,7 +108,17 @@ Set PANGOLIN_SCP_BINARY to the full path of scp(1) to override PATH lookup on al
 				}
 			}
 
-			pt := sshcmd.ParseOpenSSHPassThrough(args)
+			pt := sshcmd.ParseOpenSSHPassThrough(rawSCPArgs())
+
+			// When the auth daemon is the native SSH server, restrict
+			// pass-through options to the subset it actually supports.
+			if signData.AuthDaemonMode == "native" {
+				var stripped []string
+				pt, stripped = sshcmd.FilterForNativeSCPMode(pt)
+				if len(stripped) > 0 {
+					logger.Warning("The following options are not supported by the native SSH server and were ignored: %s", sshcmd.NativeStrippedWarning(stripped))
+				}
+			}
 
 			runOpts := RunOpts{
 				User:          signData.User,

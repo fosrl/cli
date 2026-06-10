@@ -540,6 +540,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		HTTPAddr:   opts.HTTPAddr,
 		Version:    versionpkg.Version,
 		Agent:      defaultAgent,
+		// Spawn the pangolin binary itself in watchdog mode after a DNS
+		// override is installed. The watchdog will reset DNS if this
+		// process dies before it can restore the original configuration.
+		WatchdogSubcommand: []string{"watchdog"},
+		WatchdogLogFile:    cfg.LogFile,
 		OnTerminated: func() {
 			logger.Info("Client process terminated")
 			stop()

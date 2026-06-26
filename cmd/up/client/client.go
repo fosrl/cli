@@ -77,6 +77,12 @@ func validateDNSIP(s, field string) error {
 	return nil
 }
 
+func applyTLSClientCert(client *api.Client, certPath string) {
+	if client != nil && client.HTTPClient != nil {
+		client.HTTPClient.TLSClientCert = certPath
+	}
+}
+
 func ClientUpCmd() *cobra.Command {
 	opts := ClientUpCmdOpts{}
 
@@ -141,6 +147,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
+	applyTLSClientCert(apiClient, opts.TlsClientCert)
 
 	if runtime.GOOS == "windows" {
 		err := errors.New("this command is currently unsupported on Windows")
@@ -199,6 +206,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 	}
+	applyTLSClientCert(healthClient, opts.TlsClientCert)
 
 	healthOk, healthErr := healthClient.CheckHealth()
 	if healthErr != nil || !healthOk {
@@ -624,11 +632,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	if enableAPI {
 		_ = olm.StartApi()
 	}
-	
+
 	// Run StartTunnel in a goroutine so org switching can restart it
 	// without causing the CLI process to exit
 	go olm.StartTunnel(tunnelConfig)
-	
+
 	// Block on context to keep process alive
 	<-ctx.Done()
 	logger.Info("Received shutdown signal, stopping tunnel")

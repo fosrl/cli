@@ -2,18 +2,22 @@ package api
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fosrl/cli/internal/version"
 	yaml "go.yaml.in/yaml/v3"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 // ClientConfig holds configuration for creating a new client
@@ -127,8 +131,9 @@ func (c *Client) request(method, endpoint string, payload interface{}, result in
 	}
 
 	// Create HTTP client and execute request
-	httpClient := &http.Client{
-		Timeout: c.HTTPClient.Timeout,
+	httpClient, err := createHTTPClient(c.HTTPClient.Timeout, c.HTTPClient.TLSClientCert)
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
 	resp, err := httpClient.Do(req)
@@ -526,11 +531,56 @@ func setJSONResponseHeaders(req *http.Request, userAgent string) {
 	req.Header.Set("User-Agent", userAgent)
 }
 
-// createHTTPClient creates an HTTP client with the specified timeout
-func createHTTPClient(timeout time.Duration) *http.Client {
-	return &http.Client{
-		Timeout: timeout,
+// createHTTPClient creates an HTTP client with the specified timeout and optional mTLS client cert.
+func createHTTPClient(timeout time.Duration, tlsClientCert string) (*http.Client, error) {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if tlsClientCert != "" {
+		tlsConfig, err := loadTLSClientConfig(tlsClientCert)
+		if err != nil {
+			return nil, err
+		}
+		transport.TLSClientConfig = tlsConfig
 	}
+
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}, nil
+}
+
+func loadTLSClientConfig(path string) (*tls.Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read TLS client certificate %q: %w", path, err)
+	}
+
+	if cert, err := tls.X509KeyPair(data, data); err == nil {
+		if len(cert.Certificate) > 0 && cert.Leaf == nil {
+			if leaf, err := x509.ParseCertificate(cert.Certificate[0]); err == nil {
+				cert.Leaf = leaf
+			}
+		}
+		return &tls.Config{Certificates: []tls.Certificate{cert}}, nil
+	}
+
+	privateKey, certificate, caCerts, err := pkcs12.DecodeChain(data, "")
+	if err != nil {
+		return nil, fmt.Errorf("load TLS client certificate %q: %w", path, err)
+	}
+
+	clientCert := tls.Certificate{
+		Certificate: make([][]byte, 0, 1+len(caCerts)),
+		PrivateKey:  privateKey,
+		Leaf:        certificate,
+	}
+	if certificate != nil {
+		clientCert.Certificate = append(clientCert.Certificate, certificate.Raw)
+	}
+	for _, caCert := range caCerts {
+		clientCert.Certificate = append(clientCert.Certificate, caCert.Raw)
+	}
+
+	return &tls.Config{Certificates: []tls.Certificate{clientCert}}, nil
 }
 
 // parseAPIResponseBody parses the response body into an APIResponse struct
@@ -639,7 +689,10 @@ func LoginWithCookie(client *Client, req LoginRequest) (*LoginResponse, string, 
 	client.Session.ApplyToRequest(httpReq)
 
 	// Execute request
-	httpClient := createHTTPClient(client.HTTPClient.Timeout)
+	httpClient, err := createHTTPClient(client.HTTPClient.Timeout, client.HTTPClient.TLSClientCert)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create HTTP client: %w", err)
+	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		return nil, "", fmt.Errorf("request failed: %w", err)
@@ -726,7 +779,10 @@ func StartDeviceWebAuth(client *Client, req DeviceWebAuthStartRequest) (*DeviceW
 	client.Session.ApplyToRequest(httpReq)
 
 	// Execute request
-	httpClient := createHTTPClient(client.HTTPClient.Timeout)
+	httpClient, err := createHTTPClient(client.HTTPClient.Timeout, client.HTTPClient.TLSClientCert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
+	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
@@ -784,7 +840,10 @@ func PollDeviceWebAuth(client *Client, code string) (*DeviceWebAuthPollResponse,
 	client.Session.ApplyToRequest(httpReq)
 
 	// Execute request
-	httpClient := createHTTPClient(client.HTTPClient.Timeout)
+	httpClient, err := createHTTPClient(client.HTTPClient.Timeout, client.HTTPClient.TLSClientCert)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create HTTP client: %w", err)
+	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		return nil, "", fmt.Errorf("request failed: %w", err)

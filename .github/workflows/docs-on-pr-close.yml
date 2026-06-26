@@ -1,9 +1,8 @@
 name: Update docs
 
+# Disabled — restore pull_request trigger to re-enable.
 on:
-  pull_request:
-    types: [closed]
-    branches: [main]
+  workflow_dispatch:
 
 env:
   DOCS_PR_BRANCH: chore/bot-regenerate-cli-docs
@@ -18,7 +17,7 @@ concurrency:
 
 jobs:
   generate-docs-pr:
-    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.ref != 'chore/bot-regenerate-cli-docs' }}
+    if: false # Disabled — remove this line to re-enable.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main

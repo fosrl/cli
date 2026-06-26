@@ -12,7 +12,6 @@ Pangolin CLI
 
 * [pangolin apply](pangolin_apply.md)	 - Apply commands
 * [pangolin auth](pangolin_auth.md)	 - Authentication commands
-* [pangolin auth-daemon](pangolin_auth-daemon.md)	 - Start the auth daemon
 * [pangolin down](pangolin_down.md)	 - Stop a connection
 * [pangolin list](pangolin_list.md)	 - List resources and other items from the server
 * [pangolin login](pangolin_login.md)	 - Login to Pangolin

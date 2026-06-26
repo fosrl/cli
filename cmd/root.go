@@ -11,6 +11,7 @@ import (
 	"github.com/fosrl/cli/cmd/auth/login"
 	"github.com/fosrl/cli/cmd/auth/logout"
 	"github.com/fosrl/cli/cmd/authdaemon"
+	companioncmd "github.com/fosrl/cli/cmd/companion"
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
@@ -24,8 +25,10 @@ import (
 	"github.com/fosrl/cli/cmd/version"
 	"github.com/fosrl/cli/cmd/watchdog"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
+	"github.com/fosrl/cli/internal/notice"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -52,6 +55,9 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 		cmd.AddCommand(authDaemonCmd)
 	}
 	cmd.AddCommand(apply.ApplyCommand())
+	if companionCmd := companioncmd.CompanionCmd(); companionCmd != nil {
+		cmd.AddCommand(companionCmd)
+	}
 	cmd.AddCommand(selectcmd.SelectCmd())
 	cmd.AddCommand(list.ListCmd())
 
@@ -97,9 +103,59 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 
 	logger.InitLogger(cfg.LogLevel)
 
-	accountStore, err := config.LoadAccountStore()
+	ctx := context.Background()
+	ctx = config.WithConfig(ctx, cfg)
+	cmd.SetContext(ctx)
+
+	return cmd, nil
+}
+
+func commandNeedsAuthInit(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		if c.Name() == "companion" {
+			return false
+		}
+	}
+	return true
+}
+
+func commandNeedsCompanionReady(cmd *cobra.Command) bool {
+	if !commandNeedsAuthInit(cmd) {
+		return false
+	}
+	return !commandExemptFromCompanionReady(cmd)
+}
+
+func commandExemptFromCompanionReady(cmd *cobra.Command) bool {
+	switch cmd.Name() {
+	case "version", "update", "login", "logout", "account", "org":
+		return true
+	}
+
+	if cmd.Name() == "status" && commandHasAncestor(cmd, "auth") {
+		return true
+	}
+
+	return false
+}
+
+func commandHasAncestor(cmd *cobra.Command, name string) bool {
+	for p := cmd.Parent(); p != nil; p = p.Parent() {
+		if p.Name() == name {
+			return true
+		}
+	}
+	return false
+}
+
+func initAuthContext(ctx context.Context, cfg *config.Config) (context.Context, error) {
+	if _, ok := api.ClientFromContext(ctx); ok {
+		return ctx, nil
+	}
+
+	companionState, accountStore, err := companion.Resolve(cfg)
 	if err != nil {
-		return nil, err
+		return ctx, err
 	}
 
 	var apiBaseURL string
@@ -108,32 +164,47 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	if activeAccount, _ := accountStore.ActiveAccount(); activeAccount != nil {
 		apiBaseURL = activeAccount.Host
 		sessionToken = activeAccount.SessionToken
-	} else {
-		apiBaseURL = ""
-		sessionToken = ""
 	}
 
 	client, err := api.InitClient(apiBaseURL, sessionToken)
 	if err != nil {
-		return nil, err
+		return ctx, err
 	}
 
-	ctx := context.Background()
 	ctx = api.WithAPIClient(ctx, client)
 	ctx = config.WithAccountStore(ctx, accountStore)
-	ctx = config.WithConfig(ctx, cfg)
-
-	cmd.SetContext(ctx)
-
-	return cmd, nil
+	ctx = companion.WithState(ctx, companionState)
+	return ctx, nil
 }
 
 func mainCommandPreRun(cmd *cobra.Command, args []string) error {
 	cfg := config.ConfigFromContext(cmd.Context())
+	if cfg == nil {
+		return fmt.Errorf("configuration not loaded")
+	}
 
-	// Skip update checks when running self-update.
+	if err := notice.ShowPending(cfg); err != nil {
+		logger.Debug("Failed to show pending notices: %v", err)
+	}
+
+	if commandNeedsAuthInit(cmd) {
+		ctx, err := initAuthContext(cmd.Context(), cfg)
+		if err != nil {
+			return err
+		}
+		cmd.SetContext(ctx)
+		cfg = config.ConfigFromContext(ctx)
+
+		if commandNeedsCompanionReady(cmd) {
+			if err := companion.GuardReady(ctx); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Skip update checks when running self-update or companion commands.
 	cmdName := cmd.Name()
-	if cmdName == "update" {
+	if cmdName == "update" || !commandNeedsAuthInit(cmd) {
 		logger.Debug("Skipping update check for %q command", cmdName)
 		return nil
 	}

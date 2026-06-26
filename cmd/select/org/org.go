@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
@@ -39,6 +40,11 @@ func OrgCmd() *cobra.Command {
 }
 
 func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
+	if err := companion.GuardMutatingAuth(cmd.Context()); err != nil {
+		logger.Error("%v", err)
+		return err
+	}
+
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())

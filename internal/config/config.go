@@ -18,9 +18,33 @@ type Config struct {
 	// so they must operate on separate Viper instances.
 	v *viper.Viper
 
-	LogLevel           logger.LogLevel `mapstructure:"log_level" json:"log_level"`
-	LogFile            string          `mapstructure:"log_file" json:"log_file"`
-	DisableUpdateCheck bool            `mapstructure:"disable_update_check" json:"disable_update_check"`
+	LogLevel             logger.LogLevel      `mapstructure:"log_level" json:"log_level"`
+	LogFile              string               `mapstructure:"log_file" json:"log_file"`
+	DisableUpdateCheck   bool                 `mapstructure:"disable_update_check" json:"disable_update_check"`
+	DisableCompanionMode bool                 `mapstructure:"disable_companion_mode" json:"disable_companion_mode"`
+	CompanionAppDataDirs CompanionAppDataDirs `mapstructure:"companion_app_data_dirs" json:"companion_app_data_dirs"`
+}
+
+// CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
+type CompanionAppDataDirs struct {
+	Windows string `mapstructure:"windows" json:"windows,omitempty"`
+	Darwin  string `mapstructure:"darwin" json:"darwin,omitempty"`
+}
+
+// CompanionAppDataDirForPlatform returns the configured override for the current OS.
+func (c *Config) CompanionAppDataDirForPlatform() string {
+	return companionAppDataDirForGOOS(c, runtime.GOOS)
+}
+
+func companionAppDataDirForGOOS(c *Config, goos string) string {
+	switch goos {
+	case "windows":
+		return c.CompanionAppDataDirs.Windows
+	case "darwin":
+		return c.CompanionAppDataDirs.Darwin
+	default:
+		return ""
+	}
 }
 
 func newConfigViper() (*viper.Viper, error) {
@@ -46,6 +70,8 @@ func newConfigViper() (*viper.Viper, error) {
 	v.SetDefault("log_level", "info")
 	v.SetDefault("log_file", defaultLogPath)
 	v.SetDefault("disable_update_check", false)
+	v.SetDefault("disable_companion_mode", false)
+	v.SetDefault("companion_app_data_dirs", map[string]string{})
 
 	return v, nil
 }
@@ -86,10 +112,35 @@ func (c *Config) Validate() error {
 	}
 }
 
+// CompanionModeEnabled reports whether companion mode is enabled in config.
+func (c *Config) CompanionModeEnabled() bool {
+	return !c.DisableCompanionMode
+}
+
+// SetCompanionModeEnabled updates the companion mode config flag.
+func (c *Config) SetCompanionModeEnabled(enabled bool) {
+	c.DisableCompanionMode = !enabled
+}
+
 func (c *Config) Save() error {
 	c.v.Set("log_level", c.LogLevel)
 	c.v.Set("log_file", c.LogFile)
 	c.v.Set("disable_update_check", c.DisableUpdateCheck)
+	c.v.Set("disable_companion_mode", c.DisableCompanionMode)
+	c.v.Set("companion_app_data_dirs", c.CompanionAppDataDirs)
+
+	dir, err := GetPangolinConfigDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	configFile := c.v.ConfigFileUsed()
+	if _, err := os.Stat(configFile); errors.Is(err, os.ErrNotExist) {
+		return c.v.WriteConfigAs(configFile)
+	}
 
 	return c.v.WriteConfig()
 }

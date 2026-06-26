@@ -32,7 +32,7 @@ const (
 	defaultDNSServer  = "1.1.1.1"
 	defaultEnableAPI  = true
 	defaultSocketPath = "/var/run/olm.sock"
-	defaultAgent      = "Pangolin CLI"
+	defaultAgent      = olm.AgentName
 )
 
 type ClientUpCmdOpts struct {
@@ -624,11 +624,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	if enableAPI {
 		_ = olm.StartApi()
 	}
-	
+
 	// Run StartTunnel in a goroutine so org switching can restart it
 	// without causing the CLI process to exit
 	go olm.StartTunnel(tunnelConfig)
-	
+
 	// Block on context to keep process alive
 	<-ctx.Done()
 	logger.Info("Received shutdown signal, stopping tunnel")

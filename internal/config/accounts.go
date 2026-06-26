@@ -13,18 +13,20 @@ type AccountStore struct {
 	// so they must operate on separate Viper instances.
 	v *viper.Viper
 
+	readOnly bool
+
 	ActiveUserID string             `mapstructure:"activeUserId" json:"activeUserId"`
 	Accounts     map[string]Account `mapstructure:"accounts" json:"accounts"`
 }
 
 type Account struct {
-	UserID         string           `mapstructure:"userId" json:"userId"`
-	Host           string           `mapstructure:"host" json:"host"`
-	Email          string           `mapstructure:"email" json:"email"`
-	Username       *string          `mapstructure:"username" json:"username,omitempty"`
-	Name           *string          `mapstructure:"name" json:"name,omitempty"`
-	SessionToken   string           `mapstructure:"sessionToken" json:"sessionToken"`
-	OrgID          string           `mapstructure:"orgId" json:"orgId,omitempty"`
+	UserID         string          `mapstructure:"userId" json:"userId"`
+	Host           string          `mapstructure:"host" json:"host"`
+	Email          string          `mapstructure:"email" json:"email"`
+	Username       *string         `mapstructure:"username" json:"username,omitempty"`
+	Name           *string         `mapstructure:"name" json:"name,omitempty"`
+	SessionToken   string          `mapstructure:"sessionToken" json:"sessionToken"`
+	OrgID          string          `mapstructure:"orgId" json:"orgId,omitempty"`
 	OlmCredentials *OlmCredentials `mapstructure:"olmCredentials" json:"olmCredentials,omitempty"`
 	ServerInfo     *ServerInfo     `mapstructure:"serverInfo" json:"serverInfo,omitempty"`
 }
@@ -37,11 +39,11 @@ type OlmCredentials struct {
 // ServerInfo represents server information including version, build type, and license status
 // This mirrors api.ServerInfo to avoid import cycles
 type ServerInfo struct {
-	Version                  string  `mapstructure:"version" json:"version"`
-	SupporterStatusValid     bool    `mapstructure:"supporterStatusValid" json:"supporterStatusValid"`
-	Build                    string  `mapstructure:"build" json:"build"` // "oss" | "enterprise" | "saas"
-	EnterpriseLicenseValid   bool    `mapstructure:"enterpriseLicenseValid" json:"enterpriseLicenseValid"`
-	EnterpriseLicenseType    *string `mapstructure:"enterpriseLicenseType" json:"enterpriseLicenseType,omitempty"`
+	Version                string  `mapstructure:"version" json:"version"`
+	SupporterStatusValid   bool    `mapstructure:"supporterStatusValid" json:"supporterStatusValid"`
+	Build                  string  `mapstructure:"build" json:"build"` // "oss" | "enterprise" | "saas"
+	EnterpriseLicenseValid bool    `mapstructure:"enterpriseLicenseValid" json:"enterpriseLicenseValid"`
+	EnterpriseLicenseType  *string `mapstructure:"enterpriseLicenseType" json:"enterpriseLicenseType,omitempty"`
 }
 
 func newAccountViper() (*viper.Viper, error) {
@@ -59,7 +61,7 @@ func newAccountViper() (*viper.Viper, error) {
 	return v, nil
 }
 
-func LoadAccountStore() (*AccountStore, error) {
+func LoadAccountStore(cfg *Config) (*AccountStore, error) {
 	v, err := newAccountViper()
 	if err != nil {
 		return nil, err
@@ -85,6 +87,23 @@ func LoadAccountStore() (*AccountStore, error) {
 	return &store, nil
 }
 
+// NewReadOnlyAccountStore builds an in-memory account store from desktop app session data.
+func NewReadOnlyAccountStore(activeUserID string, accounts map[string]Account) *AccountStore {
+	if accounts == nil {
+		accounts = map[string]Account{}
+	}
+	return &AccountStore{
+		readOnly:     true,
+		ActiveUserID: activeUserID,
+		Accounts:     accounts,
+	}
+}
+
+// IsReadOnly reports whether the store is managed by companion mode and cannot be persisted.
+func (s *AccountStore) IsReadOnly() bool {
+	return s.readOnly
+}
+
 func (s *AccountStore) ActiveAccount() (*Account, error) {
 	if s.ActiveUserID == "" {
 		return nil, errors.New("not logged in")
@@ -108,6 +127,9 @@ func (s *AccountStore) ActiveAccount() (*Account, error) {
 //
 // This effectively logs out the account.
 func (s *AccountStore) Deactivate(userID string) error {
+	if s.readOnly {
+		return errors.New("account store is read-only")
+	}
 	account, exists := s.Accounts[userID]
 	if !exists {
 		return errors.New("account does not exist")
@@ -144,6 +166,9 @@ func (s *AccountStore) AvailableAccounts() []Account {
 // This must be called after modifying an account obtained from ActiveAccount()
 // because Go maps return copies of values, not references.
 func (s *AccountStore) UpdateActiveAccount(account *Account) error {
+	if s.readOnly {
+		return errors.New("account store is read-only")
+	}
 	if s.ActiveUserID == "" {
 		return errors.New("not logged in")
 	}
@@ -157,6 +182,12 @@ func (s *AccountStore) UpdateActiveAccount(account *Account) error {
 }
 
 func (s *AccountStore) Save() error {
+	if s.readOnly {
+		return errors.New("account store is read-only")
+	}
+	if s.v == nil {
+		return errors.New("account store has no backing config file")
+	}
 	// HACK: If there's a better way to write the config all at once
 	// without having to specify each toplevel struct key, that
 	// would be preferable.
@@ -169,6 +200,9 @@ func (s *AccountStore) Save() error {
 
 // UpdateAccountUserInfo updates the username and name for a specific account
 func (s *AccountStore) UpdateAccountUserInfo(userID, username, name string) error {
+	if s.readOnly {
+		return errors.New("account store is read-only")
+	}
 	account, exists := s.Accounts[userID]
 	if !exists {
 		return errors.New("account not found")

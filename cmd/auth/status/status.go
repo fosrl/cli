@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/utils"
@@ -30,12 +31,30 @@ func StatusCmd() *cobra.Command {
 func statusMain(cmd *cobra.Command) error {
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
+	companionState := companion.StateFromContext(cmd.Context())
+
+	if companionState.Enabled && !companionState.Active {
+		logger.Info("Status: not logged in")
+		logger.Info("Open %s to log in", companionState.ProviderName)
+		logger.Info("Or run 'pangolin companion disable' to use standalone CLI auth")
+		return fmt.Errorf("not logged in")
+	}
 
 	account, err := accountStore.ActiveAccount()
 	if err != nil {
 		logger.Info("Status: %s", err)
-		logger.Info("Run 'pangolin login' to authenticate")
+		if companionState.Enabled {
+			logger.Info("Open %s to log in", companionState.ProviderName)
+			logger.Info("Or run 'pangolin companion disable' to use standalone CLI auth")
+		} else {
+			logger.Info("Run 'pangolin login' to authenticate")
+		}
 		return err
+	}
+
+	if companionState.Active {
+		logger.Info("Companion mode: using %s session", companionState.ProviderName)
+		fmt.Println()
 	}
 
 	// Check health before fetching user data

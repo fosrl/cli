@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/utils"
@@ -174,6 +175,11 @@ func LoginCmd() *cobra.Command {
 }
 
 func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
+	if err := companion.GuardMutatingAuth(cmd.Context()); err != nil {
+		logger.Error("%v", err)
+		return err
+	}
+
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
@@ -328,11 +334,11 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	} else if apiServerInfo != nil {
 		// Convert api.ServerInfo to config.ServerInfo
 		serverInfo := &config.ServerInfo{
-			Version:                  apiServerInfo.Version,
-			SupporterStatusValid:     apiServerInfo.SupporterStatusValid,
-			Build:                    apiServerInfo.Build,
-			EnterpriseLicenseValid:   apiServerInfo.EnterpriseLicenseValid,
-			EnterpriseLicenseType:    apiServerInfo.EnterpriseLicenseType,
+			Version:                apiServerInfo.Version,
+			SupporterStatusValid:   apiServerInfo.SupporterStatusValid,
+			Build:                  apiServerInfo.Build,
+			EnterpriseLicenseValid: apiServerInfo.EnterpriseLicenseValid,
+			EnterpriseLicenseType:  apiServerInfo.EnterpriseLicenseType,
 		}
 		// Update account with server info
 		account := accountStore.Accounts[user.UserID]

@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
@@ -44,6 +45,11 @@ func AccountCmd() *cobra.Command {
 }
 
 func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
+	if err := companion.GuardMutatingAuth(cmd.Context()); err != nil {
+		logger.Error("%v", err)
+		return err
+	}
+
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
 	availableAccounts := accountStore.AvailableAccounts()
@@ -88,10 +94,10 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 
 	// Optimistic account switching: switch locally first
 	apiClient := api.FromContext(cmd.Context())
-	
+
 	// 1. Switch account locally first
 	accountStore.ActiveUserID = selectedAccount.UserID
-	
+
 	// Update API client base URL and token from account
 	apiBaseURL := selectedAccount.Host
 	if apiBaseURL != "" {
@@ -106,7 +112,7 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 		apiClient.SetBaseURL(apiBaseURL)
 	}
 	apiClient.SetToken(selectedAccount.SessionToken)
-	
+
 	if err := accountStore.Save(); err != nil {
 		logger.Error("Error: failed to save account to store: %v", err)
 		return err
@@ -173,11 +179,11 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 	} else if apiServerInfo != nil {
 		// Convert api.ServerInfo to config.ServerInfo
 		serverInfo := &config.ServerInfo{
-			Version:                  apiServerInfo.Version,
-			SupporterStatusValid:     apiServerInfo.SupporterStatusValid,
-			Build:                    apiServerInfo.Build,
-			EnterpriseLicenseValid:   apiServerInfo.EnterpriseLicenseValid,
-			EnterpriseLicenseType:    apiServerInfo.EnterpriseLicenseType,
+			Version:                apiServerInfo.Version,
+			SupporterStatusValid:   apiServerInfo.SupporterStatusValid,
+			Build:                  apiServerInfo.Build,
+			EnterpriseLicenseValid: apiServerInfo.EnterpriseLicenseValid,
+			EnterpriseLicenseType:  apiServerInfo.EnterpriseLicenseType,
 		}
 		// Update account with server info
 		account := accountStore.Accounts[selectedAccount.UserID]

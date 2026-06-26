@@ -13,6 +13,10 @@ import (
 
 const defaultSocketPath = `\\.\pipe\pangolin-olm`
 
+// CompanionAgentName is the OLM agent identifier used by the Pangolin Windows Client.
+// Must match the Agent value in the Windows app's OLM tunnel config.
+const CompanionAgentName = "Pangolin Windows"
+
 func getDefaultSocketPath() string {
 	return defaultSocketPath
 }

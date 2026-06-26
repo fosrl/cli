@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
@@ -29,6 +30,11 @@ func LogoutCmd() *cobra.Command {
 }
 
 func logoutMain(cmd *cobra.Command) error {
+	if err := companion.GuardMutatingAuth(cmd.Context()); err != nil {
+		logger.Error("%v", err)
+		return err
+	}
+
 	apiClient := api.FromContext(cmd.Context())
 
 	// Check if client is running before logout
@@ -84,12 +90,8 @@ func logoutMain(cmd *cobra.Command) error {
 		// If version doesn't match, skip client shutdown and continue with logout
 	}
 
-	// Check if there's an active session in the key store
-	accountStore, err := config.LoadAccountStore()
-	if err != nil {
-		logger.Error("Failed to load account store: %s", err)
-		return err
-	}
+	// Check if there's an active session in the account store.
+	accountStore := config.AccountStoreFromContext(cmd.Context())
 
 	if accountStore.ActiveUserID == "" {
 		logger.Success("Already logged out!")

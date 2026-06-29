@@ -97,15 +97,6 @@ func loginWithWeb(hostname string) (string, error) {
 		_, err := reader.ReadString('\n')
 		if err == nil {
 			// User pressed Enter, open browser
-			oldStdout := browser.Stdout
-			oldStderr := browser.Stderr
-			browser.Stdout = io.Discard
-			browser.Stderr = io.Discard
-			defer func() {
-				browser.Stdout = oldStdout
-				browser.Stderr = oldStderr
-			}()
-
 			if err := openBrowserQuietly(loginURL); err != nil {
 				// Don't fail if browser can't be opened, just warn
 				logger.Warning("Failed to open browser automatically")

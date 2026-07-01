@@ -308,10 +308,17 @@ type SignSSHKeyResponse struct {
 	Data    SignSSHKeyData `json:"data"`
 }
 
+// UserResourceAliasItem is one alias with optional label names from includeLabels=true.
+type UserResourceAliasItem struct {
+	Alias  string   `json:"alias"`
+	Labels []string `json:"labels"`
+}
+
 // ListUserResourceAliasesData is the inner `data` of GET /org/:orgId/user-resource-aliases.
 type ListUserResourceAliasesData struct {
-	Aliases    []string          `json:"aliases"`
-	Pagination AliasesPagination `json:"pagination"`
+	Aliases    []string                `json:"aliases"`
+	Items      []UserResourceAliasItem `json:"items,omitempty"`
+	Pagination AliasesPagination       `json:"pagination"`
 }
 
 // AliasesPagination matches the paginated API envelope for user-resource-aliases.

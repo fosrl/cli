@@ -352,17 +352,28 @@ func (c *Client) CheckOrgUserAccess(orgID, userID string) (*CheckOrgUserAccessRe
 	return &response, nil
 }
 
+// ListUserResourceAliasesOptions configures GET /org/:orgId/user-resource-aliases.
+type ListUserResourceAliasesOptions struct {
+	IncludeLabels bool
+	LabelFilter   []string
+}
+
 // ListUserResourceAliases returns one page of host-mode private site resource aliases for the user in the org.
-func (c *Client) ListUserResourceAliases(orgID string, page, pageSize int) (*ListUserResourceAliasesData, error) {
+func (c *Client) ListUserResourceAliases(orgID string, page, pageSize int, opts ListUserResourceAliasesOptions) (*ListUserResourceAliasesData, error) {
 	path := fmt.Sprintf("/org/%s/user-resource-aliases", url.PathEscape(orgID))
 	var data ListUserResourceAliasesData
-	opts := RequestOptions{
-		Query: map[string]string{
-			"page":     strconv.Itoa(page),
-			"pageSize": strconv.Itoa(pageSize),
-		},
+	query := map[string]string{
+		"page":     strconv.Itoa(page),
+		"pageSize": strconv.Itoa(pageSize),
 	}
-	if err := c.Get(path, &data, opts); err != nil {
+	if opts.IncludeLabels {
+		query["includeLabels"] = "true"
+	}
+	if len(opts.LabelFilter) > 0 {
+		query["labels"] = strings.Join(opts.LabelFilter, ",")
+	}
+	reqOpts := RequestOptions{Query: query}
+	if err := c.Get(path, &data, reqOpts); err != nil {
 		return nil, err
 	}
 	return &data, nil

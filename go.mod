@@ -12,7 +12,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/fosrl/newt v1.13.0
 	github.com/fosrl/olm v1.6.2
-	github.com/mattn/go-isatty v0.0.20
+	github.com/mattn/go-isatty v0.0.22
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0

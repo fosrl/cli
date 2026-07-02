@@ -13,7 +13,9 @@ pangolin list aliases [flags]
 ### Options
 
 ```
-  -h, --help   help for aliases
+  -h, --help            help for aliases
+  -l, --label strings   Only list aliases for resources with this label (repeatable, OR)
+  -L, --with-labels     Include label names in output (alias and comma-separated labels, tab-separated)
 ```
 
 ### SEE ALSO

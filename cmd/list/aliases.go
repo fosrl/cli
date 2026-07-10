@@ -17,6 +17,7 @@ const aliasesPageSize = 1000
 type aliasesFetchOptions struct {
 	includeLabels bool
 	labelFilter   []string
+	status        string
 }
 
 func aliasesCmd() *cobra.Command {
@@ -43,6 +44,7 @@ func aliasesCmd() *cobra.Command {
 			requested := aliasesFetchOptions{
 				includeLabels: withLabels,
 				labelFilter:   labelFilter,
+				status:        "approved",
 			}
 
 			data, err := fetchAllAliases(apiClient, orgID, requested)
@@ -71,10 +73,7 @@ func fetchAllAliases(apiClient *api.Client, orgID string, requested aliasesFetch
 
 	var combined api.ListUserResourceAliasesData
 	for page := 1; ; page++ {
-		pageData, err := apiClient.ListUserResourceAliases(orgID, page, aliasesPageSize, api.ListUserResourceAliasesOptions{
-			IncludeLabels: effective.includeLabels,
-			LabelFilter:   effective.labelFilter,
-		})
+		pageData, err := apiClient.ListUserResourceAliases(orgID, page, aliasesPageSize, listAliasesAPIOptions(effective))
 		if err != nil {
 			return nil, err
 		}
@@ -99,6 +98,18 @@ func fetchAllAliases(apiClient *api.Client, orgID string, requested aliasesFetch
 }
 
 func resolveAliasesFetchOptions(apiClient *api.Client, orgID string, requested aliasesFetchOptions) (aliasesFetchOptions, bool, error) {
+	effective, clientSideFilter, err := resolveAliasesFetchOptionsWithStatus(apiClient, orgID, requested)
+	if err == nil || !isBadRequest(err) || requested.status == "" {
+		return effective, clientSideFilter, err
+	}
+
+	// Older servers reject unknown query params such as status; retry without it.
+	withoutStatus := requested
+	withoutStatus.status = ""
+	return resolveAliasesFetchOptionsWithStatus(apiClient, orgID, withoutStatus)
+}
+
+func resolveAliasesFetchOptionsWithStatus(apiClient *api.Client, orgID string, requested aliasesFetchOptions) (aliasesFetchOptions, bool, error) {
 	effective := requested
 
 	if err := probeAliasesPage(apiClient, orgID, effective); err == nil {
@@ -111,6 +122,7 @@ func resolveAliasesFetchOptions(apiClient *api.Client, orgID string, requested a
 		effective = aliasesFetchOptions{
 			includeLabels: true,
 			labelFilter:   nil,
+			status:        requested.status,
 		}
 		if err := probeAliasesPage(apiClient, orgID, effective); err == nil {
 			return effective, true, nil
@@ -119,7 +131,7 @@ func resolveAliasesFetchOptions(apiClient *api.Client, orgID string, requested a
 		}
 	}
 
-	effective = aliasesFetchOptions{}
+	effective = aliasesFetchOptions{status: requested.status}
 	if err := probeAliasesPage(apiClient, orgID, effective); err != nil {
 		return effective, false, err
 	}
@@ -127,11 +139,16 @@ func resolveAliasesFetchOptions(apiClient *api.Client, orgID string, requested a
 	return effective, false, nil
 }
 
-func probeAliasesPage(apiClient *api.Client, orgID string, opts aliasesFetchOptions) error {
-	_, err := apiClient.ListUserResourceAliases(orgID, 1, 1, api.ListUserResourceAliasesOptions{
+func listAliasesAPIOptions(opts aliasesFetchOptions) api.ListUserResourceAliasesOptions {
+	return api.ListUserResourceAliasesOptions{
 		IncludeLabels: opts.includeLabels,
 		LabelFilter:   opts.labelFilter,
-	})
+		Status:        opts.status,
+	}
+}
+
+func probeAliasesPage(apiClient *api.Client, orgID string, opts aliasesFetchOptions) error {
+	_, err := apiClient.ListUserResourceAliases(orgID, 1, 1, listAliasesAPIOptions(opts))
 	return err
 }
 

@@ -82,7 +82,7 @@ func ClientUpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "client",
 		Short: "Start a client connection",
-		Long:  "Bring up a client tunneled connection",
+		Long:  `Bring up a client tunneled connection.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// `--id` and `--secret` must be specified together
 			if (opts.ID == "") != (opts.Secret == "") {
@@ -92,6 +92,9 @@ func ClientUpCmd() *cobra.Command {
 			if opts.Attached && opts.Silent {
 				return errors.New("--silent and --attached options conflict")
 			}
+
+			cfg := config.ConfigFromContext(cmd.Context())
+			applyUpDefaults(cmd, &opts, cfg)
 
 			if err := validateDNSIP(opts.DNS, "netstack-dns"); err != nil {
 				return err
@@ -134,6 +137,23 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
 	return cmd
+}
+
+// Precedence: flags > env/config > built-in defaults.
+func applyUpDefaults(cmd *cobra.Command, opts *ClientUpCmdOpts, cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+
+	if !cmd.Flags().Changed("tunnel-dns") && cfg.IsSet("up.tunnel_dns") {
+		opts.TunnelDNS = cfg.GetBool("up.tunnel_dns")
+	}
+	if !cmd.Flags().Changed("override-dns") && cfg.IsSet("up.override_dns") {
+		opts.OverrideDNS = cfg.GetBool("up.override_dns")
+	}
+	if !cmd.Flags().Changed("upstream-dns") && cfg.IsSet("up.upstream_dns") {
+		opts.UpstreamDNS = cfg.GetStringSlice("up.upstream_dns")
+	}
 }
 
 func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string) error {

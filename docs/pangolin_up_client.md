@@ -4,7 +4,7 @@ Start a client connection
 
 ### Synopsis
 
-Bring up a client tunneled connection
+Bring up a client tunneled connection.
 
 ```
 pangolin up client [flags]

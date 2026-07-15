@@ -12,6 +12,7 @@ import (
 	"github.com/fosrl/cli/cmd/auth/logout"
 	"github.com/fosrl/cli/cmd/authdaemon"
 	companioncmd "github.com/fosrl/cli/cmd/companion"
+	configcmd "github.com/fosrl/cli/cmd/config"
 	"github.com/fosrl/cli/cmd/down"
 	"github.com/fosrl/cli/cmd/list"
 	"github.com/fosrl/cli/cmd/logs"
@@ -60,6 +61,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 	}
 	cmd.AddCommand(selectcmd.SelectCmd())
 	cmd.AddCommand(list.ListCmd())
+	cmd.AddCommand(configcmd.ConfigCmd())
 
 	// Platform-specific commands - nil on unsupported platforms
 	if upCmd := up.UpCmd(); upCmd != nil {
@@ -112,7 +114,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 
 func commandNeedsAuthInit(cmd *cobra.Command) bool {
 	for c := cmd; c != nil; c = c.Parent() {
-		if c.Name() == "companion" {
+		if c.Name() == "companion" || c.Name() == "config" {
 			return false
 		}
 	}

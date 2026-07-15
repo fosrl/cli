@@ -356,6 +356,7 @@ func (c *Client) CheckOrgUserAccess(orgID, userID string) (*CheckOrgUserAccessRe
 type ListUserResourceAliasesOptions struct {
 	IncludeLabels bool
 	LabelFilter   []string
+	Status        string
 }
 
 // ListUserResourceAliases returns one page of host-mode private site resource aliases for the user in the org.
@@ -371,6 +372,9 @@ func (c *Client) ListUserResourceAliases(orgID string, page, pageSize int, opts 
 	}
 	if len(opts.LabelFilter) > 0 {
 		query["labels"] = strings.Join(opts.LabelFilter, ",")
+	}
+	if opts.Status != "" {
+		query["status"] = opts.Status
 	}
 	reqOpts := RequestOptions{Query: query}
 	if err := c.Get(path, &data, reqOpts); err != nil {

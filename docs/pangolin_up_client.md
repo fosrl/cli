@@ -4,7 +4,7 @@ Start a client connection
 
 ### Synopsis
 
-Bring up a client tunneled connection
+Bring up a client tunneled connection.
 
 ```
 pangolin up client [flags]
@@ -22,6 +22,7 @@ pangolin up client [flags]
       --interface-name name      Interface name (default "pangolin")
       --log-level string         Log level (default "info")
       --mtu int                  Maximum transmission unit (default 1280)
+      --netstack-dns server      DNS server to use for Netstack. This handles DNS resolution outside of the upstream servers.
       --org string               Organization ID (default: selected organization if logged in)
       --override-dns             When enabled, the client uses custom DNS servers to resolve internal resources and aliases. This overrides your system's default DNS settings. Queries that cannot be resolved as a Pangolin resource will be forwarded to your configured Upstream DNS Server. (default true)
       --ping-interval interval   Ping interval (default 5s)
@@ -30,10 +31,10 @@ pangolin up client [flags]
       --silent                   Disable TUI and run silently when detached
       --tls-client-cert path     TLS client certificate path
       --tunnel-dns               When enabled, DNS queries are routed through the tunnel for remote resolution. To ensure queries are tunneled correctly, you must define the DNS server as a Pangolin resource and enter its address as an Upstream DNS Server.
-      --netstack-dns server      DNS server to use for Netstack. This handles DNS resolution outside of the upstream servers if overriding using the system DNS
-      --upstream-dns strings     List of DNS servers to use for external DNS resolution if overriding using the system DNS
+      --upstream-dns strings     List of DNS servers to use for external DNS resolution if overriding system DNS
 ```
 
 ### SEE ALSO
 
-- [pangolin up](pangolin_up.md) - Start a connection
+* [pangolin up](pangolin_up.md)	 - Start a connection
+

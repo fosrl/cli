@@ -53,6 +53,7 @@ type ClientUpCmdOpts struct {
 	OverrideDNS   bool
 	TunnelDNS     bool
 	UpstreamDNS   []string
+	MatchDomains  []string
 }
 
 // validateDNSIP ensures the given DNS server string is a valid IP address.
@@ -133,6 +134,7 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.OverrideDNS, "override-dns", true, "When enabled, the client uses custom DNS servers to resolve internal resources and aliases. This overrides your system's default DNS settings. Queries that cannot be resolved as a Pangolin resource will be forwarded to your configured Upstream DNS Server.")
 	cmd.Flags().BoolVar(&opts.TunnelDNS, "tunnel-dns", false, "When enabled, DNS queries are routed through the tunnel for remote resolution. To ensure queries are tunneled correctly, you must define the DNS server as a Pangolin resource and enter its address as an Upstream DNS Server.")
 	cmd.Flags().StringSliceVar(&opts.UpstreamDNS, "upstream-dns", []string{}, "List of DNS servers to use for external DNS resolution if overriding system DNS")
+	cmd.Flags().StringSliceVar(&opts.MatchDomains, "match-domains", nil, "FQDN wildcard patterns (e.g. '*.proxy.internal') to check against local records/upstream DNS; queries for non-matching domains go directly to the system's DNS servers (default: match all domains, or the value from config if set)")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
@@ -160,6 +162,14 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
+
+	// Fall back to the persisted config value when --match-domains wasn't
+	// explicitly passed. Resolved here (rather than left to the subprocess,
+	// which runs as root and may not have access to the user's config) so it
+	// can be forwarded to the subprocess unconditionally below.
+	if !cmd.Flags().Changed("match-domains") && len(cfg.MatchDomains) > 0 {
+		opts.MatchDomains = cfg.MatchDomains
+	}
 
 	if runtime.GOOS == "windows" {
 		err := errors.New("this command is currently unsupported on Windows")
@@ -365,6 +375,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if cmd.Flags().Changed("upstream-dns") {
 			// Comma sep
 			cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(opts.UpstreamDNS, ","))
+		}
+		if len(opts.MatchDomains) > 0 {
+			// Always forwarded (rather than gated on Changed) since it may have
+			// come from the persisted config rather than the flag, and the
+			// subprocess (running as root) may not have access to that config.
+			cmdArgs = append(cmdArgs, "--match-domains", strings.Join(opts.MatchDomains, ","))
 		}
 
 		// Add positional args if any
@@ -605,6 +621,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		OverrideDNS:          opts.OverrideDNS,
 		TunnelDNS:            opts.TunnelDNS,
 		UpstreamDNS:          upstreamDNS,
+		MatchDomains:         opts.MatchDomains,
 		UserToken:            userToken,
 		InitialFingerprint:   initialFingerprint,
 		InitialPostures:      initialPostures,

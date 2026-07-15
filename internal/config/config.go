@@ -32,6 +32,14 @@ type UpConfig struct {
 	TunnelDNS   *bool    `mapstructure:"tunnel_dns" json:"tunnel_dns,omitempty"`
 	UpstreamDNS []string `mapstructure:"upstream_dns" json:"upstream_dns,omitempty"`
 	OverrideDNS *bool    `mapstructure:"override_dns" json:"override_dns,omitempty"`
+
+	// MatchDomains lists FQDN wildcard patterns (using * and ? wildcards, e.g.
+	// "*.proxy.internal") that olm should check against local records/upstream
+	// DNS. Queries for domains that don't match any pattern are sent directly to
+	// the host's system DNS servers. Used as the default for `pangolin up`'s
+	// --match-domains flag when the flag isn't passed explicitly. Empty means
+	// match every domain (the feature is disabled).
+	MatchDomains []string `mapstructure:"match_domains" json:"match_domains"`
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -98,6 +106,7 @@ func newConfigViper() (*viper.Viper, error) {
 	v.SetDefault("disable_update_check", false)
 	v.SetDefault("disable_companion_mode", false)
 	v.SetDefault("companion_app_data_dirs", map[string]string{})
+	v.SetDefault("match_domains", []string{})
 
 	return v, nil
 }
@@ -292,6 +301,7 @@ func (c *Config) Save() error {
 	c.v.Set("disable_update_check", c.DisableUpdateCheck)
 	c.v.Set("disable_companion_mode", c.DisableCompanionMode)
 	c.v.Set("companion_app_data_dirs", c.CompanionAppDataDirs)
+	c.v.Set("match_domains", c.Up.MatchDomains)
 
 	// Only persist up keys that were explicitly set so we do not write
 	// zero-value bools that would later look like intentional overrides.

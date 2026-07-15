@@ -1,15 +1,15 @@
-## pangolin config get
+## pangolin config show
 
-Get a config value
+Print the current config contents
 
 ```
-pangolin config get <key> [flags]
+pangolin config show [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for get
+  -h, --help   help for show
 ```
 
 ### SEE ALSO

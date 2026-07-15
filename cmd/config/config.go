@@ -17,6 +17,7 @@ func ConfigCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(configPathCmd())
+	cmd.AddCommand(configShowCmd())
 	cmd.AddCommand(configListCmd())
 	cmd.AddCommand(configGetCmd())
 	cmd.AddCommand(configSetCmd())
@@ -39,6 +40,16 @@ func configPathCmd() *cobra.Command {
 	}
 }
 
+func configShowCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show",
+		Short: "Print the current config contents",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return dumpConfig(config.ConfigFromContext(cmd.Context()))
+		},
+	}
+}
+
 func configListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
@@ -54,15 +65,11 @@ func configListCmd() *cobra.Command {
 
 func configGetCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "get [key]",
-		Short: "Get a config value, or dump config when no key is given",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "get <key>",
+		Short: "Get a config value",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := config.ConfigFromContext(cmd.Context())
-
-			if len(args) == 0 {
-				return dumpConfig(cfg)
-			}
 
 			value, err := cfg.GetKey(args[0])
 			if err != nil {

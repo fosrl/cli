@@ -47,6 +47,7 @@ type OLMPeerStatus struct {
 	LastSeen  time.Time     `json:"lastSeen"`
 	Endpoint  string        `json:"endpoint,omitempty"`
 	IsRelay   bool          `json:"isRelay"`
+	IsLocal   bool          `json:"isLocal"` // true when connected via a local network endpoint, bypassing both the public endpoint and relay
 	PeerIP    string        `json:"peerAddress,omitempty"`
 }
 

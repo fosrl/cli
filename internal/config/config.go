@@ -39,7 +39,7 @@ type UpConfig struct {
 	// the host's system DNS servers. Used as the default for `pangolin up`'s
 	// --match-domains flag when the flag isn't passed explicitly. Empty means
 	// match every domain (the feature is disabled).
-	MatchDomains []string `mapstructure:"match_domains" json:"match_domains"`
+	MatchDomains []string `mapstructure:"match_domains_dns" json:"match_domains_dns"`
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -56,7 +56,7 @@ var ConfigOptions = []string{
 	"up.tunnel_dns",
 	"up.upstream_dns",
 	"up.override_dns",
-	"up.match_domains",
+	"up.match_domains_dns",
 }
 
 // SupportedConfigKeys returns the settable config keys.
@@ -107,7 +107,7 @@ func newConfigViper() (*viper.Viper, error) {
 	v.SetDefault("disable_update_check", false)
 	v.SetDefault("disable_companion_mode", false)
 	v.SetDefault("companion_app_data_dirs", map[string]string{})
-	v.SetDefault("up.match_domains", []string{})
+	v.SetDefault("up.match_domains_dns", []string{})
 
 	return v, nil
 }
@@ -232,7 +232,7 @@ func (c *Config) SetKey(key, value string) error {
 		servers := splitCommaList(value)
 		c.Up.UpstreamDNS = servers
 		c.v.Set(key, servers)
-	case "up.match_domains":
+	case "up.match_domains_dns":
 		domains := splitCommaList(value)
 		c.Up.MatchDomains = domains
 		c.v.Set(key, domains)
@@ -268,7 +268,7 @@ func (c *Config) GetKey(key string) (string, error) {
 			return "", errConfigKeyUnset(key)
 		}
 		return strings.Join(c.GetStringSlice(key), ","), nil
-	case "up.match_domains":
+	case "up.match_domains_dns":
 		if !c.IsSet(key) {
 			return "", errConfigKeyUnset(key)
 		}
@@ -324,7 +324,7 @@ func (c *Config) Save() error {
 		c.v.Set("up.upstream_dns", c.Up.UpstreamDNS)
 	}
 	if c.Up.MatchDomains != nil {
-		c.v.Set("up.match_domains", c.Up.MatchDomains)
+		c.v.Set("up.match_domains_dns", c.Up.MatchDomains)
 	}
 
 	dir, err := GetPangolinConfigDir()

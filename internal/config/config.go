@@ -56,6 +56,7 @@ var ConfigOptions = []string{
 	"up.tunnel_dns",
 	"up.upstream_dns",
 	"up.override_dns",
+	"up.match_domains",
 }
 
 // SupportedConfigKeys returns the settable config keys.
@@ -106,7 +107,7 @@ func newConfigViper() (*viper.Viper, error) {
 	v.SetDefault("disable_update_check", false)
 	v.SetDefault("disable_companion_mode", false)
 	v.SetDefault("companion_app_data_dirs", map[string]string{})
-	v.SetDefault("match_domains", []string{})
+	v.SetDefault("up.match_domains", []string{})
 
 	return v, nil
 }
@@ -231,6 +232,10 @@ func (c *Config) SetKey(key, value string) error {
 		servers := splitCommaList(value)
 		c.Up.UpstreamDNS = servers
 		c.v.Set(key, servers)
+	case "up.match_domains":
+		domains := splitCommaList(value)
+		c.Up.MatchDomains = domains
+		c.v.Set(key, domains)
 	default:
 		return fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -259,6 +264,11 @@ func (c *Config) GetKey(key string) (string, error) {
 		}
 		return fmt.Sprintf("%t", c.GetBool(key)), nil
 	case "up.upstream_dns":
+		if !c.IsSet(key) {
+			return "", errConfigKeyUnset(key)
+		}
+		return strings.Join(c.GetStringSlice(key), ","), nil
+	case "up.match_domains":
 		if !c.IsSet(key) {
 			return "", errConfigKeyUnset(key)
 		}
@@ -301,7 +311,6 @@ func (c *Config) Save() error {
 	c.v.Set("disable_update_check", c.DisableUpdateCheck)
 	c.v.Set("disable_companion_mode", c.DisableCompanionMode)
 	c.v.Set("companion_app_data_dirs", c.CompanionAppDataDirs)
-	c.v.Set("match_domains", c.Up.MatchDomains)
 
 	// Only persist up keys that were explicitly set so we do not write
 	// zero-value bools that would later look like intentional overrides.
@@ -313,6 +322,9 @@ func (c *Config) Save() error {
 	}
 	if c.Up.UpstreamDNS != nil {
 		c.v.Set("up.upstream_dns", c.Up.UpstreamDNS)
+	}
+	if c.Up.MatchDomains != nil {
+		c.v.Set("up.match_domains", c.Up.MatchDomains)
 	}
 
 	dir, err := GetPangolinConfigDir()

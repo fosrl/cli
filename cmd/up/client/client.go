@@ -167,8 +167,8 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// explicitly passed. Resolved here (rather than left to the subprocess,
 	// which runs as root and may not have access to the user's config) so it
 	// can be forwarded to the subprocess unconditionally below.
-	if !cmd.Flags().Changed("match-domains") && len(cfg.MatchDomains) > 0 {
-		opts.MatchDomains = cfg.MatchDomains
+	if !cmd.Flags().Changed("match-domains") && cfg.IsSet("up.match_domains") {
+		opts.MatchDomains = cfg.GetStringSlice("up.match_domains")
 	}
 
 	if runtime.GOOS == "windows" {

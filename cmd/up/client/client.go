@@ -35,25 +35,26 @@ const (
 )
 
 type ClientUpCmdOpts struct {
-	ID            string
-	Secret        string
-	Endpoint      string
-	OrgID         string
-	MTU           int
-	DNS           string
-	InterfaceName string
-	LogLevel      string
-	HTTPAddr      string
-	PingInterval  time.Duration
-	PingTimeout   time.Duration
-	Holepunch     bool
-	TlsClientCert string
-	Attached      bool
-	Silent        bool
-	OverrideDNS   bool
-	TunnelDNS     bool
-	UpstreamDNS   []string
-	MatchDomains  []string
+	ID                string
+	Secret            string
+	Endpoint          string
+	OrgID             string
+	MTU               int
+	DNS               string
+	InterfaceName     string
+	LogLevel          string
+	HTTPAddr          string
+	PingInterval      time.Duration
+	PingTimeout       time.Duration
+	Holepunch         bool
+	TlsClientCert     string
+	Attached          bool
+	Silent            bool
+	OverrideDNS       bool
+	TunnelDNS         bool
+	UpstreamDNS       []string
+	MatchDomains      []string
+	PreferLocalRoutes bool
 }
 
 // validateDNSIP ensures the given DNS server string is a valid IP address.
@@ -135,6 +136,7 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.TunnelDNS, "tunnel-dns", false, "When enabled, DNS queries are routed through the tunnel for remote resolution. To ensure queries are tunneled correctly, you must define the DNS server as a Pangolin resource and enter its address as an Upstream DNS Server.")
 	cmd.Flags().StringSliceVar(&opts.UpstreamDNS, "upstream-dns", []string{}, "List of DNS servers to use for external DNS resolution if overriding system DNS")
 	cmd.Flags().StringSliceVar(&opts.MatchDomains, "match-domains", nil, "FQDN wildcard patterns (e.g. '*.proxy.internal') to check against local records/upstream DNS; queries for non-matching domains go directly to the system's DNS servers (default: match all domains, or the value from config if set)")
+	cmd.Flags().BoolVar(&opts.PreferLocalRoutes, "prefer-local-routes", false, "Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
@@ -155,6 +157,9 @@ func applyUpDefaults(cmd *cobra.Command, opts *ClientUpCmdOpts, cfg *config.Conf
 	}
 	if !cmd.Flags().Changed("upstream-dns") && cfg.IsSet("up.upstream_dns") {
 		opts.UpstreamDNS = cfg.GetStringSlice("up.upstream_dns")
+	}
+	if !cmd.Flags().Changed("prefer-local-routes") && cfg.IsSet("up.prefer_local_routes") {
+		opts.PreferLocalRoutes = cfg.GetBool("up.prefer_local_routes")
 	}
 }
 
@@ -381,6 +386,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			// come from the persisted config rather than the flag, and the
 			// subprocess (running as root) may not have access to that config.
 			cmdArgs = append(cmdArgs, "--match-domains", strings.Join(opts.MatchDomains, ","))
+		}
+		if opts.PreferLocalRoutes {
+			// Always forwarded when true (rather than gated on Changed) for the
+			// same reason as MatchDomains above - it may have come from config.
+			cmdArgs = append(cmdArgs, "--prefer-local-routes")
 		}
 
 		// Add positional args if any
@@ -622,6 +632,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		TunnelDNS:            opts.TunnelDNS,
 		UpstreamDNS:          upstreamDNS,
 		MatchDomains:         opts.MatchDomains,
+		PreferLocalRoutes:    opts.PreferLocalRoutes,
 		UserToken:            userToken,
 		InitialFingerprint:   initialFingerprint,
 		InitialPostures:      initialPostures,

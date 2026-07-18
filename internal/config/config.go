@@ -40,6 +40,13 @@ type UpConfig struct {
 	// --match-domains flag when the flag isn't passed explicitly. Empty means
 	// match every domain (the feature is disabled).
 	MatchDomains []string `mapstructure:"match_domains_dns" json:"match_domains_dns"`
+
+	// PreferLocalRoutes, when enabled, adds tunnel routes with a high metric so
+	// overlapping local/connected routes take precedence over the VPN route to
+	// the same destination. Used as the default for `pangolin up`'s
+	// --prefer-local-routes flag when the flag isn't passed explicitly.
+	// Defaults to false.
+	PreferLocalRoutes *bool `mapstructure:"prefer_local_routes" json:"prefer_local_routes,omitempty"`
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -57,6 +64,7 @@ var ConfigOptions = []string{
 	"up.upstream_dns",
 	"up.override_dns",
 	"up.match_domains_dns",
+	"up.prefer_local_routes",
 }
 
 // SupportedConfigKeys returns the settable config keys.
@@ -236,6 +244,13 @@ func (c *Config) SetKey(key, value string) error {
 		domains := splitCommaList(value)
 		c.Up.MatchDomains = domains
 		c.v.Set(key, domains)
+	case "up.prefer_local_routes":
+		b, err := parseBool(value)
+		if err != nil {
+			return err
+		}
+		c.Up.PreferLocalRoutes = &b
+		c.v.Set(key, b)
 	default:
 		return fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -273,6 +288,11 @@ func (c *Config) GetKey(key string) (string, error) {
 			return "", errConfigKeyUnset(key)
 		}
 		return strings.Join(c.GetStringSlice(key), ","), nil
+	case "up.prefer_local_routes":
+		if !c.IsSet(key) {
+			return "", errConfigKeyUnset(key)
+		}
+		return fmt.Sprintf("%t", c.GetBool(key)), nil
 	default:
 		return "", fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -325,6 +345,9 @@ func (c *Config) Save() error {
 	}
 	if c.Up.MatchDomains != nil {
 		c.v.Set("up.match_domains_dns", c.Up.MatchDomains)
+	}
+	if c.Up.PreferLocalRoutes != nil {
+		c.v.Set("up.prefer_local_routes", *c.Up.PreferLocalRoutes)
 	}
 
 	dir, err := GetPangolinConfigDir()

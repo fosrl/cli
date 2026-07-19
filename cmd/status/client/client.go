@@ -90,7 +90,7 @@ func printStatusTable(status *olm.StatusResponse) {
 	// Print peers if there are any
 	if len(status.PeerStatuses) > 0 {
 		fmt.Println("")
-		peerHeaders := []string{"SITE", "ENDPOINT", "STATUS", "LAST SEEN", "RELAY"}
+		peerHeaders := []string{"SITE", "ENDPOINT", "STATUS", "LAST SEEN", "CONNECTION"}
 		peerRows := [][]string{}
 
 		for _, peer := range status.PeerStatuses {
@@ -101,13 +101,27 @@ func printStatusTable(status *olm.StatusResponse) {
 				peer.Endpoint,
 				formatStatus(peer.Connected, true), // Peers don't have registered field, use true
 				lastSeen,
-				fmt.Sprintf("%t", peer.IsRelay),
+				formatConnectionMode(peer.IsLocal, peer.IsRelay),
 			})
 
 		}
 		utils.PrintTable(peerHeaders, peerRows)
 	} else {
 		fmt.Println("\nNo peers connected")
+	}
+}
+
+// formatConnectionMode summarizes how a peer is currently connected. Local and relay are
+// mutually exclusive; when neither applies the peer is connected directly to its public
+// endpoint.
+func formatConnectionMode(isLocal, isRelay bool) string {
+	switch {
+	case isLocal:
+		return "Local"
+	case isRelay:
+		return "Relay"
+	default:
+		return "Direct"
 	}
 }
 

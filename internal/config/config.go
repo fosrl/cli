@@ -32,6 +32,21 @@ type UpConfig struct {
 	TunnelDNS   *bool    `mapstructure:"tunnel_dns" json:"tunnel_dns,omitempty"`
 	UpstreamDNS []string `mapstructure:"upstream_dns" json:"upstream_dns,omitempty"`
 	OverrideDNS *bool    `mapstructure:"override_dns" json:"override_dns,omitempty"`
+
+	// MatchDomains lists FQDN wildcard patterns (using * and ? wildcards, e.g.
+	// "*.proxy.internal") that olm should check against local records/upstream
+	// DNS. Queries for domains that don't match any pattern are sent directly to
+	// the host's system DNS servers. Used as the default for `pangolin up`'s
+	// --match-domains flag when the flag isn't passed explicitly. Empty means
+	// match every domain (the feature is disabled).
+	MatchDomains []string `mapstructure:"match_domains_dns" json:"match_domains_dns"`
+
+	// PreferLocalRoutes, when enabled, adds tunnel routes with a high metric so
+	// overlapping local/connected routes take precedence over the VPN route to
+	// the same destination. Used as the default for `pangolin up`'s
+	// --prefer-local-routes flag when the flag isn't passed explicitly.
+	// Defaults to false.
+	PreferLocalRoutes *bool `mapstructure:"prefer_local_routes" json:"prefer_local_routes,omitempty"`
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -48,6 +63,8 @@ var ConfigOptions = []string{
 	"up.tunnel_dns",
 	"up.upstream_dns",
 	"up.override_dns",
+	"up.match_domains_dns",
+	"up.prefer_local_routes",
 }
 
 // SupportedConfigKeys returns the settable config keys.
@@ -98,6 +115,7 @@ func newConfigViper() (*viper.Viper, error) {
 	v.SetDefault("disable_update_check", false)
 	v.SetDefault("disable_companion_mode", false)
 	v.SetDefault("companion_app_data_dirs", map[string]string{})
+	v.SetDefault("up.match_domains_dns", []string{})
 
 	return v, nil
 }
@@ -222,6 +240,17 @@ func (c *Config) SetKey(key, value string) error {
 		servers := splitCommaList(value)
 		c.Up.UpstreamDNS = servers
 		c.v.Set(key, servers)
+	case "up.match_domains_dns":
+		domains := splitCommaList(value)
+		c.Up.MatchDomains = domains
+		c.v.Set(key, domains)
+	case "up.prefer_local_routes":
+		b, err := parseBool(value)
+		if err != nil {
+			return err
+		}
+		c.Up.PreferLocalRoutes = &b
+		c.v.Set(key, b)
 	default:
 		return fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -254,6 +283,16 @@ func (c *Config) GetKey(key string) (string, error) {
 			return "", errConfigKeyUnset(key)
 		}
 		return strings.Join(c.GetStringSlice(key), ","), nil
+	case "up.match_domains_dns":
+		if !c.IsSet(key) {
+			return "", errConfigKeyUnset(key)
+		}
+		return strings.Join(c.GetStringSlice(key), ","), nil
+	case "up.prefer_local_routes":
+		if !c.IsSet(key) {
+			return "", errConfigKeyUnset(key)
+		}
+		return fmt.Sprintf("%t", c.GetBool(key)), nil
 	default:
 		return "", fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -303,6 +342,12 @@ func (c *Config) Save() error {
 	}
 	if c.Up.UpstreamDNS != nil {
 		c.v.Set("up.upstream_dns", c.Up.UpstreamDNS)
+	}
+	if c.Up.MatchDomains != nil {
+		c.v.Set("up.match_domains_dns", c.Up.MatchDomains)
+	}
+	if c.Up.PreferLocalRoutes != nil {
+		c.v.Set("up.prefer_local_routes", *c.Up.PreferLocalRoutes)
 	}
 
 	dir, err := GetPangolinConfigDir()

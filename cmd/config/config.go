@@ -134,6 +134,9 @@ func dumpConfig(cfg *config.Config) error {
 	if cfg.IsSet("up.upstream_dns") {
 		up["upstream_dns"] = cfg.GetStringSlice("up.upstream_dns")
 	}
+	if cfg.IsSet("up.prefer_local_routes") {
+		up["prefer_local_routes"] = cfg.GetBool("up.prefer_local_routes")
+	}
 	if len(up) > 0 {
 		out["up"] = up
 	}

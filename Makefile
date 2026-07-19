@@ -3,7 +3,7 @@
 BINARY_NAME=pangolin
 OUTPUT_DIR=bin
 
-VERSION ?= version_replaceme
+VERSION ?= 0.15.0
 LDFLAGS = -s -w -X github.com/fosrl/cli/internal/version.Version=$(VERSION)
 
 all: clean build

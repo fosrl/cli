@@ -13,6 +13,8 @@ Supported keys:
   up.tunnel_dns
   up.upstream_dns
   up.override_dns
+  up.match_domains_dns
+  up.prefer_local_routes
 
 Examples:
   pangolin config set up.tunnel_dns true

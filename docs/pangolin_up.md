@@ -24,12 +24,14 @@ pangolin up [flags]
       --id string                Client ID (optional, will use user info if not provided)
       --interface-name name      Interface name (default "pangolin")
       --log-level string         Log level (default "info")
+      --match-domains strings    FQDN wildcard patterns (e.g. '*.proxy.internal') to check against local records/upstream DNS; queries for non-matching domains go directly to the system's DNS servers (default: match all domains, or the value from config if set)
       --mtu int                  Maximum transmission unit (default 1280)
       --netstack-dns server      DNS server to use for Netstack. This handles DNS resolution outside of the upstream servers.
       --org string               Organization ID (default: selected organization if logged in)
       --override-dns             When enabled, the client uses custom DNS servers to resolve internal resources and aliases. This overrides your system's default DNS settings. Queries that cannot be resolved as a Pangolin resource will be forwarded to your configured Upstream DNS Server. (default true)
       --ping-interval interval   Ping interval (default 5s)
       --ping-timeout timeout     Ping timeout (default 5s)
+      --prefer-local-routes      Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)
       --secret string            Client secret (optional, will use user info if not provided)
       --silent                   Disable TUI and run silently when detached
       --tls-client-cert path     TLS client certificate path

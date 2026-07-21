@@ -78,6 +78,12 @@ func validateDNSIP(s, field string) error {
 	return nil
 }
 
+func applyTLSClientCert(client *api.Client, certPath string) {
+	if client != nil && client.HTTPClient != nil {
+		client.HTTPClient.TLSClientCert = certPath
+	}
+}
+
 func ClientUpCmd() *cobra.Command {
 	opts := ClientUpCmdOpts{}
 
@@ -167,6 +173,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
+	applyTLSClientCert(apiClient, opts.TlsClientCert)
 
 	// Fall back to the persisted config value when --match-domains wasn't
 	// explicitly passed. Resolved here (rather than left to the subprocess,
@@ -233,6 +240,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 	}
+	applyTLSClientCert(healthClient, opts.TlsClientCert)
 
 	healthOk, healthErr := healthClient.CheckHealth()
 	if healthErr != nil || !healthOk {

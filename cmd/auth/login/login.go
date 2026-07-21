@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -32,6 +33,21 @@ func getDeviceName() string {
 		return "Unknown Device"
 	}
 	return hostname
+}
+
+func openBrowserQuietly(url string) error {
+	stdout := browser.Stdout
+	stderr := browser.Stderr
+
+	browser.Stdout = io.Discard
+	browser.Stderr = io.Discard
+
+	defer func() {
+		browser.Stdout = stdout
+		browser.Stderr = stderr
+	}()
+
+	return browser.OpenURL(url)
 }
 
 func loginWithWeb(hostname string) (string, error) {
@@ -82,7 +98,7 @@ func loginWithWeb(hostname string) (string, error) {
 		_, err := reader.ReadString('\n')
 		if err == nil {
 			// User pressed Enter, open browser
-			if err := browser.OpenURL(loginURL); err != nil {
+			if err := openBrowserQuietly(loginURL); err != nil {
 				// Don't fail if browser can't be opened, just warn
 				logger.Warning("Failed to open browser automatically")
 				logger.Info("Please manually visit: %s", baseLoginURL)

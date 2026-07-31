@@ -227,7 +227,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	} else {
 		// Create a temporary client for health check
 		var err error
-		healthClient, err = api.InitClient(endpoint, "")
+		healthClient, err = api.InitClient(endpoint, "", cfg.SessionCookieName)
 		if err != nil {
 			logger.Error("Error: failed to create API client for health check: %v", err)
 			return err

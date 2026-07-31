@@ -204,10 +204,21 @@ func (c *Client) SetBaseURL(baseURL string) {
 	c.BaseURL = strings.TrimSuffix(baseURL, "/")
 }
 
-// SetToken updates the token for the client
+// SetToken updates the token for the client, preserving any configured
+// SessionCookieName/CSRFToken overrides.
 func (c *Client) SetToken(token string) {
+	cookieName := c.Session.SessionCookieName
+	csrfToken := c.Session.CSRFToken
+
 	c.Session = NewUserClientSession()
 	c.Session.SessionToken = token
+
+	if cookieName != "" {
+		c.Session.SessionCookieName = cookieName
+	}
+	if csrfToken != "" {
+		c.Session.CSRFToken = csrfToken
+	}
 }
 
 // WithIntegrationAPIKey clones the current client and switches it to use

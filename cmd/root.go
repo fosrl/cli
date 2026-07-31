@@ -168,7 +168,7 @@ func initAuthContext(ctx context.Context, cfg *config.Config) (context.Context, 
 		sessionToken = activeAccount.SessionToken
 	}
 
-	client, err := api.InitClient(apiBaseURL, sessionToken)
+	client, err := api.InitClient(apiBaseURL, sessionToken, cfg.SessionCookieName)
 	if err != nil {
 		return ctx, err
 	}

@@ -22,8 +22,11 @@ import "strings"
 //
 // Allowed: client-side presentation flags that do not require server-side
 // handling: -v/-vv/-vvv (verbosity), -t (force PTY), -T (no PTY), -q (quiet),
-// -C (compression), -e <char> (escape character). Remote commands are passed
-// through unchanged because the native server supports exec requests.
+// -C (compression), -e <char> (escape character), -i <file> (identity file;
+// added alongside the JIT-signed key since buildExecSSHArgs sets
+// IdentitiesOnly=yes, which only restricts auth to explicitly configured
+// identities, not to a single one). Remote commands are passed through
+// unchanged because the native server supports exec requests.
 func FilterForNativeMode(pt SSHPassthrough) (SSHPassthrough, []string) {
 	var allowed []string
 	var stripped []string
@@ -188,6 +191,8 @@ func nativeAllowedOption(tok string) (allowed bool, consumesNext bool) {
 	case "-C": // compression (negotiated at transport layer)
 		return true, false
 	case "-e": // escape character — value is consumed
+		return true, true
+	case "-i": // identity file — value is consumed
 		return true, true
 	}
 

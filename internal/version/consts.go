@@ -4,4 +4,4 @@ package version
 // This value can be overridden at build time using ldflags:
 //
 //	go build -ldflags "-X github.com/fosrl/cli/internal/version.Version=<version>"
-var Version = "0.15.0"
+var Version = "0.15.1"

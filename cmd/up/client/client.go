@@ -636,6 +636,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		UserToken:            userToken,
 		InitialFingerprint:   initialFingerprint,
 		InitialPostures:      initialPostures,
+		EnableUAPI:           false, // ONLY FOR DEBUG: TODO MAKE FALSE
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)

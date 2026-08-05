@@ -36,6 +36,16 @@ type StatusResponse struct {
 	PeerStatuses    map[int]*OLMPeerStatus `json:"peers,omitempty"`
 	NetworkSettings map[string]interface{} `json:"networkSettings,omitempty"`
 	Error           *StatusError           `json:"error,omitempty"`
+	ExitNode        *OLMExitNodeStatus     `json:"exitNode,omitempty"`
+}
+
+// OLMExitNodeStatus represents the connectivity status of the client's own exit
+// node connection (used for site resources hosted on the exit node)
+type OLMExitNodeStatus struct {
+	Connected bool          `json:"connected"`
+	RTT       time.Duration `json:"rtt"`
+	LastSeen  time.Time     `json:"lastSeen"`
+	Endpoint  string        `json:"endpoint,omitempty"`
 }
 
 // OLMPeerStatus represents the status of a peer connection

@@ -21,7 +21,7 @@
       in rec {
         pangolin-cli = pkgs.buildGoModule {
           pname = "pangolin-cli";
-          version = "0.13.0";
+          version = "0.15.1";
           src = ./.;
 
           vendorHash = "sha256-mb5IGRRz5pZoi7QJSNVRubQDfhRZu977CWq1Gf6Z7bQ=";

@@ -17,7 +17,7 @@ import (
 
 type BlueprintCmdOpts struct {
 	Name     string
-	Path     string
+	Paths    []string
 	APIKey   string
 	Endpoint string
 	OrgID    string
@@ -29,7 +29,8 @@ func BlueprintCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "blueprint",
 		Short: "Apply a blueprint",
-		Long:  "Apply a YAML blueprint to the Pangolin server",
+		Long:  "Apply a YAML blueprint to the Pangolin server. --file may be a glob pattern (e.g. -f 'inference-*.yaml') or given multiple times; every matching file is applied one by one.",
+		Args:  cobra.ArbitraryArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Integration API: any of the three flags implies all three are required (avoids silent session fallback).
 			integration := opts.APIKey != "" || opts.Endpoint != "" || opts.OrgID != ""
@@ -39,16 +40,29 @@ func BlueprintCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := applyBlueprintMain(cmd, opts); err != nil {
+			// Extra positional args show up when the shell expands a glob (e.g. -f inference-*)
+			// before we ever see it; fold them in alongside anything passed via -f itself.
+			paths, err := resolveBlueprintPaths(append(append([]string{}, opts.Paths...), args...))
+			if err != nil {
 				return err
 			}
-			logger.Info("Successfully applied blueprint!")
+
+			if opts.Name != "" && len(paths) > 1 {
+				return errors.New("--name cannot be used when multiple blueprint files match; the name is derived from each filename instead")
+			}
+
+			for _, path := range paths {
+				if err := applyBlueprintMain(cmd, opts, path); err != nil {
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				logger.Info("Successfully applied blueprint: %s", path)
+			}
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.Path, "file", "f", "", "Blueprint YAML file path (use '-' for stdin)")
-	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Blueprint name (default: filename without extension)")
+	cmd.Flags().StringArrayVarP(&opts.Paths, "file", "f", nil, "Blueprint YAML file path, or glob pattern (e.g. 'inference-*.yaml'); repeatable. Use '-' for stdin")
+	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Blueprint name (default: filename without extension); only valid for a single file")
 	cmd.Flags().StringVar(&opts.APIKey, "api-key", "", "Integration API key (id.secret)")
 	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Integration API host URL")
 	cmd.Flags().StringVar(&opts.OrgID, "org", "", "Organization ID")
@@ -57,14 +71,52 @@ func BlueprintCmd() *cobra.Command {
 	return cmd
 }
 
-func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
-	if opts.Path == "-" && strings.TrimSpace(opts.Name) == "" {
+// resolveBlueprintPaths expands any glob patterns among the given tokens into
+// concrete file paths, passes "-" (stdin) and non-glob paths through as-is,
+// and dedupes the result while preserving order.
+func resolveBlueprintPaths(tokens []string) ([]string, error) {
+	seen := make(map[string]bool)
+	var resolved []string
+
+	add := func(path string) {
+		if !seen[path] {
+			seen[path] = true
+			resolved = append(resolved, path)
+		}
+	}
+
+	for _, token := range tokens {
+		if token == "-" || !strings.ContainsAny(token, "*?[") {
+			add(token)
+			continue
+		}
+
+		matches, err := filepath.Glob(token)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern %q: %w", token, err)
+		}
+		if len(matches) == 0 {
+			return nil, fmt.Errorf("no files matched pattern %q", token)
+		}
+		for _, m := range matches {
+			add(m)
+		}
+	}
+
+	if len(resolved) == 0 {
+		return nil, errors.New("no blueprint files specified")
+	}
+	return resolved, nil
+}
+
+func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts, path string) error {
+	if path == "-" && strings.TrimSpace(opts.Name) == "" {
 		return errors.New("name is required when using --file -")
 	}
 
 	name := opts.Name
 	if name == "" {
-		filename := filepath.Base(opts.Path)
+		filename := filepath.Base(path)
 		switch ext := strings.ToLower(filepath.Ext(filename)); ext {
 		case ".yaml", ".yml":
 			name = strings.TrimSuffix(filename, ext)
@@ -79,7 +131,7 @@ func applyBlueprintMain(cmd *cobra.Command, opts BlueprintCmdOpts) error {
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
-	blueprintContents, err := readBlueprint(opts.Path)
+	blueprintContents, err := readBlueprint(path)
 	if err != nil {
 		return err
 	}

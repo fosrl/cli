@@ -3,6 +3,7 @@ package configure
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 )
 
 // writeClaudeConfig merges the Pangolin AI gateway settings into
@@ -20,7 +21,12 @@ func writeClaudeConfig(endpoint string, auth Auth) ([]string, error) {
 	}
 
 	if auth.Mode == AuthModeKeyed {
-		m["apiKeyHelper"] = fmt.Sprintf("echo '%s'", auth.Key)
+		m["apiKeyHelper"] = apiKeyHelperEcho(auth.Key)
+	} else {
+		// A non-empty, unusable placeholder - forces Claude to invoke the
+		// helper at all instead of silently falling back to whatever
+		// account/key the user already has configured.
+		m["apiKeyHelper"] = apiKeyHelperEcho("-")
 	}
 
 	env := ensureMap(m, "env")
@@ -31,4 +37,18 @@ func writeClaudeConfig(endpoint string, auth Auth) ([]string, error) {
 	}
 
 	return []string{path}, nil
+}
+
+// apiKeyHelperEcho formats an `echo` command that prints value verbatim, in
+// the shell Claude Code actually runs apiKeyHelper through on each platform.
+// Claude Code runs it via cmd.exe on Windows (not PowerShell or Git Bash),
+// and cmd.exe's echo doesn't strip quote characters at all - wrapping value
+// in bash-style single quotes there would leak the quotes into the value
+// Claude reads. POSIX shells (macOS/Linux) get single-quoted for safety
+// against shell interpretation instead.
+func apiKeyHelperEcho(value string) string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf("echo %s", value)
+	}
+	return fmt.Sprintf("echo '%s'", value)
 }

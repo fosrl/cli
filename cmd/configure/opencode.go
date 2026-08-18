@@ -8,7 +8,8 @@ import (
 // writeOpencodeConfig merges the Pangolin AI gateway baseURL into OpenCode's
 // global config (~/.config/opencode/opencode.json, respecting $XDG_CONFIG_HOME
 // if set) and, when keyed, the credential into its auth store
-// (~/.local/share/opencode/auth.json), preserving any other existing keys.
+// (~/.local/share/opencode/auth.json, respecting $XDG_DATA_HOME if set),
+// preserving any other existing keys.
 func writeOpencodeConfig(endpoint string, auth Auth) ([]string, error) {
 	home, err := homeDir()
 	if err != nil {
@@ -41,7 +42,10 @@ func writeOpencodeConfig(endpoint string, auth Auth) ([]string, error) {
 	paths := []string{configPath}
 
 	if auth.Mode == AuthModeKeyed {
-		authPath := filepath.Join(home, ".local", "share", "opencode", "auth.json")
+		authPath, err := opencodeDataPath(home)
+		if err != nil {
+			return nil, err
+		}
 		authData, err := readJSONMap(authPath)
 		if err != nil {
 			return nil, err
@@ -60,10 +64,24 @@ func writeOpencodeConfig(endpoint string, auth Auth) ([]string, error) {
 }
 
 // opencodeConfigPath resolves OpenCode's global config file path, honoring
-// $XDG_CONFIG_HOME if set (per OpenCode's documented XDG support).
+// $XDG_CONFIG_HOME if set (per OpenCode's documented XDG support). OpenCode
+// uses this same literal ~/.config path as its default on every OS, including
+// Windows (it doesn't map to %APPDATA%/%LOCALAPPDATA% by default), so no
+// GOOS-specific fallback is needed here.
 func opencodeConfigPath(home string) (string, error) {
 	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
 		return filepath.Join(xdgConfigHome, "opencode", "opencode.json"), nil
 	}
 	return filepath.Join(home, ".config", "opencode", "opencode.json"), nil
+}
+
+// opencodeDataPath resolves OpenCode's auth store file path, honoring
+// $XDG_DATA_HOME if set, for the same reason opencodeConfigPath honors
+// $XDG_CONFIG_HOME: OpenCode's data directory follows the same
+// (Windows-including) XDG resolution as its config directory.
+func opencodeDataPath(home string) (string, error) {
+	if xdgDataHome := os.Getenv("XDG_DATA_HOME"); xdgDataHome != "" {
+		return filepath.Join(xdgDataHome, "opencode", "auth.json"), nil
+	}
+	return filepath.Join(home, ".local", "share", "opencode", "auth.json"), nil
 }

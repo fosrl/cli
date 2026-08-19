@@ -85,3 +85,67 @@ func opencodeDataPath(home string) (string, error) {
 	}
 	return filepath.Join(home, ".local", "share", "opencode", "auth.json"), nil
 }
+
+// resetOpencodeConfig removes the baseURL overrides writeOpencodeConfig adds
+// from OpenCode's global config, and the credential it stores from OpenCode's
+// auth store, preserving every other existing key in both.
+func resetOpencodeConfig() ([]string, error) {
+	home, err := homeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	configPath, err := opencodeConfigPath(home)
+	if err != nil {
+		return nil, err
+	}
+	authPath, err := opencodeDataPath(home)
+	if err != nil {
+		return nil, err
+	}
+
+	var paths []string
+
+	config, exists, err := readExistingJSONMap(configPath)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		changed := false
+		if provider, ok := config["provider"].(map[string]interface{}); ok {
+			for _, name := range []string{"anthropic", "openai"} {
+				entry, ok := provider[name].(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if options, ok := entry["options"].(map[string]interface{}); ok {
+					if deleteKey(options, "baseURL") {
+						changed = true
+					}
+					pruneEmptyMap(entry, "options")
+				}
+				pruneEmptyMap(provider, name)
+			}
+			pruneEmptyMap(config, "provider")
+		}
+		if changed {
+			if err := writeJSONMap(configPath, config); err != nil {
+				return nil, err
+			}
+			paths = append(paths, configPath)
+		}
+	}
+
+	authData, exists, err := readExistingJSONMap(authPath)
+	if err != nil {
+		return nil, err
+	}
+	if exists && deleteKey(authData, "anthropic") {
+		if err := writeJSONMap(authPath, authData); err != nil {
+			return nil, err
+		}
+		paths = append(paths, authPath)
+	}
+
+	return paths, nil
+}

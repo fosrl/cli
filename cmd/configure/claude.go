@@ -52,3 +52,35 @@ func apiKeyHelperEcho(value string) string {
 	}
 	return fmt.Sprintf("echo '%s'", value)
 }
+
+// resetClaudeConfig removes the keys writeClaudeConfig sets from
+// ~/.claude/settings.json, preserving every other existing key.
+func resetClaudeConfig() ([]string, error) {
+	home, err := homeDir()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(home, ".claude", "settings.json")
+
+	m, exists, err := readExistingJSONMap(path)
+	if err != nil || !exists {
+		return nil, err
+	}
+
+	changed := deleteKey(m, "apiKeyHelper")
+	if env, ok := m["env"].(map[string]interface{}); ok {
+		if deleteKey(env, "ANTHROPIC_BASE_URL") {
+			changed = true
+		}
+		pruneEmptyMap(m, "env")
+	}
+
+	if !changed {
+		return nil, nil
+	}
+	if err := writeJSONMap(path, m); err != nil {
+		return nil, err
+	}
+
+	return []string{path}, nil
+}

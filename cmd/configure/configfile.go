@@ -71,3 +71,38 @@ func homeDir() (string, error) {
 	}
 	return home, nil
 }
+
+// readExistingJSONMap reads path like readJSONMap, but reports whether the
+// file exists at all so reset can skip files it would otherwise create.
+func readExistingJSONMap(path string) (map[string]interface{}, bool, error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("failed to read %s: %w", path, err)
+	}
+
+	m, err := readJSONMap(path)
+	if err != nil {
+		return nil, false, err
+	}
+	return m, true, nil
+}
+
+// deleteKey removes key from parent, reporting whether it was there, so
+// callers can tell an actual removal from a no-op.
+func deleteKey(parent map[string]interface{}, key string) bool {
+	if _, ok := parent[key]; !ok {
+		return false
+	}
+	delete(parent, key)
+	return true
+}
+
+// pruneEmptyMap deletes key from parent when it holds a now-empty map, so
+// reset doesn't leave behind the containers configure created.
+func pruneEmptyMap(parent map[string]interface{}, key string) {
+	if child, ok := parent[key].(map[string]interface{}); ok && len(child) == 0 {
+		delete(parent, key)
+	}
+}

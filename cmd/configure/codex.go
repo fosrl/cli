@@ -107,3 +107,75 @@ func readTOMLMap(path string) (map[string]interface{}, error) {
 	}
 	return m, nil
 }
+
+// resetCodexConfig removes the model provider writeCodexConfig adds from
+// $CODEX_HOME/config.toml, preserving every other existing key. NOTE:
+// go-toml/v2 doesn't preserve comments/formatting on round-trip.
+func resetCodexConfig() ([]string, error) {
+	path, err := codexConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	m, exists, err := readExistingTOMLMap(path)
+	if err != nil || !exists {
+		return nil, err
+	}
+
+	changed := false
+	// Only clear the active provider if it's still pointing at ours - the
+	// user may have switched back to another provider by hand.
+	if m["model_provider"] == "pangolin" {
+		delete(m, "model_provider")
+		changed = true
+	}
+	if providers, ok := m["model_providers"].(map[string]interface{}); ok {
+		if deleteKey(providers, "pangolin") {
+			changed = true
+		}
+		pruneEmptyMap(m, "model_providers")
+	}
+
+	if !changed {
+		return nil, nil
+	}
+
+	data, err := toml.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode %s: %w", path, err)
+	}
+	if err := writeFile(path, data); err != nil {
+		return nil, err
+	}
+
+	logger.Info("If you set PANGOLIN_API_KEY for Codex, unset it; run:")
+	logger.Info("  %s", unsetEnvVarCommand("PANGOLIN_API_KEY"))
+
+	return []string{path}, nil
+}
+
+// unsetEnvVarCommand formats the counterpart to exportEnvVarCommand, in the
+// syntax for the platform's default shell.
+func unsetEnvVarCommand(name string) string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf(`Remove-Item Env:\%s`, name)
+	}
+	return fmt.Sprintf("unset %s", name)
+}
+
+// readExistingTOMLMap reads path like readTOMLMap, but reports whether the
+// file exists at all so reset can skip files it would otherwise create.
+func readExistingTOMLMap(path string) (map[string]interface{}, bool, error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("failed to read %s: %w", path, err)
+	}
+
+	m, err := readTOMLMap(path)
+	if err != nil {
+		return nil, false, err
+	}
+	return m, true, nil
+}

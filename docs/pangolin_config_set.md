@@ -15,6 +15,7 @@ Supported keys:
   up.override_dns
   up.match_domains_dns
   up.prefer_local_routes
+  session_cookie_name
 
 Examples:
   pangolin config set up.tunnel_dns true

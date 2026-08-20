@@ -87,11 +87,22 @@ func printStatusTable(status *olm.StatusResponse) {
 	}
 	utils.PrintTable(headers, rows)
 
-	// Print peers if there are any
-	if len(status.PeerStatuses) > 0 {
+	// Print peers (and the exit node, if connected) if there are any
+	if len(status.PeerStatuses) > 0 || status.ExitNode != nil {
 		fmt.Println("")
 		peerHeaders := []string{"SITE", "ENDPOINT", "STATUS", "LAST SEEN", "CONNECTION"}
 		peerRows := [][]string{}
+
+		if status.ExitNode != nil {
+			lastSeen := formatLastSeen(status.ExitNode.LastSeen.Format(time.RFC3339))
+			peerRows = append(peerRows, []string{
+				"Pangolin Server",
+				status.ExitNode.Endpoint,
+				formatStatus(status.ExitNode.Connected, true),
+				lastSeen,
+				"Direct",
+			})
+		}
 
 		for _, peer := range status.PeerStatuses {
 			lastSeen := formatLastSeen(peer.LastSeen.Format(time.RFC3339))

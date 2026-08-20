@@ -124,6 +124,10 @@ func dumpConfig(cfg *config.Config) error {
 		"disable_companion_mode": cfg.DisableCompanionMode,
 	}
 
+	if cfg.SessionCookieName != "" {
+		out["session_cookie_name"] = cfg.SessionCookieName
+	}
+
 	up := map[string]any{}
 	if cfg.IsSet("up.tunnel_dns") {
 		up["tunnel_dns"] = cfg.GetBool("up.tunnel_dns")

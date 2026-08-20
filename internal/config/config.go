@@ -24,6 +24,10 @@ type Config struct {
 	DisableCompanionMode bool                 `mapstructure:"disable_companion_mode" json:"disable_companion_mode"`
 	CompanionAppDataDirs CompanionAppDataDirs `mapstructure:"companion_app_data_dirs" json:"companion_app_data_dirs"`
 	Up                   UpConfig             `mapstructure:"up" json:"up,omitempty"`
+
+	// SessionCookieName overrides the cookie name used for the CLI's session
+	// token. Empty means the API client's built-in default is used.
+	SessionCookieName string `mapstructure:"session_cookie_name" json:"session_cookie_name,omitempty"`
 }
 
 // UpConfig holds persistent defaults for pangolin up DNS-related flags.
@@ -65,6 +69,7 @@ var ConfigOptions = []string{
 	"up.override_dns",
 	"up.match_domains_dns",
 	"up.prefer_local_routes",
+	"session_cookie_name",
 }
 
 // SupportedConfigKeys returns the settable config keys.
@@ -251,6 +256,9 @@ func (c *Config) SetKey(key, value string) error {
 		}
 		c.Up.PreferLocalRoutes = &b
 		c.v.Set(key, b)
+	case "session_cookie_name":
+		c.SessionCookieName = value
+		c.v.Set(key, value)
 	default:
 		return fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -293,6 +301,8 @@ func (c *Config) GetKey(key string) (string, error) {
 			return "", errConfigKeyUnset(key)
 		}
 		return fmt.Sprintf("%t", c.GetBool(key)), nil
+	case "session_cookie_name":
+		return c.SessionCookieName, nil
 	default:
 		return "", fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
@@ -331,6 +341,9 @@ func (c *Config) Save() error {
 	c.v.Set("disable_update_check", c.DisableUpdateCheck)
 	c.v.Set("disable_companion_mode", c.DisableCompanionMode)
 	c.v.Set("companion_app_data_dirs", c.CompanionAppDataDirs)
+	if c.SessionCookieName != "" {
+		c.v.Set("session_cookie_name", c.SessionCookieName)
+	}
 
 	// Only persist up keys that were explicitly set so we do not write
 	// zero-value bools that would later look like intentional overrides.

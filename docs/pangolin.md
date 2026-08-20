@@ -14,6 +14,7 @@ Pangolin CLI
 * [pangolin auth](pangolin_auth.md)	 - Authentication commands
 * [pangolin auth-daemon](pangolin_auth-daemon.md)	 - Start the auth daemon
 * [pangolin config](pangolin_config.md)	 - View and edit CLI configuration
+* [pangolin configure](pangolin_configure.md)	 - Configure a local AI client to use a Pangolin AI gateway resource
 * [pangolin down](pangolin_down.md)	 - Stop a connection
 * [pangolin list](pangolin_list.md)	 - List resources and other items from the server
 * [pangolin login](pangolin_login.md)	 - Login to Pangolin

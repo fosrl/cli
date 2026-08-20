@@ -7,8 +7,9 @@ import (
 
 // InitClient initializes a new API client with stored credentials and
 // a URL. The client will be created without authentication if no token
-// is found.
-func InitClient(hostname string, token string) (*Client, error) {
+// is found. sessionCookieName overrides the default session cookie name
+// when non-empty (see Config.SessionCookieName).
+func InitClient(hostname string, token string, sessionCookieName string) (*Client, error) {
 	// Build base URL (hostname should already include protocol from login)
 	baseURL := hostname
 	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
@@ -17,13 +18,17 @@ func InitClient(hostname string, token string) (*Client, error) {
 	}
 	baseURL = strings.TrimSuffix(baseURL, "/") + "/api/v1"
 
+	if sessionCookieName == "" {
+		sessionCookieName = defaultSessionCookieName
+	}
+
 	// Create API client (this should never fail, but handle it just in case)
 	client, err := NewClient(ClientConfig{
 		BaseURL:           baseURL,
 		AgentName:         "pangolin-cli",
 		Token:             token,
-		SessionCookieName: "p_session_token",
-		CSRFToken:         "x-csrf-protection",
+		SessionCookieName: sessionCookieName,
+		CSRFToken:         defaultCSRFToken,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)

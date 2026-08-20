@@ -46,6 +46,7 @@ var clients = map[string]client{
 	"claude":   {write: writeClaudeConfig, reset: resetClaudeConfig},
 	"codex":    {write: writeCodexConfig, reset: resetCodexConfig},
 	"opencode": {write: writeOpencodeConfig, reset: resetOpencodeConfig},
+	"gemini":   {write: writeGeminiConfig, reset: resetGeminiConfig},
 }
 
 type ConfigureCmdOpts struct {
@@ -61,7 +62,7 @@ func ConfigureCmd() *cobra.Command {
 		Use:   "configure <client> [key]",
 		Short: "Configure a local AI client to use a Pangolin AI gateway resource",
 		Long: "Writes local config files (e.g. ~/.claude/settings.json) so an AI client talks to a Pangolin\n" +
-			"resource acting as an AI gateway. Supported clients: claude, codex, opencode.\n\n" +
+			"resource acting as an AI gateway. Supported clients: claude, codex, opencode, gemini.\n\n" +
 			"If [key] is omitted, an API key is fetched automatically for public resources (private/site\n" +
 			"resources need no key). Pass [key] to configure with a credential obtained elsewhere without\n" +
 			"making any API calls for it.\n\n" +
@@ -88,7 +89,7 @@ func configureMain(cmd *cobra.Command, opts ConfigureCmdOpts, args []string) err
 		if clientArg == "cursor" {
 			return fmt.Errorf("cursor must be configured manually; see the AI client config instructions in the dashboard")
 		}
-		return fmt.Errorf("unsupported client %q; expected one of: claude, codex, opencode", clientArg)
+		return fmt.Errorf("unsupported client %q; expected one of: claude, codex, opencode, gemini", clientArg)
 	}
 
 	if opts.Reset {

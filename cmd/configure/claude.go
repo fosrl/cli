@@ -20,14 +20,11 @@ func writeClaudeConfig(endpoint string, auth Auth) ([]string, error) {
 		return nil, err
 	}
 
-	if auth.Mode == AuthModeKeyed {
-		m["apiKeyHelper"] = apiKeyHelperEcho(auth.Key)
-	} else {
-		// A non-empty, unusable placeholder - forces Claude to invoke the
-		// helper at all instead of silently falling back to whatever
-		// account/key the user already has configured.
-		m["apiKeyHelper"] = apiKeyHelperEcho("-")
-	}
+	// Keyless resources still get a helper emitting a placeholder: a non-empty,
+	// unusable value forces Claude to invoke the helper at all instead of
+	// silently falling back to whatever account/key the user already has
+	// configured.
+	m["apiKeyHelper"] = apiKeyHelperEcho(keyOrPlaceholder(auth))
 
 	env := ensureMap(m, "env")
 	env["ANTHROPIC_BASE_URL"] = endpoint

@@ -27,6 +27,21 @@ type Auth struct {
 	Key  string
 }
 
+// keylessPlaceholderKey stands in for a credential on keyless (private/site)
+// resources. Those need no credential, but most clients refuse to start
+// without *some* key set, so they get an obviously-inert one rather than an
+// omitted field. Mirrors KEYLESS_PLACEHOLDER_KEY in src/lib/aiClientConfig.ts.
+const keylessPlaceholderKey = "none"
+
+// keyOrPlaceholder returns the real credential, or the inert placeholder when
+// the resource needs none.
+func keyOrPlaceholder(auth Auth) string {
+	if auth.Mode == AuthModeKeyed {
+		return auth.Key
+	}
+	return keylessPlaceholderKey
+}
+
 // clientWriter writes the local config file(s) for one AI client and returns
 // the paths it touched, for the success message.
 type clientWriter func(endpoint string, auth Auth) ([]string, error)

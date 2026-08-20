@@ -97,26 +97,27 @@ func writeOpencodeConfig(endpoint string, auth Auth) ([]string, error) {
 	}
 	paths := []string{configPath}
 
-	if auth.Mode == AuthModeKeyed {
-		authPath, err := opencodeDataPath(home)
-		if err != nil {
-			return nil, err
-		}
-		authData, err := readJSONMap(authPath)
-		if err != nil {
-			return nil, err
-		}
-		for _, name := range providers {
-			authData[name] = map[string]interface{}{
-				"type": "api",
-				"key":  auth.Key,
-			}
-		}
-		if err := writeJSONMap(authPath, authData); err != nil {
-			return nil, err
-		}
-		paths = append(paths, authPath)
+	// The credential is written even for keyless resources: OpenCode refuses
+	// to start a provider with no key at all ("OpenAI API key is missing"),
+	// so it gets an inert placeholder instead of an omitted entry.
+	authPath, err := opencodeDataPath(home)
+	if err != nil {
+		return nil, err
 	}
+	authData, err := readJSONMap(authPath)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range providers {
+		authData[name] = map[string]interface{}{
+			"type": "api",
+			"key":  keyOrPlaceholder(auth),
+		}
+	}
+	if err := writeJSONMap(authPath, authData); err != nil {
+		return nil, err
+	}
+	paths = append(paths, authPath)
 
 	return paths, nil
 }

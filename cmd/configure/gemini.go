@@ -22,13 +22,8 @@ func writeGeminiConfig(endpoint string, auth Auth) ([]string, error) {
 		return nil, err
 	}
 
-	key := "none"
-	if auth.Mode == AuthModeKeyed {
-		key = auth.Key
-	}
-
 	lines = setEnvLine(lines, "GOOGLE_GEMINI_BASE_URL", endpoint)
-	lines = setEnvLine(lines, "GEMINI_API_KEY", key)
+	lines = setEnvLine(lines, "GEMINI_API_KEY", keyOrPlaceholder(auth))
 
 	if err := writeFile(path, []byte(strings.Join(lines, "\n"))); err != nil {
 		return nil, err

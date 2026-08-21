@@ -327,3 +327,89 @@ type AliasesPagination struct {
 	PageSize int `json:"pageSize"`
 	Page     int `json:"page"`
 }
+
+// LauncherLabel is a label attached to a launcher resource.
+type LauncherLabel struct {
+	LabelID int    `json:"labelId"`
+	Name    string `json:"name"`
+	Color   string `json:"color"`
+}
+
+// LauncherSiteInfo is the site a private launcher resource belongs to.
+type LauncherSiteInfo struct {
+	SiteID int    `json:"siteId"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Online *bool  `json:"online,omitempty"`
+}
+
+// LauncherResource mirrors server/routers/launcher/types.ts's LauncherResource: a
+// unified view of both public resources and private site resources, with the
+// access URL already computed server-side.
+type LauncherResource struct {
+	LauncherResourceKey string            `json:"launcherResourceKey"`
+	ResourceType        string            `json:"resourceType"` // "public" | "site"
+	ResourceID          int               `json:"resourceId"`
+	SiteResourceID      *int              `json:"siteResourceId,omitempty"`
+	NiceID              string            `json:"niceId"`
+	Name                string            `json:"name"`
+	AccessDisplay       string            `json:"accessDisplay"`
+	AccessCopyValue     string            `json:"accessCopyValue"`
+	AccessURL           *string           `json:"accessUrl"`
+	IconURL             *string           `json:"iconUrl"`
+	Enabled             bool              `json:"enabled"`
+	Mode                string            `json:"mode"`
+	Labels              []LauncherLabel   `json:"labels"`
+	Site                *LauncherSiteInfo `json:"site,omitempty"`
+}
+
+// LauncherPagination matches the paginated API envelope for launcher resources.
+type LauncherPagination struct {
+	Total    int `json:"total"`
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+}
+
+// ListLauncherResourcesData is the inner `data` of GET /org/:orgId/launcher/resources.
+type ListLauncherResourcesData struct {
+	Resources  []LauncherResource `json:"resources"`
+	Pagination LauncherPagination `json:"pagination"`
+}
+
+// GetResourceData is the (partial) inner `data` of GET /org/:orgId/resource/:niceId.
+// Only the fields the CLI needs are modeled; the server returns more, which
+// json.Unmarshal simply ignores.
+type GetResourceData struct {
+	ResourceID   int    `json:"resourceId"`
+	ResourceGUID string `json:"resourceGuid"`
+	OrgID        string `json:"orgId"`
+	Name         string `json:"name"`
+	NiceID       string `json:"niceId"`
+	Mode         string `json:"mode"`
+}
+
+// VirtualApiKeySummary is the public (secret-free) shape of a virtual API key.
+type VirtualApiKeySummary struct {
+	VirtualApiKeyID string `json:"virtualApiKeyId"`
+	OrgID           string `json:"orgId"`
+	Name            string `json:"name"`
+	LastChars       string `json:"lastChars"`
+	Kind            string `json:"kind"`
+	CreatedAt       int64  `json:"createdAt"`
+}
+
+// ListMyVirtualApiKeysData is the inner `data` of GET /org/:orgId/my-virtual-api-keys.
+type ListMyVirtualApiKeysData struct {
+	UserKey      VirtualApiKeySummary   `json:"userKey"`
+	ManualKeys   []VirtualApiKeySummary `json:"manualKeys"`
+	ResourceName *string                `json:"resourceName,omitempty"`
+}
+
+// GetMyVirtualApiKeyData is the inner `data` of GET /org/:orgId/my-virtual-api-keys/:virtualApiKeyId.
+type GetMyVirtualApiKeyData struct {
+	VirtualApiKey struct {
+		VirtualApiKeyID string `json:"virtualApiKeyId"`
+		Secret          string `json:"secret"`
+		LastChars       string `json:"lastChars"`
+	} `json:"virtualApiKey"`
+}

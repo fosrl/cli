@@ -34,15 +34,19 @@ func getDeviceName() string {
 	return hostname
 }
 
-func loginWithWeb(hostname string) (string, error) {
+func loginWithWeb(hostname string, sessionCookieName string) (string, error) {
 	// Build base URL for login (use hostname as-is, StartDeviceWebAuth will add /api/v1)
 	baseURL := hostname
+
+	if sessionCookieName == "" {
+		sessionCookieName = "p_session_token"
+	}
 
 	// Create a temporary API client for login (without auth)
 	loginClient, err := api.NewClient(api.ClientConfig{
 		BaseURL:           baseURL,
 		AgentName:         "pangolin-cli",
-		SessionCookieName: "p_session_token",
+		SessionCookieName: sessionCookieName,
 		CSRFToken:         "x-csrf-protection",
 	})
 	if err != nil {
@@ -182,6 +186,7 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
+	cfg := config.ConfigFromContext(cmd.Context())
 
 	hostname := opts.Hostname
 
@@ -237,7 +242,7 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	}
 
 	// Perform web login
-	sessionToken, err := loginWithWeb(hostname)
+	sessionToken, err := loginWithWeb(hostname, cfg.SessionCookieName)
 	if err != nil {
 		logger.Error("%v", err)
 		return err

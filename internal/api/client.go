@@ -204,10 +204,21 @@ func (c *Client) SetBaseURL(baseURL string) {
 	c.BaseURL = strings.TrimSuffix(baseURL, "/")
 }
 
-// SetToken updates the token for the client
+// SetToken updates the token for the client, preserving any configured
+// SessionCookieName/CSRFToken overrides.
 func (c *Client) SetToken(token string) {
+	cookieName := c.Session.SessionCookieName
+	csrfToken := c.Session.CSRFToken
+
 	c.Session = NewUserClientSession()
 	c.Session.SessionToken = token
+
+	if cookieName != "" {
+		c.Session.SessionCookieName = cookieName
+	}
+	if csrfToken != "" {
+		c.Session.CSRFToken = csrfToken
+	}
 }
 
 // WithIntegrationAPIKey clones the current client and switches it to use
@@ -378,6 +389,86 @@ func (c *Client) ListUserResourceAliases(orgID string, page, pageSize int, opts 
 	}
 	reqOpts := RequestOptions{Query: query}
 	if err := c.Get(path, &data, reqOpts); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// ListLauncherResourcesOptions configures GET /org/:orgId/launcher/resources.
+type ListLauncherResourcesOptions struct {
+	Query    string
+	Page     int
+	PageSize int
+}
+
+// ListLauncherResources returns one page of the org's "AI Gateway" launcher
+// resources - inference-mode resources only (the same pinned group the
+// dashboard shows), covering both public and private ("site") resources with
+// their access URLs already computed server-side - optionally filtered by a
+// case-insensitive search query matched against name/niceId/fullDomain.
+// Non-inference resources (e.g. plain "http") can't act as an AI gateway, so
+// they're excluded server-side rather than filtered out here.
+func (c *Client) ListLauncherResources(orgID string, opts ListLauncherResourcesOptions) (*ListLauncherResourcesData, error) {
+	path := fmt.Sprintf("/org/%s/launcher/resources", url.PathEscape(orgID))
+	page := opts.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := opts.PageSize
+	if pageSize < 1 {
+		pageSize = 1000
+	}
+	query := map[string]string{
+		// LAUNCHER_AI_GATEWAY_GROUP_KEY + the default groupBy=site - server-side
+		// filters to mode=="inference" resources only (see
+		// server/routers/launcher/launcherResourceAccess.ts's filterResourcesBySite).
+		"groupKey": "ai-gateway",
+		"page":     strconv.Itoa(page),
+		"pageSize": strconv.Itoa(pageSize),
+	}
+	if opts.Query != "" {
+		query["query"] = opts.Query
+	}
+	var data ListLauncherResourcesData
+	if err := c.Get(path, &data, RequestOptions{Query: query}); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// GetResourceByNiceID fetches a resource's full details (including resourceGuid,
+// not present on LauncherResource) by org + niceId.
+func (c *Client) GetResourceByNiceID(orgID, niceID string) (*GetResourceData, error) {
+	path := fmt.Sprintf("/org/%s/resource/%s", url.PathEscape(orgID), url.PathEscape(niceID))
+	var data GetResourceData
+	if err := c.Get(path, &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// ListMyVirtualApiKeys returns the signed-in user's identity virtual API key
+// (auto-created if missing) and any manual keys attributed to them, optionally
+// scoped to a resource by GUID.
+func (c *Client) ListMyVirtualApiKeys(orgID, resourceGuid string) (*ListMyVirtualApiKeysData, error) {
+	path := fmt.Sprintf("/org/%s/my-virtual-api-keys", url.PathEscape(orgID))
+	var reqOpts []RequestOptions
+	if resourceGuid != "" {
+		reqOpts = []RequestOptions{{Query: map[string]string{"resourceGuid": resourceGuid}}}
+	}
+	var data ListMyVirtualApiKeysData
+	if err := c.Get(path, &data, reqOpts...); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// GetMyVirtualApiKey fetches the decrypted secret for a virtual API key owned
+// by the signed-in user.
+func (c *Client) GetMyVirtualApiKey(orgID, virtualApiKeyID string) (*GetMyVirtualApiKeyData, error) {
+	path := fmt.Sprintf("/org/%s/my-virtual-api-keys/%s", url.PathEscape(orgID), url.PathEscape(virtualApiKeyID))
+	var data GetMyVirtualApiKeyData
+	if err := c.Get(path, &data); err != nil {
 		return nil, err
 	}
 	return &data, nil

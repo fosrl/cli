@@ -37,7 +37,7 @@ active; use --force to override that check.`,
 			}
 
 			if os.Geteuid() != 0 {
-				logger.Warning("DNS reset typically requires root privileges; rerun with sudo if it fails")
+				return errors.New("reset-dns must be run as root (or with sudo) to modify system DNS settings")
 			}
 
 			if err := dnsOverride.ForceResetDNS(interfaceName); err != nil {

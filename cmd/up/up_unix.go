@@ -4,6 +4,7 @@ package up
 
 import (
 	"github.com/fosrl/cli/cmd/up/client"
+	"github.com/fosrl/cli/cmd/up/site"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,7 @@ If ran with no subcommand, 'client' is passed.
 `
 
 	cmd.AddCommand(client.ClientUpCmd())
+	cmd.AddCommand(site.SiteUpCmd())
 
 	return cmd
 }

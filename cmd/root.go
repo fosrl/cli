@@ -115,6 +115,12 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 }
 
 func commandNeedsAuthInit(cmd *cobra.Command) bool {
+	// `up site` runs Newt standalone, exactly like the newt binary itself -
+	// it takes its own id/secret/endpoint and never needs a Pangolin
+	// account or the companion daemon.
+	if cmd.Name() == "site" && commandHasAncestor(cmd, "up") {
+		return false
+	}
 	for c := cmd; c != nil; c = c.Parent() {
 		if c.Name() == "companion" || c.Name() == "config" {
 			return false

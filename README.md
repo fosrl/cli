@@ -2,7 +2,7 @@
 
 This is the official Pangolin CLI tool.
 
-Since there isn't an official GUI application for Linux, this CLI serves as the official way to connect to Pangolin VPN on Linux.
+Since there isn't an official GUI application for Linux, this CLI serves as the official Pangolin client for Linux devices.
 
 This client can be used with both:
 

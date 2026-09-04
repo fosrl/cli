@@ -1,4 +1,4 @@
-package client
+package service
 
 import (
 	"fmt"
@@ -10,39 +10,15 @@ import (
 )
 
 // clientServiceName is the systemd unit name (without the .service suffix)
-// used to run this machine client persistently in the background.
+// used to run a machine client persistently in the background.
 const clientServiceName = "pangolin-client"
 
-// ServiceCmd returns the `up client service` command group, which installs,
-// removes, and monitors a systemd service that keeps `pangolin up client`
-// running persistently - restarting it automatically on crash or reboot.
-//
-// This targets machine clients (explicit --id/--secret, no user login) since
-// that's the case that needs to run unattended on a server; an
-// interactively-logged-in user's client is expected to be started manually.
-func ServiceCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "service",
-		Short: "Manage a systemd service that keeps this machine client running persistently",
-		Long: `Install, remove, and monitor a systemd service that runs 'pangolin up client'
-in the background, restarting it automatically if it crashes or the machine
-reboots.
+// The client subcommands target machine clients (explicit --id/--secret,
+// no user login) since that's the case that needs to run unattended on a
+// server; an interactively-logged-in user's client is expected to be
+// started manually.
 
-Intended for machine clients (--id/--secret), which don't have an
-interactively logged-in user to restart them.
-
-Only supported on Linux (requires systemd) and must be run as root.`,
-	}
-
-	cmd.AddCommand(serviceInstallCmd())
-	cmd.AddCommand(serviceUninstallCmd())
-	cmd.AddCommand(serviceStatusCmd())
-	cmd.AddCommand(serviceLogsCmd())
-
-	return cmd
-}
-
-func serviceInstallCmd() *cobra.Command {
+func clientInstallCmd() *cobra.Command {
 	opts := struct {
 		ID       string
 		Secret   string
@@ -51,9 +27,13 @@ func serviceInstallCmd() *cobra.Command {
 	}{}
 
 	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install and start the systemd service",
-		Long:  "Write a systemd unit and environment file for this client, then enable and start it immediately.",
+		Use:   "client",
+		Short: "Install and start the client (Olm) systemd service",
+		Long: `Write a systemd unit and environment file for this machine client, then
+enable and start it immediately.
+
+Intended for machine clients (--id/--secret), which don't have an
+interactively logged-in user to restart them.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			executable, err := os.Executable()
 			if err != nil {
@@ -87,7 +67,7 @@ func serviceInstallCmd() *cobra.Command {
 			}
 
 			logger.Success("Installed and started %s.service", clientServiceName)
-			logger.Info("Check status with 'pangolin up client service status' or follow logs with 'pangolin up client service logs -f'")
+			logger.Info("Check status with 'pangolin service status client' or follow logs with 'pangolin service logs client -f'")
 		},
 	}
 
@@ -102,10 +82,10 @@ func serviceInstallCmd() *cobra.Command {
 	return cmd
 }
 
-func serviceUninstallCmd() *cobra.Command {
+func clientUninstallCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "uninstall",
-		Short: "Stop and remove the systemd service",
+		Use:   "client",
+		Short: "Stop and remove the client (Olm) systemd service",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := systemdsvc.Uninstall(clientServiceName); err != nil {
 				logger.Error("Error: %v", err)
@@ -116,10 +96,10 @@ func serviceUninstallCmd() *cobra.Command {
 	}
 }
 
-func serviceStatusCmd() *cobra.Command {
+func clientStatusCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "status",
-		Short: "Show the systemd service status",
+		Use:   "client",
+		Short: "Show the client (Olm) systemd service status",
 		Run: func(cmd *cobra.Command, args []string) {
 			out, err := systemdsvc.Status(clientServiceName)
 			if err != nil {
@@ -131,12 +111,12 @@ func serviceStatusCmd() *cobra.Command {
 	}
 }
 
-func serviceLogsCmd() *cobra.Command {
+func clientLogsCmd() *cobra.Command {
 	opts := struct{ Lines int }{}
 
 	cmd := &cobra.Command{
-		Use:   "logs",
-		Short: "Follow the systemd service logs",
+		Use:   "client",
+		Short: "Follow the client (Olm) systemd service logs",
 		Long:  "Stream the client service's journal output (equivalent to 'journalctl -u pangolin-client -f').",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := systemdsvc.Follow(clientServiceName, opts.Lines); err != nil {

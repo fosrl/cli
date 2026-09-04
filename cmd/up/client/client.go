@@ -166,8 +166,6 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
-	cmd.AddCommand(ServiceCmd())
-
 	return cmd
 }
 

@@ -41,8 +41,6 @@ newt binary. Run 'pangolin up site --help' to see them.`,
 		},
 	}
 
-	cmd.AddCommand(ServiceCmd())
-
 	return cmd
 }
 

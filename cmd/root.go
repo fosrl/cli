@@ -20,6 +20,7 @@ import (
 	"github.com/fosrl/cli/cmd/resetdns"
 	"github.com/fosrl/cli/cmd/scp"
 	selectcmd "github.com/fosrl/cli/cmd/select"
+	"github.com/fosrl/cli/cmd/service"
 	"github.com/fosrl/cli/cmd/ssh"
 	"github.com/fosrl/cli/cmd/status"
 	"github.com/fosrl/cli/cmd/up"
@@ -85,6 +86,7 @@ func RootCommand(initResources bool) (*cobra.Command, error) {
 		cmd.AddCommand(watchdogCmd)
 	}
 
+	cmd.AddCommand(service.ServiceCmd())
 	cmd.AddCommand(ssh.SSHCmd())
 	cmd.AddCommand(scp.SCPCmd())
 	cmd.AddCommand(update.UpdateCmd())
@@ -119,6 +121,12 @@ func commandNeedsAuthInit(cmd *cobra.Command) bool {
 	// it takes its own id/secret/endpoint and never needs a Pangolin
 	// account or the companion daemon.
 	if cmd.Name() == "site" && commandHasAncestor(cmd, "up") {
+		return false
+	}
+	// `service` installs/manages systemd units and always takes its own
+	// id/secret/endpoint (site) or id/secret (client) explicitly, so it
+	// never needs a Pangolin account or the companion daemon either.
+	if cmd.Name() == "service" || commandHasAncestor(cmd, "service") {
 		return false
 	}
 	for c := cmd; c != nil; c = c.Parent() {

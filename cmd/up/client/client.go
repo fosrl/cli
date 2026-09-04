@@ -86,6 +86,32 @@ func ClientUpCmd() *cobra.Command {
 		Short: "Start a client connection",
 		Long:  `Bring up a client tunneled connection.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Fall back to environment variables when the corresponding flag
+			// wasn't explicitly set, so a systemd EnvironmentFile (see the
+			// `service` subcommand) can supply machine-client credentials
+			// without putting them on the command line, where they'd be
+			// visible to any local user via `ps`.
+			if !cmd.Flags().Changed("id") {
+				if v := os.Getenv("PANGOLIN_CLIENT_ID"); v != "" {
+					opts.ID = v
+				}
+			}
+			if !cmd.Flags().Changed("secret") {
+				if v := os.Getenv("PANGOLIN_CLIENT_SECRET"); v != "" {
+					opts.Secret = v
+				}
+			}
+			if !cmd.Flags().Changed("endpoint") {
+				if v := os.Getenv("PANGOLIN_ENDPOINT"); v != "" {
+					opts.Endpoint = v
+				}
+			}
+			if !cmd.Flags().Changed("org") {
+				if v := os.Getenv("PANGOLIN_ORG"); v != "" {
+					opts.OrgID = v
+				}
+			}
+
 			// `--id` and `--secret` must be specified together
 			if (opts.ID == "") != (opts.Secret == "") {
 				return errors.New("--id and --secret must be provided together")
@@ -139,6 +165,8 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.PreferLocalRoutes, "prefer-local-routes", false, "Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
+
+	cmd.AddCommand(ServiceCmd())
 
 	return cmd
 }

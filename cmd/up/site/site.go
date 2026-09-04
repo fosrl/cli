@@ -49,7 +49,7 @@ func run(ctx context.Context, args []string) error {
 
 	cfg, err := newtconfig.Load(newtconfig.Options{
 		Args:     args,
-		Version:  versionpkg.Version,
+		Version:  versionpkg.NewtVersion(),
 		Platform: runtime.GOOS,
 	})
 	if err != nil {

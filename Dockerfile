@@ -17,7 +17,8 @@ COPY . .
 
 # Build the application
 ARG VERSION=dev
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X github.com/fosrl/cli/internal/version.Version=${VERSION}" -o /pangolin-cli
+RUN NEWT_VERSION=$(go list -m -f '{{.Version}}' github.com/fosrl/newt | sed 's/^v//') && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X github.com/fosrl/cli/internal/version.Version=${VERSION} -X github.com/fosrl/cli/internal/version.NewtVersionOverride=${NEWT_VERSION}" -o /pangolin-cli
 
 FROM public.ecr.aws/docker/library/alpine:3.23 AS runner
 

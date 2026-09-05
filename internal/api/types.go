@@ -17,7 +17,8 @@ type Client struct {
 
 // HTTPClient wraps the standard http.Client with additional configuration
 type HTTPClient struct {
-	Timeout time.Duration
+	Timeout       time.Duration
+	TLSClientCert string
 }
 
 // RequestOptions contains optional parameters for API requests

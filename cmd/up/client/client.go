@@ -198,6 +198,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	credentialsFromKeyring := olmID == "" && olmSecret == ""
 
+	// Detect whether we are the elevated subprocess spawned by a parent
+	// `pangolin up` (detached mode). We use an environment variable rather
+	// than checking if running as root, because the user might run
+	// "sudo pangolin up" directly and still expect the TUI.
+	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
+
 	// Determine endpoint early
 	var endpoint string
 	if opts.Endpoint != "" {
@@ -249,28 +255,42 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 
-		// Ensure OLM credentials exist and are valid
-		newCredsGenerated, err := utils.EnsureOlmCredentials(apiClient, activeAccount)
-		if err != nil {
-			if errors.Is(err, utils.ErrSudoRequired) {
-				logger.Error("%v", err)
-			} else {
-				logger.Error("Failed to ensure OLM credentials: %v", err)
-			}
-			return err
-		}
-
-		if newCredsGenerated {
-			// fmt.Println("New creds generated saving them")
-			// Update the account in the store since ActiveAccount() returns a copy
-			if err := accountStore.UpdateActiveAccount(activeAccount); err != nil {
-				logger.Error("Failed to update account in store: %v", err)
+		if isSubprocess {
+			// The parent process already ensured the credentials exist and
+			// saved them to the account store; read them back from there
+			// instead of receiving them via argv, which would expose the
+			// secret in the process list (/proc/<pid>/cmdline is
+			// world-readable). Skipping EnsureOlmCredentials here also
+			// avoids the elevated subprocess writing the account store.
+			if activeAccount.OlmCredentials == nil {
+				err := errors.New("no OLM credentials found in account store")
+				logger.Error("Error: %v", err)
 				return err
 			}
-			err := accountStore.Save()
+		} else {
+			// Ensure OLM credentials exist and are valid
+			newCredsGenerated, err := utils.EnsureOlmCredentials(apiClient, activeAccount)
 			if err != nil {
-				logger.Error("Failed to save accounts to store: %v", err)
+				if errors.Is(err, utils.ErrSudoRequired) {
+					logger.Error("%v", err)
+				} else {
+					logger.Error("Failed to ensure OLM credentials: %v", err)
+				}
 				return err
+			}
+
+			if newCredsGenerated {
+				// fmt.Println("New creds generated saving them")
+				// Update the account in the store since ActiveAccount() returns a copy
+				if err := accountStore.UpdateActiveAccount(activeAccount); err != nil {
+					logger.Error("Failed to update account in store: %v", err)
+					return err
+				}
+				err := accountStore.Save()
+				if err != nil {
+					logger.Error("Failed to save accounts to store: %v", err)
+					return err
+				}
 			}
 		}
 
@@ -303,9 +323,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	// Handle detached mode - subprocess self without --attach flag
 	// Skip detached mode if we're a subprocess spawned by the parent process
-	// We use an environment variable to detect this, rather than checking if running as root,
-	// because the user might run "sudo pangolin up" directly and still expect the TUI
-	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
 	if !opts.Attached && !isSubprocess {
 		executable, err := os.Executable()
 		if err != nil {
@@ -323,9 +340,14 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 
 		// Add all flags that were set (except --attach)
-		// OLM credentials are always included (from flags, config, or newly created)
-		cmdArgs = append(cmdArgs, "--id", olmID)
-		cmdArgs = append(cmdArgs, "--secret", olmSecret)
+		// OLM credentials are passed via argv only when the user supplied
+		// them explicitly. When they come from the account store, the
+		// subprocess reads them from the store itself so the secret never
+		// appears in the process list (/proc/<pid>/cmdline is world-readable).
+		if !credentialsFromKeyring {
+			cmdArgs = append(cmdArgs, "--id", olmID)
+			cmdArgs = append(cmdArgs, "--secret", olmSecret)
+		}
 
 		// Always pass endpoint to subprocess (required, subprocess won't have user's config)
 		// Get endpoint from flag or hostname config (same logic as attached mode)

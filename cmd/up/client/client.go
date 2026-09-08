@@ -29,9 +29,8 @@ import (
 )
 
 const (
-	defaultEnableAPI  = true
-	defaultSocketPath = "/var/run/olm.sock"
-	defaultAgent      = olm.AgentName
+	defaultEnableAPI = true
+	defaultAgent     = olm.AgentName
 )
 
 type ClientUpCmdOpts struct {
@@ -84,7 +83,14 @@ func ClientUpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "client",
 		Short: "Start a client connection",
-		Long:  `Bring up a client tunneled connection.`,
+		Long: `Bring up a client tunneled connection.
+
+On Windows, only machine clients are supported: --id, --secret, and
+--endpoint must all be passed explicitly. Interactive login isn't
+supported - use the desktop app for that. The tunnel also can't run
+directly from a console process there, so this installs the same
+background service 'pangolin service install client' would, tails its
+logs, and removes the service again when you press Ctrl+C.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Fall back to environment variables when the corresponding flag
 			// wasn't explicitly set, so a systemd EnvironmentFile (see the
@@ -115,6 +121,15 @@ func ClientUpCmd() *cobra.Command {
 			// `--id` and `--secret` must be specified together
 			if (opts.ID == "") != (opts.Secret == "") {
 				return errors.New("--id and --secret must be provided together")
+			}
+
+			// Windows only supports machine clients (explicit
+			// --id/--secret/--endpoint, run under a service - see
+			// `pangolin service install client`). Interactively logging in
+			// and letting this command manage keyring/account credentials
+			// itself isn't implemented on Windows.
+			if runtime.GOOS == "windows" && (opts.ID == "" || opts.Secret == "" || opts.Endpoint == "") {
+				return errors.New("on Windows, --id, --secret, and --endpoint are required (only machine clients are supported, not interactive login)")
 			}
 
 			if opts.Attached && opts.Silent {
@@ -194,18 +209,26 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
 
+	if runtime.GOOS == "windows" {
+		// Windows can't run the olm tunnel directly from a console process
+		// the way Linux/macOS can (see runWindowsMachineClient for why) -
+		// it always has to go through a Windows Service. PreRunE already
+		// required machine-client credentials for this platform, so just
+		// install/tail/uninstall the same service
+		// `pangolin service install client` manages.
+		if err := runWindowsMachineClient(opts); err != nil {
+			logger.Error("Error: %v", err)
+			return err
+		}
+		return nil
+	}
+
 	// Fall back to the persisted config value when --match-domains wasn't
 	// explicitly passed. Resolved here (rather than left to the subprocess,
 	// which runs as root and may not have access to the user's config) so it
 	// can be forwarded to the subprocess unconditionally below.
 	if !cmd.Flags().Changed("match-domains") && cfg.IsSet("up.match_domains_dns") {
 		opts.MatchDomains = cfg.GetStringSlice("up.match_domains_dns")
-	}
-
-	if runtime.GOOS == "windows" {
-		err := errors.New("this command is currently unsupported on Windows")
-		logger.Error("Error: %v", err)
-		return err
 	}
 
 	// Check if a client is already running
@@ -551,7 +574,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		enableAPI = true
 	}
 
-	socketPath := defaultSocketPath
+	// Per-OS default (a Unix socket path, or a named pipe on Windows) -
+	// matches what internal/olm.NewClient("") resolves to, so `status`/
+	// `down`/`logs` can find this instance.
+	socketPath := olm.GetDefaultSocketPath()
 
 	upstreamDNS := make([]string, 0, len(opts.UpstreamDNS))
 	for _, server := range opts.UpstreamDNS {

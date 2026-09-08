@@ -13,7 +13,6 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/fosrl/cli/internal/logger"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/fosrl/newt/clients/permissions"
 	newtLogger "github.com/fosrl/newt/logger"
@@ -75,7 +74,6 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("failed to initialize newt: %w", err)
 	}
 
-	logger.Info("Starting site tunnel to %s", cfg.Endpoint)
 	n.Start(sigCtx)
 
 	return nil

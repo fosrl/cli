@@ -8,7 +8,7 @@ import (
 )
 
 // UpCmd returns the "up" command tree available on Windows. The `client`
-// (Olm) subcommand is unix-only; `site` (Newt) supports Windows too.
+// subcommand is unix-only; `site` (Newt) supports Windows too.
 func UpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "up",

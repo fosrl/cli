@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 )
 
-// olmHostedService is the Windows Service handler for the client (Olm)
+// olmHostedService is the Windows Service handler for the client
 // service. Unlike hostedService (used for site), it doesn't spawn a
 // `pangolin up client` child process - that command has no standalone
 // Windows console mode, since interactive tunnel management on Windows is
@@ -127,14 +127,14 @@ func runOlmClient(ctx context.Context, serviceName string, creds ClientCreds) er
 	}
 
 	olmInitConfig := olmpkg.OlmConfig{
-		LogLevel:   "info",
-		EnableAPI:  true,
+		LogLevel:  "info",
+		EnableAPI: true,
 		// Named pipe on Windows. A name distinct from olm's own "olm"
 		// default, so this machine-client service can't collide with a
 		// separate interactive olm/desktop-app instance on the same box.
 		SocketPath: "pangolin-client",
 		Version:    versionpkg.Version,
-		Agent:      "Pangolin Service (Olm)",
+		Agent:      "Pangolin Service",
 		// No WatchdogSubcommand: `pangolin up client` sets one (see
 		// cmd/watchdog) as a DNS-cleanup safety net for its own process,
 		// but the CLI's watchdog subcommand isn't implemented on Windows

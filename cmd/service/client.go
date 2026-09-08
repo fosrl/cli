@@ -29,7 +29,7 @@ func clientInstallCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "client",
-		Short: "Install and start the client (Olm) background service",
+		Short: "Install and start the client background service",
 		Long: `Install a background service for this machine client, then start it
 immediately.
 
@@ -50,7 +50,7 @@ tunnel directly in-process instead.`,
 
 			spec := svcmgr.Spec{
 				Name:        clientServiceName,
-				DisplayName: "Pangolin Client (Olm)",
+				DisplayName: "Pangolin Client",
 				Description: "Runs 'pangolin up client' persistently in the background",
 				// On Linux/macOS, Args is the subprocess command line
 				// (--attach runs in the foreground under the service
@@ -88,7 +88,7 @@ tunnel directly in-process instead.`,
 func clientUninstallCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "client",
-		Short: "Stop and remove the client (Olm) background service",
+		Short: "Stop and remove the client background service",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := svcmgr.Uninstall(clientServiceName); err != nil {
 				logger.Error("Error: %v", err)
@@ -102,7 +102,7 @@ func clientUninstallCmd() *cobra.Command {
 func clientStatusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "client",
-		Short: "Show the client (Olm) background service status",
+		Short: "Show the client background service status",
 		Run: func(cmd *cobra.Command, args []string) {
 			out, err := svcmgr.Status(clientServiceName)
 			if err != nil {
@@ -119,7 +119,7 @@ func clientLogsCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "client",
-		Short: "Follow the client (Olm) background service logs",
+		Short: "Follow the client background service logs",
 		Long:  "Stream the client service's log output.",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := svcmgr.Follow(clientServiceName, opts.Lines); err != nil {

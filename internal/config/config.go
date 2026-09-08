@@ -412,8 +412,21 @@ func userHomeDir() (string, error) {
 		return u.HomeDir, nil
 	}
 
-	// Not running with sudo, use current user's home directory
-	return os.UserHomeDir()
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return home, nil
+	}
+
+	// $HOME isn't set - e.g. this process was launched by systemd/launchd/
+	// the Windows SCM (see internal/svcmgr), none of which set it for the
+	// services they run. Fall back to looking the user up directly via the
+	// OS user database (getpwuid, not the environment) rather than failing
+	// outright - for a service running as root this reliably resolves to
+	// root's actual home directory (e.g. /var/root on macOS, /root on Linux).
+	if u, err := user.Current(); err == nil && u.HomeDir != "" {
+		return u.HomeDir, nil
+	}
+
+	return "", errors.New("failed to determine home directory: $HOME is not set")
 }
 
 // defaultLogPath returns the default log file path for client logs

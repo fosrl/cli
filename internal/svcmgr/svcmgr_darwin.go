@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -149,20 +150,36 @@ func Uninstall(name string) error {
 	return nil
 }
 
-// Status returns a human-readable summary of the service's current state.
+var (
+	pidFieldRe      = regexp.MustCompile(`"PID"\s*=\s*(-?\d+);`)
+	lastExitFieldRe = regexp.MustCompile(`"LastExitStatus"\s*=\s*(-?\d+);`)
+)
+
+// Status returns a short, human-readable summary of whether the service is
+// loaded and running - not the full `launchctl print` dump, which is mostly
+// noise for a "is it up" check.
 func Status(name string) (string, error) {
 	if err := CheckSupported(); err != nil {
 		return "", err
 	}
 
-	var b strings.Builder
+	out, err := exec.Command("launchctl", "list", label(name)).Output()
+	if err != nil {
+		return "Loaded:  no\n", nil
+	}
+	text := string(out)
 
-	if out, err := exec.Command("launchctl", "print", "system/"+label(name)).CombinedOutput(); err == nil {
-		b.Write(out)
-	} else if out, err := exec.Command("launchctl", "list", label(name)).CombinedOutput(); err == nil {
-		b.Write(out)
+	var b strings.Builder
+	b.WriteString("Loaded:  yes\n")
+
+	if m := pidFieldRe.FindStringSubmatch(text); m != nil {
+		fmt.Fprintf(&b, "Running: yes (pid %s)\n", m[1])
 	} else {
-		fmt.Fprintf(&b, "Not loaded (%v)\n", err)
+		exitStatus := "unknown"
+		if m := lastExitFieldRe.FindStringSubmatch(text); m != nil {
+			exitStatus = m[1]
+		}
+		fmt.Fprintf(&b, "Running: no (last exit status %s)\n", exitStatus)
 	}
 
 	return b.String(), nil

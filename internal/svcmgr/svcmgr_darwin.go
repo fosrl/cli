@@ -142,6 +142,10 @@ func Uninstall(name string) error {
 		return fmt.Errorf("failed to remove %s: %w", path, err)
 	}
 
+	// Best-effort: a stale log from this install shouldn't linger and be
+	// mistaken for output from a later one.
+	_ = os.Remove(logPath(name))
+
 	return nil
 }
 

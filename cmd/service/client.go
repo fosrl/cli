@@ -5,13 +5,14 @@ import (
 	"os"
 
 	"github.com/fosrl/cli/internal/logger"
-	"github.com/fosrl/cli/internal/systemdsvc"
+	"github.com/fosrl/cli/internal/svcmgr"
 	"github.com/spf13/cobra"
 )
 
-// clientServiceName is the systemd unit name (without the .service suffix)
-// used to run a machine client persistently in the background.
-const clientServiceName = "pangolin-client"
+// clientServiceName identifies the background service (systemd unit,
+// launchd label, or Windows Service name, depending on platform) used to
+// run a machine client persistently.
+const clientServiceName = svcmgr.ClientServiceName
 
 // The client subcommands target machine clients (explicit --id/--secret,
 // no user login) since that's the case that needs to run unattended on a
@@ -28,19 +29,16 @@ func clientInstallCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "client",
-		Short: "Install and start the client (Olm) systemd service",
-		Long: `Write a systemd unit and environment file for this machine client, then
-enable and start it immediately.
+		Short: "Install and start the client (Olm) background service",
+		Long: `Install a background service for this machine client, then start it
+immediately.
 
 Intended for machine clients (--id/--secret), which don't have an
-interactively logged-in user to restart them.`,
+interactively logged-in user to restart them. On Windows this only supports
+the service itself - 'pangolin up client' has no standalone Windows console
+mode (that's handled by the Pangolin desktop app); the service runs the
+tunnel directly in-process instead.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			executable, err := os.Executable()
-			if err != nil {
-				logger.Error("Error: failed to resolve executable path: %v", err)
-				os.Exit(1)
-			}
-
 			envVars := map[string]string{
 				"PANGOLIN_CLIENT_ID":     opts.ID,
 				"PANGOLIN_CLIENT_SECRET": opts.Secret,
@@ -50,23 +48,28 @@ interactively logged-in user to restart them.`,
 				envVars["PANGOLIN_ORG"] = opts.OrgID
 			}
 
-			spec := systemdsvc.UnitSpec{
+			spec := svcmgr.Spec{
 				Name:        clientServiceName,
-				Description: "Pangolin Client (Olm)",
-				// --attach runs in the foreground under systemd's supervision
-				// (no self-detaching subprocess/TUI); credentials come from
-				// the EnvironmentFile rather than the command line so they
-				// don't leak into `ps` output.
-				ExecStart: fmt.Sprintf("%s up client --attach", executable),
-				EnvVars:   envVars,
+				DisplayName: "Pangolin Client (Olm)",
+				Description: "Runs 'pangolin up client' persistently in the background",
+				// On Linux/macOS, Args is the subprocess command line
+				// (--attach runs in the foreground under the service
+				// supervisor's control, no self-detaching subprocess/TUI).
+				// Windows ignores Args for the client service and instead
+				// runs the tunnel in-process (see svcmgr_windows.go) - it's
+				// kept here for documentation/parity. Credentials always
+				// come from the environment rather than the command line so
+				// they don't leak into `ps`/Task Manager.
+				Args:    []string{"up", "client", "--attach"},
+				EnvVars: envVars,
 			}
 
-			if err := systemdsvc.Install(spec); err != nil {
+			if err := svcmgr.Install(spec); err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}
 
-			logger.Success("Installed and started %s.service", clientServiceName)
+			logger.Success("Installed and started the %s service", clientServiceName)
 			logger.Info("Check status with 'pangolin service status client' or follow logs with 'pangolin service logs client -f'")
 		},
 	}
@@ -85,13 +88,13 @@ interactively logged-in user to restart them.`,
 func clientUninstallCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "client",
-		Short: "Stop and remove the client (Olm) systemd service",
+		Short: "Stop and remove the client (Olm) background service",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := systemdsvc.Uninstall(clientServiceName); err != nil {
+			if err := svcmgr.Uninstall(clientServiceName); err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}
-			logger.Success("Removed %s.service", clientServiceName)
+			logger.Success("Removed the %s service", clientServiceName)
 		},
 	}
 }
@@ -99,9 +102,9 @@ func clientUninstallCmd() *cobra.Command {
 func clientStatusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "client",
-		Short: "Show the client (Olm) systemd service status",
+		Short: "Show the client (Olm) background service status",
 		Run: func(cmd *cobra.Command, args []string) {
-			out, err := systemdsvc.Status(clientServiceName)
+			out, err := svcmgr.Status(clientServiceName)
 			if err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
@@ -116,10 +119,10 @@ func clientLogsCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "client",
-		Short: "Follow the client (Olm) systemd service logs",
-		Long:  "Stream the client service's journal output (equivalent to 'journalctl -u pangolin-client -f').",
+		Short: "Follow the client (Olm) background service logs",
+		Long:  "Stream the client service's log output.",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := systemdsvc.Follow(clientServiceName, opts.Lines); err != nil {
+			if err := svcmgr.Follow(clientServiceName, opts.Lines); err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}

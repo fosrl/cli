@@ -5,13 +5,14 @@ import (
 	"os"
 
 	"github.com/fosrl/cli/internal/logger"
-	"github.com/fosrl/cli/internal/systemdsvc"
+	"github.com/fosrl/cli/internal/svcmgr"
 	"github.com/spf13/cobra"
 )
 
-// siteServiceName is the systemd unit name (without the .service suffix)
-// used to run a site tunnel persistently in the background.
-const siteServiceName = "pangolin-site"
+// siteServiceName identifies the background service (systemd unit, launchd
+// label, or Windows Service name, depending on platform) used to run a
+// site tunnel persistently.
+const siteServiceName = svcmgr.SiteServiceName
 
 func siteInstallCmd() *cobra.Command {
 	opts := struct {
@@ -24,15 +25,9 @@ func siteInstallCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "site",
-		Short: "Install and start the site (Newt) systemd service",
-		Long:  "Write a systemd unit and environment file for this site, then enable and start it immediately.",
+		Short: "Install and start the site (Newt) background service",
+		Long:  "Install a background service for this site, then start it immediately.",
 		Run: func(cmd *cobra.Command, args []string) {
-			executable, err := os.Executable()
-			if err != nil {
-				logger.Error("Error: failed to resolve executable path: %v", err)
-				os.Exit(1)
-			}
-
 			envVars := map[string]string{
 				"NEWT_ID":           opts.ID,
 				"NEWT_SECRET":       opts.Secret,
@@ -45,19 +40,20 @@ func siteInstallCmd() *cobra.Command {
 				envVars["DISABLE_SSH"] = "true"
 			}
 
-			spec := systemdsvc.UnitSpec{
+			spec := svcmgr.Spec{
 				Name:        siteServiceName,
-				Description: "Pangolin Site (Newt)",
-				ExecStart:   fmt.Sprintf("%s up site", executable),
+				DisplayName: "Pangolin Site (Newt)",
+				Description: "Runs 'pangolin up site' persistently in the background",
+				Args:        []string{"up", "site"},
 				EnvVars:     envVars,
 			}
 
-			if err := systemdsvc.Install(spec); err != nil {
+			if err := svcmgr.Install(spec); err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}
 
-			logger.Success("Installed and started %s.service", siteServiceName)
+			logger.Success("Installed and started the %s service", siteServiceName)
 			logger.Info("Check status with 'pangolin service status site' or follow logs with 'pangolin service logs site -f'")
 		},
 	}
@@ -77,13 +73,13 @@ func siteInstallCmd() *cobra.Command {
 func siteUninstallCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "site",
-		Short: "Stop and remove the site (Newt) systemd service",
+		Short: "Stop and remove the site (Newt) background service",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := systemdsvc.Uninstall(siteServiceName); err != nil {
+			if err := svcmgr.Uninstall(siteServiceName); err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}
-			logger.Success("Removed %s.service", siteServiceName)
+			logger.Success("Removed the %s service", siteServiceName)
 		},
 	}
 }
@@ -91,9 +87,9 @@ func siteUninstallCmd() *cobra.Command {
 func siteStatusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "site",
-		Short: "Show the site (Newt) systemd service status",
+		Short: "Show the site (Newt) background service status",
 		Run: func(cmd *cobra.Command, args []string) {
-			out, err := systemdsvc.Status(siteServiceName)
+			out, err := svcmgr.Status(siteServiceName)
 			if err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
@@ -108,10 +104,10 @@ func siteLogsCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "site",
-		Short: "Follow the site (Newt) systemd service logs",
-		Long:  "Stream the site service's journal output (equivalent to 'journalctl -u pangolin-site -f').",
+		Short: "Follow the site (Newt) background service logs",
+		Long:  "Stream the site service's log output.",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := systemdsvc.Follow(siteServiceName, opts.Lines); err != nil {
+			if err := svcmgr.Follow(siteServiceName, opts.Lines); err != nil {
 				logger.Error("Error: %v", err)
 				os.Exit(1)
 			}

@@ -1,8 +1,6 @@
-// Package systemdsvc manages systemd units that keep a `pangolin up site` or
-// `pangolin up client` process running persistently in the background,
-// mirroring the "Systemd Service" install instructions shown for the
-// standalone newt/olm binaries, but driven from the CLI itself.
-package systemdsvc
+//go:build linux
+
+package svcmgr
 
 import (
 	"errors"
@@ -10,50 +8,29 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 )
 
-var (
-	ErrUnsupportedPlatform = errors.New("systemd services are only supported on Linux")
-	ErrRootRequired        = errors.New("this command must be run as root (use sudo)")
-)
+var ErrRootRequired = errors.New("this command must be run as root (use sudo)")
 
 const (
 	unitDir = "/etc/systemd/system"
 	envDir  = "/etc/pangolin"
 )
 
-// UnitSpec describes a systemd service unit managed by the Pangolin CLI.
-type UnitSpec struct {
-	// Name is the systemd unit name without the ".service" suffix, e.g. "pangolin-site".
-	Name string
-	// Description is the unit's [Unit] Description=.
-	Description string
-	// ExecStart is the full command line the unit runs.
-	ExecStart string
-	// EnvVars, if non-empty, are written to an EnvironmentFile at 0600
-	// permissions (since they typically hold credentials) referenced from
-	// the unit, keeping secrets out of both the unit file and `ps` output.
-	EnvVars map[string]string
-}
-
-func (s UnitSpec) unitPath() string {
-	return filepath.Join(unitDir, s.Name+".service")
+func unitPath(name string) string {
+	return filepath.Join(unitDir, name+".service")
 }
 
 func envPath(name string) string {
 	return filepath.Join(envDir, name+".env")
 }
 
-// CheckSupported returns an error if systemd service management isn't
-// available on this platform, or if the process lacks the permissions
-// needed to manage system services.
+// CheckSupported returns an error if the process lacks the permissions
+// needed to manage system services, or systemd isn't available.
 func CheckSupported() error {
-	if runtime.GOOS != "linux" {
-		return ErrUnsupportedPlatform
-	}
 	if os.Geteuid() != 0 {
 		return ErrRootRequired
 	}
@@ -65,9 +42,14 @@ func CheckSupported() error {
 
 // Install writes the unit (and environment file, if any), reloads systemd,
 // and enables + starts the service immediately.
-func Install(spec UnitSpec) error {
+func Install(spec Spec) error {
 	if err := CheckSupported(); err != nil {
 		return err
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to resolve executable path: %w", err)
 	}
 
 	if len(spec.EnvVars) > 0 {
@@ -91,8 +73,8 @@ func Install(spec UnitSpec) error {
 		}
 	}
 
-	if err := os.WriteFile(spec.unitPath(), []byte(buildUnitFile(spec)), 0o644); err != nil {
-		return fmt.Errorf("failed to write %s: %w", spec.unitPath(), err)
+	if err := os.WriteFile(unitPath(spec.Name), []byte(buildUnitFile(spec, executable)), 0o644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", unitPath(spec.Name), err)
 	}
 
 	if err := runSystemctl("daemon-reload"); err != nil {
@@ -102,7 +84,12 @@ func Install(spec UnitSpec) error {
 	return runSystemctl("enable", "--now", spec.Name)
 }
 
-func buildUnitFile(spec UnitSpec) string {
+func buildUnitFile(spec Spec, executable string) string {
+	execStart := systemdQuote(executable)
+	for _, a := range spec.Args {
+		execStart += " " + systemdQuote(a)
+	}
+
 	var b strings.Builder
 	b.WriteString("[Unit]\n")
 	fmt.Fprintf(&b, "Description=%s\n", spec.Description)
@@ -115,7 +102,7 @@ func buildUnitFile(spec UnitSpec) string {
 	if len(spec.EnvVars) > 0 {
 		fmt.Fprintf(&b, "EnvironmentFile=%s\n", envPath(spec.Name))
 	}
-	fmt.Fprintf(&b, "ExecStart=%s\n", spec.ExecStart)
+	fmt.Fprintf(&b, "ExecStart=%s\n", execStart)
 	b.WriteString("Restart=always\n")
 	b.WriteString("RestartSec=2\n")
 	b.WriteString("UMask=0077\n")
@@ -123,6 +110,16 @@ func buildUnitFile(spec UnitSpec) string {
 	b.WriteString("[Install]\n")
 	b.WriteString("WantedBy=multi-user.target\n")
 	return b.String()
+}
+
+// systemdQuote quotes a token for use in a unit file's ExecStart= line if
+// it contains characters that would otherwise be treated as word
+// separators (systemd.service(5) uses C-style quoting).
+func systemdQuote(s string) string {
+	if strings.ContainsAny(s, " \t\"'") {
+		return strconv.Quote(s)
+	}
+	return s
 }
 
 // Uninstall stops and disables the service, then removes its unit and
@@ -135,7 +132,7 @@ func Uninstall(name string) error {
 	// Best-effort: the unit may not exist or may already be stopped.
 	_ = runSystemctl("disable", "--now", name)
 
-	if err := os.Remove(filepath.Join(unitDir, name+".service")); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(unitPath(name)); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove unit file: %w", err)
 	}
 	if err := os.Remove(envPath(name)); err != nil && !os.IsNotExist(err) {

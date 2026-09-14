@@ -7,17 +7,22 @@ package site
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/fosrl/newt/clients/permissions"
 	newtLogger "github.com/fosrl/newt/logger"
 	newtpkg "github.com/fosrl/newt/newt"
 	"github.com/fosrl/newt/newtconfig"
+	"github.com/fosrl/newt/updates"
+	"github.com/fosrl/newt/websocket"
 	"github.com/spf13/cobra"
 )
 
@@ -47,9 +52,11 @@ func run(ctx context.Context, args []string) error {
 	newtLogger.Init(nil)
 
 	cfg, err := newtconfig.Load(newtconfig.Options{
-		Args:     args,
-		Version:  versionpkg.NewtVersion(),
-		Platform: runtime.GOOS,
+		Args:         args,
+		Version:      versionpkg.NewtVersion(),
+		Agent:        "cli",
+		AgentVersion: versionpkg.Version,
+		Platform:     runtime.GOOS,
 	})
 	if err != nil {
 		return fmt.Errorf("configuration error: %w", err)
@@ -74,7 +81,64 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("failed to initialize newt: %w", err)
 	}
 
+	resolvedCfg := n.GetConfig()
+
+	startSelfUpdateChecks(sigCtx, resolvedCfg)
+
 	n.Start(sigCtx)
 
 	return nil
+}
+
+// startSelfUpdateChecks periodically checks the Pangolin server for a newer
+// CLI release and, if one is available, downloads it, replaces the running
+// `pangolin` binary on disk, and re-execs in place - mirroring the
+// self-update loop the standalone newt binary runs for itself, but with
+// Agent: "cli" so the server hands back a pangolin-cli release instead of a
+// newt one.
+func startSelfUpdateChecks(ctx context.Context, resolvedCfg newtpkg.Config) {
+	// Reuse the same TLS parameters as the websocket client for the
+	// self-update HTTP requests.
+	var selfUpdateTLS *tls.Config
+	if resolvedCfg.TLSClientCert != "" || resolvedCfg.TLSPrivateKey != "" {
+		selfUpdateTLS, _ = websocket.BuildTLSConfig(
+			resolvedCfg.TLSClientCert,
+			resolvedCfg.TLSClientKey,
+			resolvedCfg.TLSClientCAs,
+			resolvedCfg.TLSPrivateKey,
+		)
+	}
+
+	doUpdate := func() {
+		newtLogger.Debug("checkAndSelfUpdate: running periodic update check")
+		if err := updates.CheckAndSelfUpdate(updates.SelfUpdateConfig{
+			Endpoint:       resolvedCfg.Endpoint,
+			NewtID:         resolvedCfg.ID,
+			Secret:         resolvedCfg.Secret,
+			CurrentVersion: versionpkg.NewtVersion(),
+			TLSConfig:      selfUpdateTLS,
+			Agent:          "cli",
+		}); err != nil {
+			if errors.Is(err, updates.ErrAutoUpdateUnsupportedInOfficialContainer) {
+				newtLogger.Debug("checkAndSelfUpdate: auto-update skipped: %v", err)
+				return
+			}
+			newtLogger.Error("Auto-update check failed: %v", err)
+		}
+	}
+
+	go func() {
+		time.Sleep(2 * time.Minute)
+		doUpdate()
+		ticker := time.NewTicker(6 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				doUpdate()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 }

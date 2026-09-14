@@ -12,10 +12,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
 
+	"github.com/fosrl/cli/internal/config"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	"github.com/fosrl/newt/clients/permissions"
 	newtLogger "github.com/fosrl/newt/logger"
@@ -51,12 +53,18 @@ newt binary. Run 'pangolin up site --help' to see them.`,
 func run(ctx context.Context, args []string) error {
 	newtLogger.Init(nil)
 
+	defaultConfigFile, err := defaultSiteConfigFile()
+	if err != nil {
+		return fmt.Errorf("failed to resolve default config file location: %w", err)
+	}
+
 	cfg, err := newtconfig.Load(newtconfig.Options{
-		Args:         args,
-		Version:      versionpkg.NewtVersion(),
-		Agent:        "cli",
-		AgentVersion: versionpkg.Version,
-		Platform:     runtime.GOOS,
+		Args:              args,
+		Version:           versionpkg.NewtVersion(),
+		Agent:             "cli",
+		AgentVersion:      versionpkg.Version,
+		Platform:          runtime.GOOS,
+		DefaultConfigFile: defaultConfigFile,
 	})
 	if err != nil {
 		return fmt.Errorf("configuration error: %w", err)
@@ -88,6 +96,21 @@ func run(ctx context.Context, args []string) error {
 	n.Start(sigCtx)
 
 	return nil
+}
+
+// defaultSiteConfigFile returns the site tunnel's config file path when run
+// under the Pangolin CLI: alongside the CLI's own config.json, in the same
+// ~/.config/pangolin directory, but named site.json so the two don't
+// collide. This only applies as a fallback default - --config-file and
+// CONFIG_FILE still take precedence, and the standalone newt binary keeps
+// using its own default (~/.config/newt-client/config.json) since it never
+// sets newtconfig.Options.DefaultConfigFile.
+func defaultSiteConfigFile() (string, error) {
+	dir, err := config.GetPangolinConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "site.json"), nil
 }
 
 // startSelfUpdateChecks periodically checks the Pangolin server for a newer

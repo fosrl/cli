@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -25,6 +26,39 @@ const (
 	HostingOptionSelfHosted HostingOption = "self-hosted"
 )
 
+type LoginTarget string
+
+const (
+	LoginTargetSameAccount      LoginTarget = "same"
+	LoginTargetDifferentAccount LoginTarget = "different"
+)
+
+// promptLoginTarget asks the user whether they want to log back into the
+// currently active account or a different one. It's only shown when there's
+// already an active, logged-in account.
+func promptLoginTarget(activeAccount *config.Account) (LoginTarget, error) {
+	var target LoginTarget
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[LoginTarget]().
+				Title("You already have an account").
+				Description(fmt.Sprintf("Currently selected %s", utils.AccountDisplayNameWithHost(activeAccount))).
+				Options(
+					huh.NewOption(fmt.Sprintf("Log in again as %s", utils.AccountDisplayNameWithHost(activeAccount)), LoginTargetSameAccount),
+					huh.NewOption("Log in to a different account", LoginTargetDifferentAccount),
+				).
+				Value(&target),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		return "", err
+	}
+
+	return target, nil
+}
+
 // getDeviceName returns a human-readable device name
 func getDeviceName() string {
 	hostname, err := os.Hostname()
@@ -34,7 +68,7 @@ func getDeviceName() string {
 	return hostname
 }
 
-func loginWithWeb(hostname string, sessionCookieName string) (string, error) {
+func loginWithWeb(hostname string, sessionCookieName string, knownEmail string) (string, error) {
 	// Build base URL for login (use hostname as-is, StartDeviceWebAuth will add /api/v1)
 	baseURL := hostname
 
@@ -73,8 +107,11 @@ func loginWithWeb(hostname string, sessionCookieName string) (string, error) {
 
 	// Build the base login URL (without query parameter) for display
 	baseLoginURL := fmt.Sprintf("%s/auth/login/device", strings.TrimSuffix(hostname, "/"))
-	// Build the login URL with code as query parameter for browser
+	// Build the login URL with code (and, if known, the user) as query parameters for browser
 	loginURL := fmt.Sprintf("%s?code=%s", baseLoginURL, code)
+	if knownEmail != "" {
+		loginURL = fmt.Sprintf("%s&user=%s", loginURL, url.QueryEscape(knownEmail))
+	}
 
 	// Display code and instructions (similar to GH CLI format)
 	logger.Info("First copy your one-time code: %s", code)
@@ -189,6 +226,25 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	cfg := config.ConfigFromContext(cmd.Context())
 
 	hostname := opts.Hostname
+	knownEmail := ""
+
+	// If we're already logged into an account and no explicit hostname was
+	// given, ask whether to log back into the same account (reusing its
+	// server URL) or a different one.
+	if hostname == "" {
+		if activeAccount, err := accountStore.ActiveAccount(); err == nil && activeAccount != nil {
+			target, err := promptLoginTarget(activeAccount)
+			if err != nil {
+				logger.Error("Error: %v", err)
+				return err
+			}
+
+			if target == LoginTargetSameAccount {
+				hostname = activeAccount.Host
+				knownEmail = activeAccount.Email
+			}
+		}
+	}
 
 	// If hostname was provided, skip hosting option selection
 	if hostname == "" {
@@ -242,7 +298,7 @@ func loginMain(cmd *cobra.Command, opts *LoginCmdOpts) error {
 	}
 
 	// Perform web login
-	sessionToken, err := loginWithWeb(hostname, cfg.SessionCookieName)
+	sessionToken, err := loginWithWeb(hostname, cfg.SessionCookieName, knownEmail)
 	if err != nil {
 		logger.Error("%v", err)
 		return err

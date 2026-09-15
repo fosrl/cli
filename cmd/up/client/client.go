@@ -29,9 +29,8 @@ import (
 )
 
 const (
-	defaultEnableAPI  = true
-	defaultSocketPath = "/var/run/olm.sock"
-	defaultAgent      = olm.AgentName
+	defaultEnableAPI = true
+	defaultAgent     = olm.AgentName
 )
 
 type ClientUpCmdOpts struct {
@@ -55,6 +54,8 @@ type ClientUpCmdOpts struct {
 	UpstreamDNS       []string
 	MatchDomains      []string
 	PreferLocalRoutes bool
+	DisableRelay      bool
+	SubnetRouter      bool
 }
 
 // validateDNSIP ensures the given DNS server string is a valid IP address.
@@ -84,11 +85,62 @@ func ClientUpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "client",
 		Short: "Start a client connection",
-		Long:  `Bring up a client tunneled connection.`,
+		Long: `Bring up a client tunneled connection.
+
+On Windows, only machine clients are supported: --id, --secret, and
+--endpoint must all be passed explicitly. Interactive login isn't
+supported - use the desktop app for that. The tunnel also can't run
+directly from a console process there, so this installs the same
+background service 'pangolin service install client' would, tails its
+logs, and removes the service again when you press Ctrl+C.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Fall back to environment variables when the corresponding flag
+			// wasn't explicitly set, so a systemd EnvironmentFile (see the
+			// `service` subcommand) can supply machine-client credentials
+			// without putting them on the command line, where they'd be
+			// visible to any local user via `ps`.
+			if !cmd.Flags().Changed("id") {
+				if v := os.Getenv("PANGOLIN_CLIENT_ID"); v != "" {
+					opts.ID = v
+				}
+			}
+			if !cmd.Flags().Changed("secret") {
+				if v := os.Getenv("PANGOLIN_CLIENT_SECRET"); v != "" {
+					opts.Secret = v
+				}
+			}
+			if !cmd.Flags().Changed("endpoint") {
+				if v := os.Getenv("PANGOLIN_ENDPOINT"); v != "" {
+					opts.Endpoint = v
+				}
+			}
+			if !cmd.Flags().Changed("org") {
+				if v := os.Getenv("PANGOLIN_ORG"); v != "" {
+					opts.OrgID = v
+				}
+			}
+
+			// Fall back to the same environment variables read by the
+			// standalone olm client (see olm/config.go) for every other
+			// flag not explicitly set on the command line. This lets an
+			// EnvironmentFile written for the olm binary also configure
+			// `pangolin up client` unchanged.
+			if err := applyUpEnvOverrides(cmd); err != nil {
+				return err
+			}
+
 			// `--id` and `--secret` must be specified together
 			if (opts.ID == "") != (opts.Secret == "") {
 				return errors.New("--id and --secret must be provided together")
+			}
+
+			// Windows only supports machine clients (explicit
+			// --id/--secret/--endpoint, run under a service - see
+			// `pangolin service install client`). Interactively logging in
+			// and letting this command manage keyring/account credentials
+			// itself isn't implemented on Windows.
+			if runtime.GOOS == "windows" && (opts.ID == "" || opts.Secret == "" || opts.Endpoint == "") {
+				return errors.New("on Windows, --id, --secret, and --endpoint are required (only machine clients are supported, not interactive login)")
 			}
 
 			if opts.Attached && opts.Silent {
@@ -137,13 +189,76 @@ func ClientUpCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&opts.UpstreamDNS, "upstream-dns", []string{}, "List of DNS servers to use for external DNS resolution if overriding system DNS")
 	cmd.Flags().StringSliceVar(&opts.MatchDomains, "match-domains", nil, "FQDN wildcard patterns (e.g. '*.proxy.internal') to check against local records/upstream DNS; queries for non-matching domains go directly to the system's DNS servers (default: match all domains, or the value from config if set)")
 	cmd.Flags().BoolVar(&opts.PreferLocalRoutes, "prefer-local-routes", false, "Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)")
+	cmd.Flags().BoolVar(&opts.DisableRelay, "disable-relay", false, "Disable relay connections (default false)")
+	cmd.Flags().BoolVar(&opts.SubnetRouter, "subnet-router", false, "Enable this client to act as a subnet router: traffic forwarded from the local network is NATed to this client's own tunnel IP before going out over the tunnel. Linux only, requires CAP_NET_ADMIN. (default false)")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
 	return cmd
 }
 
-// Precedence: flags > env/config > built-in defaults.
+// olmEnvFlagOverrides maps the environment variables read by the standalone
+// olm client (see olm/config.go's loadConfigFromEnv) to the corresponding
+// `up client` flag name. --id/--secret/--endpoint/--org are handled
+// separately above under the CLI's own PANGOLIN_CLIENT_ID/SECRET/ENDPOINT/ORG
+// names, and --holepunch is handled separately below since it's inverted
+// relative to olm's DISABLE_HOLEPUNCH.
+var olmEnvFlagOverrides = []struct {
+	env  string
+	flag string
+}{
+	{"MTU", "mtu"},
+	{"DNS", "netstack-dns"},
+	{"UPSTREAM_DNS", "upstream-dns"},
+	{"MATCH_DOMAINS_DNS", "match-domains"},
+	{"LOG_LEVEL", "log-level"},
+	{"INTERFACE", "interface-name"},
+	{"HTTP_ADDR", "http-addr"},
+	{"PING_INTERVAL", "ping-interval"},
+	{"PING_TIMEOUT", "ping-timeout"},
+	{"OVERRIDE_DNS", "override-dns"},
+	{"TUNNEL_DNS", "tunnel-dns"},
+	{"DISABLE_RELAY", "disable-relay"},
+	{"PREFER_LOCAL_ROUTES", "prefer-local-routes"},
+	{"SUBNET_ROUTER", "subnet-router"},
+}
+
+// applyUpEnvOverrides falls back to environment variables - matching the
+// names read by the standalone olm client - for any flag not explicitly set
+// on the command line. Values are applied via cmd.Flags().Set rather than
+// writing the opts field directly so that: (1) each value is parsed/validated
+// the same way a CLI-provided value would be (int, duration, bool, comma-
+// separated slice), and (2) the flag is marked Changed, so downstream logic
+// that checks cmd.Flags().Changed(...) - including forwarding flags to the
+// detached subprocess - treats an env-sourced value the same as an explicit
+// flag.
+func applyUpEnvOverrides(cmd *cobra.Command) error {
+	for _, m := range olmEnvFlagOverrides {
+		if cmd.Flags().Changed(m.flag) {
+			continue
+		}
+		v, ok := os.LookupEnv(m.env)
+		if !ok || v == "" {
+			continue
+		}
+		if err := cmd.Flags().Set(m.flag, v); err != nil {
+			return fmt.Errorf("invalid %s value %q: %w", m.env, v, err)
+		}
+	}
+
+	// DISABLE_HOLEPUNCH is the inverse of --holepunch (default true).
+	if !cmd.Flags().Changed("holepunch") {
+		if v := os.Getenv("DISABLE_HOLEPUNCH"); v == "true" {
+			if err := cmd.Flags().Set("holepunch", "false"); err != nil {
+				return fmt.Errorf("invalid DISABLE_HOLEPUNCH value %q: %w", v, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Precedence: flags > env vars > persisted config > built-in defaults.
 func applyUpDefaults(cmd *cobra.Command, opts *ClientUpCmdOpts, cfg *config.Config) {
 	if cfg == nil {
 		return
@@ -168,18 +283,26 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
 
+	if runtime.GOOS == "windows" {
+		// Windows can't run the olm tunnel directly from a console process
+		// the way Linux/macOS can (see runWindowsMachineClient for why) -
+		// it always has to go through a Windows Service. PreRunE already
+		// required machine-client credentials for this platform, so just
+		// install/tail/uninstall the same service
+		// `pangolin service install client` manages.
+		if err := runWindowsMachineClient(opts); err != nil {
+			logger.Error("Error: %v", err)
+			return err
+		}
+		return nil
+	}
+
 	// Fall back to the persisted config value when --match-domains wasn't
 	// explicitly passed. Resolved here (rather than left to the subprocess,
 	// which runs as root and may not have access to the user's config) so it
 	// can be forwarded to the subprocess unconditionally below.
 	if !cmd.Flags().Changed("match-domains") && cfg.IsSet("up.match_domains_dns") {
 		opts.MatchDomains = cfg.GetStringSlice("up.match_domains_dns")
-	}
-
-	if runtime.GOOS == "windows" {
-		err := errors.New("this command is currently unsupported on Windows")
-		logger.Error("Error: %v", err)
-		return err
 	}
 
 	// Check if a client is already running
@@ -392,6 +515,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			// same reason as MatchDomains above - it may have come from config.
 			cmdArgs = append(cmdArgs, "--prefer-local-routes")
 		}
+		if opts.DisableRelay {
+			cmdArgs = append(cmdArgs, "--disable-relay")
+		}
+		if opts.SubnetRouter {
+			cmdArgs = append(cmdArgs, "--subnet-router")
+		}
 
 		// Add positional args if any
 		cmdArgs = append(cmdArgs, extraArgs...)
@@ -525,7 +654,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		enableAPI = true
 	}
 
-	socketPath := defaultSocketPath
+	// Per-OS default (a Unix socket path, or a named pipe on Windows) -
+	// matches what internal/olm.NewClient("") resolves to, so `status`/
+	// `down`/`logs` can find this instance.
+	socketPath := olm.GetDefaultSocketPath()
 
 	upstreamDNS := make([]string, 0, len(opts.UpstreamDNS))
 	for _, server := range opts.UpstreamDNS {
@@ -633,10 +765,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		UpstreamDNS:          upstreamDNS,
 		MatchDomains:         opts.MatchDomains,
 		PreferLocalRoutes:    opts.PreferLocalRoutes,
-		UserToken:            userToken,
-		InitialFingerprint:   initialFingerprint,
-		InitialPostures:      initialPostures,
-		EnableUAPI:           false, // ONLY FOR DEBUG: TODO MAKE FALSE
+		DisableRelay:         opts.DisableRelay,
+		// SubnetRouter:         opts.SubnetRouter,
+		UserToken:          userToken,
+		InitialFingerprint: initialFingerprint,
+		InitialPostures:    initialPostures,
+		EnableUAPI:         false, // ONLY FOR DEBUG: TODO MAKE FALSE
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)

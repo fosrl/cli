@@ -21,10 +21,10 @@
       in rec {
         pangolin-cli = pkgs.buildGoModule {
           pname = "pangolin-cli";
-          version = "0.13.0";
+          version = "0.17.0";
           src = ./.;
 
-          vendorHash = "sha256-QOq5LJQubo9yqdoNPWjAyZtuRf/y7Y7TJkpzxTaExfg=";
+          vendorHash = "sha256-BAI5T7W0Wixcn11sr41cIMYlfsnjNAcuzYnDLWI1pcs=";
 
           ldflags = [
             "-s"

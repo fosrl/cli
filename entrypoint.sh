@@ -5,7 +5,14 @@ set -e
 # Check if Pangolin environment variables are set
 if [ -n "$PANGOLIN_ENDPOINT" ] && [ -n "$CLIENT_ID" ] && [ -n "$CLIENT_SECRET" ]; then
     # Run pangolin-cli up --attach with the provided credentials
-    exec pangolin-cli up --attach --id "$CLIENT_ID" --secret "$CLIENT_SECRET" --endpoint "$PANGOLIN_ENDPOINT" "$@"
+    exec pangolin-cli up client --attach --id "$CLIENT_ID" --secret "$CLIENT_SECRET" --endpoint "$PANGOLIN_ENDPOINT" "$@"
+fi
+
+# Check if site (Newt) environment variables are set. SITE_ID/SITE_SECRET
+# (along with PANGOLIN_ENDPOINT and any other newt flags/env vars) are read
+# directly by `up site`, so nothing needs to be translated into flags here.
+if [ -n "$SITE_ID" ] && [ -n "$SITE_SECRET" ]; then
+    exec pangolin-cli up site "$@"
 fi
 
 # If no arguments provided, run pangolin-cli with default behavior

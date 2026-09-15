@@ -766,11 +766,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		MatchDomains:         opts.MatchDomains,
 		PreferLocalRoutes:    opts.PreferLocalRoutes,
 		DisableRelay:         opts.DisableRelay,
-		SubnetRouter:         opts.SubnetRouter,
-		UserToken:            userToken,
-		InitialFingerprint:   initialFingerprint,
-		InitialPostures:      initialPostures,
-		EnableUAPI:           false, // ONLY FOR DEBUG: TODO MAKE FALSE
+		// SubnetRouter:         opts.SubnetRouter,
+		UserToken:          userToken,
+		InitialFingerprint: initialFingerprint,
+		InitialPostures:    initialPostures,
+		EnableUAPI:         false, // ONLY FOR DEBUG: TODO MAKE FALSE
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)

@@ -23,6 +23,7 @@ Pangolin CLI
 * [pangolin reset-dns](pangolin_reset-dns.md)	 - Force-clear stale DNS overrides
 * [pangolin scp](pangolin_scp.md)	 - Run scp using just-in-time SSH certificates
 * [pangolin select](pangolin_select.md)	 - Select account information to use
+* [pangolin service](pangolin_service.md)	 - Manage background services that keep a site or client running persistently
 * [pangolin ssh](pangolin_ssh.md)	 - Run an interactive SSH session
 * [pangolin status](pangolin_status.md)	 - Status commands
 * [pangolin up](pangolin_up.md)	 - Start a connection

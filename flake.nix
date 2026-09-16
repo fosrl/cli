@@ -24,7 +24,7 @@
           version = "0.17.0";
           src = ./.;
 
-          vendorHash = "sha256-BAI5T7W0Wixcn11sr41cIMYlfsnjNAcuzYnDLWI1pcs=";
+          vendorHash = "sha256-sAEP05d7wpIMgN68IkG0qkURLxpIV82WwD82PiFbLYw=";
 
           ldflags = [
             "-s"

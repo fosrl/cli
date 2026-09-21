@@ -117,7 +117,7 @@ func newConfigViper() (*viper.Viper, error) {
 	// Defaults
 	v.SetDefault("log_level", "info")
 	v.SetDefault("log_file", defaultLogPath)
-	v.SetDefault("disable_update_check", false)
+	v.SetDefault("disable_update_check", IsExternallyManaged())
 	v.SetDefault("disable_companion_mode", false)
 	v.SetDefault("companion_app_data_dirs", map[string]string{})
 	v.SetDefault("up.match_domains_dns", []string{})

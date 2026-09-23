@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/svcmgr"
@@ -19,6 +20,7 @@ func siteInstallCmd() *cobra.Command {
 		ID             string
 		Secret         string
 		Endpoint       string
+		ConfigFile     string
 		DisableClients bool
 		DisableSSH     bool
 	}{}
@@ -26,12 +28,47 @@ func siteInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "site",
 		Short: "Install and start the site (Newt) background service",
-		Long:  "Install a background service for this site, then start it immediately.",
+		Long: `Install a background service for this site, then start it immediately.
+
+Credentials can be given directly (--id, --secret, --endpoint) or via a
+newt config file (--config-file), in which case the flags are optional and
+any that are set override the file's values.`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if opts.ConfigFile != "" {
+				abs, err := filepath.Abs(opts.ConfigFile)
+				if err != nil {
+					return fmt.Errorf("resolving --config-file: %w", err)
+				}
+				if _, err := os.Stat(abs); err != nil {
+					return fmt.Errorf("--config-file: %w", err)
+				}
+				opts.ConfigFile = abs
+				return nil
+			}
+			var missing []string
+			for _, f := range []struct{ name, val string }{
+				{"id", opts.ID}, {"secret", opts.Secret}, {"endpoint", opts.Endpoint},
+			} {
+				if f.val == "" {
+					missing = append(missing, "--"+f.name)
+				}
+			}
+			if len(missing) > 0 {
+				return fmt.Errorf("required flag(s) %v not set (or pass --config-file)", missing)
+			}
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
-			envVars := map[string]string{
+			envVars := map[string]string{}
+			for k, v := range map[string]string{
 				"NEWT_ID":           opts.ID,
 				"NEWT_SECRET":       opts.Secret,
 				"PANGOLIN_ENDPOINT": opts.Endpoint,
+				"CONFIG_FILE":       opts.ConfigFile,
+			} {
+				if v != "" {
+					envVars[k] = v
+				}
 			}
 			if opts.DisableClients {
 				envVars["DISABLE_CLIENTS"] = "true"
@@ -58,14 +95,12 @@ func siteInstallCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.ID, "id", "", "Site ID")
-	cmd.Flags().StringVar(&opts.Secret, "secret", "", "Site secret")
-	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Pangolin server endpoint")
+	cmd.Flags().StringVar(&opts.ID, "id", "", "Site ID (required unless --config-file is set)")
+	cmd.Flags().StringVar(&opts.Secret, "secret", "", "Site secret (required unless --config-file is set)")
+	cmd.Flags().StringVar(&opts.Endpoint, "endpoint", "", "Pangolin server endpoint (required unless --config-file is set)")
+	cmd.Flags().StringVar(&opts.ConfigFile, "config-file", "", "Path to a newt config file passed through to 'pangolin up site'")
 	cmd.Flags().BoolVar(&opts.DisableClients, "disable-clients", false, "Disable accepting client connections")
 	cmd.Flags().BoolVar(&opts.DisableSSH, "disable-ssh", false, "Disable Pangolin SSH")
-	cmd.MarkFlagRequired("id")
-	cmd.MarkFlagRequired("secret")
-	cmd.MarkFlagRequired("endpoint")
 
 	return cmd
 }

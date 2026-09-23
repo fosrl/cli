@@ -13,7 +13,7 @@ require (
 	github.com/fosrl/newt v1.17.0
 	github.com/fosrl/olm v1.9.1
 	github.com/mattn/go-isatty v0.0.24
-	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0

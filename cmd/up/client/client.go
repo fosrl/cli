@@ -79,6 +79,12 @@ func validateDNSIP(s, field string) error {
 	return nil
 }
 
+func applyTLSClientCert(client *api.Client, certPath string) {
+	if client != nil && client.HTTPClient != nil {
+		client.HTTPClient.TLSClientCert = certPath
+	}
+}
+
 func ClientUpCmd() *cobra.Command {
 	opts := ClientUpCmdOpts{}
 
@@ -282,6 +288,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
+	applyTLSClientCert(apiClient, opts.TlsClientCert)
 
 	if runtime.GOOS == "windows" {
 		// Windows can't run the olm tunnel directly from a console process
@@ -356,6 +363,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 	}
+	applyTLSClientCert(healthClient, opts.TlsClientCert)
 
 	healthOk, healthErr := healthClient.CheckHealth()
 	if healthErr != nil || !healthOk {

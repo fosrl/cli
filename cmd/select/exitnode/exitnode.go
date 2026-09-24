@@ -160,19 +160,22 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 		options = append(options, huh.NewOption(label, i))
 	}
 
-	// huh starts the cursor on the option matching this value, so default to
-	// "None" when it's offered; otherwise it would start on the first exit
-	// node with "None" scrolled out of view above it.
+	// huh starts the cursor on the option matching this value, so preselect
+	// "None" when it's offered.
 	selected := 0
 	if hasGateway {
 		selected = disableChoice
 	}
 	form := huh.NewForm(
 		huh.NewGroup(
+			// Value must come before Options: Options positions the scroll
+			// offset from the value bound at that moment, and Value doesn't
+			// reposition it afterwards, which would leave "None" hidden above
+			// the visible list.
 			huh.NewSelect[int]().
 				Title("Select an exit node").
-				Options(options...).
-				Value(&selected),
+				Value(&selected).
+				Options(options...),
 		),
 	)
 	if err := form.Run(); err != nil {

@@ -51,6 +51,11 @@ type UpConfig struct {
 	// --prefer-local-routes flag when the flag isn't passed explicitly.
 	// Defaults to false.
 	PreferLocalRoutes *bool `mapstructure:"prefer_local_routes" json:"prefer_local_routes,omitempty"`
+
+	// GatewaySiteIDs are the site IDs of the exit node selected with
+	// `pangolin select exit-node`. `pangolin up` re-applies them at connect time
+	// so the same exit node is used across restarts. Empty means no exit node.
+	GatewaySiteIDs []int `mapstructure:"exit_node_site_ids" json:"exit_node_site_ids,omitempty"`
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -361,6 +366,11 @@ func (c *Config) Save() error {
 	}
 	if c.Up.PreferLocalRoutes != nil {
 		c.v.Set("up.prefer_local_routes", *c.Up.PreferLocalRoutes)
+	}
+	// A non-nil empty slice is written as [] so a cleared exit node overrides
+	// a previously persisted one.
+	if c.Up.GatewaySiteIDs != nil {
+		c.v.Set("up.exit_node_site_ids", c.Up.GatewaySiteIDs)
 	}
 
 	dir, err := GetPangolinConfigDir()

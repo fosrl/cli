@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -56,6 +57,7 @@ type ClientUpCmdOpts struct {
 	PreferLocalRoutes bool
 	DisableRelay      bool
 	SubnetRouter      bool
+	GatewaySiteIDs    []int
 }
 
 // validateDNSIP ensures the given DNS server string is a valid IP address.
@@ -191,6 +193,7 @@ logs, and removes the service again when you press Ctrl+C.`,
 	cmd.Flags().BoolVar(&opts.PreferLocalRoutes, "prefer-local-routes", false, "Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)")
 	cmd.Flags().BoolVar(&opts.DisableRelay, "disable-relay", false, "Disable relay connections (default false)")
 	cmd.Flags().BoolVar(&opts.SubnetRouter, "subnet-router", false, "Enable this client to act as a subnet router: traffic forwarded from the local network is NATed to this client's own tunnel IP before going out over the tunnel. Linux only, requires CAP_NET_ADMIN. (default false)")
+	cmd.Flags().IntSliceVar(&opts.GatewaySiteIDs, "exit-node-site-ids", nil, "Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any)")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
@@ -303,6 +306,12 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// can be forwarded to the subprocess unconditionally below.
 	if !cmd.Flags().Changed("match-domains") && cfg.IsSet("up.match_domains_dns") {
 		opts.MatchDomains = cfg.GetStringSlice("up.match_domains_dns")
+	}
+
+	// Same as match-domains: resolved here so it can be forwarded to the
+	// subprocess, which may not have access to the user's config.
+	if !cmd.Flags().Changed("exit-node-site-ids") && len(cfg.Up.GatewaySiteIDs) > 0 {
+		opts.GatewaySiteIDs = cfg.Up.GatewaySiteIDs
 	}
 
 	// Check if a client is already running
@@ -520,6 +529,13 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 		if opts.SubnetRouter {
 			cmdArgs = append(cmdArgs, "--subnet-router")
+		}
+		if len(opts.GatewaySiteIDs) > 0 {
+			ids := make([]string, len(opts.GatewaySiteIDs))
+			for i, id := range opts.GatewaySiteIDs {
+				ids[i] = strconv.Itoa(id)
+			}
+			cmdArgs = append(cmdArgs, "--exit-node-site-ids", strings.Join(ids, ","))
 		}
 
 		// Add positional args if any
@@ -766,6 +782,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		MatchDomains:         opts.MatchDomains,
 		PreferLocalRoutes:    opts.PreferLocalRoutes,
 		DisableRelay:         opts.DisableRelay,
+		GatewaySiteIds:       opts.GatewaySiteIDs,
 		// SubnetRouter:         opts.SubnetRouter,
 		UserToken:          userToken,
 		InitialFingerprint: initialFingerprint,

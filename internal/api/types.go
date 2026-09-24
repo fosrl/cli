@@ -376,6 +376,32 @@ type ListLauncherResourcesData struct {
 	Pagination LauncherPagination `json:"pagination"`
 }
 
+// SiteResource is the (partial) shape of an entry returned by
+// GET /org/:orgId/site-resources. Only the fields the CLI needs are modeled.
+type SiteResource struct {
+	SiteResourceID int      `json:"siteResourceId"`
+	NiceID         string   `json:"niceId"`
+	Name           string   `json:"name"`
+	Mode           string   `json:"mode"`
+	Enabled        bool     `json:"enabled"`
+	SiteIDs        []int    `json:"siteIds"`
+	SiteNames      []string `json:"siteNames"`
+	SiteOnlines    []bool   `json:"siteOnlines"`
+}
+
+// SiteResourcePagination matches the paginated API envelope for site resources.
+type SiteResourcePagination struct {
+	Total    int `json:"total"`
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+}
+
+// ListSiteResourcesData is the inner `data` of GET /org/:orgId/site-resources.
+type ListSiteResourcesData struct {
+	SiteResources []SiteResource         `json:"siteResources"`
+	Pagination    SiteResourcePagination `json:"pagination"`
+}
+
 // GetResourceData is the (partial) inner `data` of GET /org/:orgId/resource/:niceId.
 // Only the fields the CLI needs are modeled; the server returns more, which
 // json.Unmarshal simply ignores.

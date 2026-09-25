@@ -308,12 +308,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		opts.MatchDomains = cfg.GetStringSlice("up.match_domains_dns")
 	}
 
-	// Same as match-domains: resolved here so it can be forwarded to the
-	// subprocess, which may not have access to the user's config.
-	if !cmd.Flags().Changed("exit-node-site-ids") && len(cfg.Up.GatewaySiteIDs) > 0 {
-		opts.GatewaySiteIDs = cfg.Up.GatewaySiteIDs
-	}
-
 	// Check if a client is already running
 	olmClient := olm.NewClient("")
 	if olmClient.IsRunning() {
@@ -425,6 +419,18 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		}
 
 		orgID = activeAccount.OrgID
+	}
+
+	// Same as match-domains: resolved here so it can be forwarded to the
+	// subprocess, which may not have access to the user's config. Verified
+	// against the server when we have a user session, so a deleted exit node
+	// isn't applied.
+	if !cmd.Flags().Changed("exit-node-site-ids") {
+		var list func(string) ([]api.SiteResource, error)
+		if credentialsFromKeyring {
+			list = apiClient.ListGatewayResources
+		}
+		opts.GatewaySiteIDs = resolveSavedExitNode(cfg.Up, orgID, list)
 	}
 
 	// Handle log file setup - if detached mode, always use log file

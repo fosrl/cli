@@ -80,9 +80,16 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			usable = append(usable, g)
 		}
 	}
+	// The saved exit node, if it was selected in this org. It identifies the
+	// active one by niceId, since resources can share sites.
+	savedNiceID := ""
+	if cfg.Up.ExitNodeNiceID != "" && (cfg.Up.ExitNodeOrgID == "" || cfg.Up.ExitNodeOrgID == orgID) {
+		savedNiceID = cfg.Up.ExitNodeNiceID
+	}
+
 	// A saved exit node can outlive the active one (e.g. its sites weren't
 	// connected on startup), so offer to clear it either way.
-	hasGateway := status.GatewayActive || len(cfg.Up.GatewaySiteIDs) > 0
+	hasGateway := status.GatewayActive || cfg.Up.ExitNodeNiceID != ""
 	if len(usable) == 0 && !hasGateway {
 		err := fmt.Errorf("no exit nodes available in this organization")
 		logger.Error("%v", err)
@@ -104,7 +111,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			return err
 		}
 	} else {
-		choice, err = selectExitNodeForm(usable, status, hasGateway)
+		choice, err = selectExitNodeForm(usable, status, hasGateway, savedNiceID)
 		if err != nil {
 			logger.Error("%v", err)
 			return err
@@ -118,7 +125,8 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 				return err
 			}
 		}
-		saveGateway(cfg, []int{})
+		cfg.ClearExitNode()
+		saveExitNode(cfg)
 		logger.Success("Exit node disabled")
 		return nil
 	}
@@ -128,23 +136,23 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 		logger.Error("Failed to select exit node: %v", err)
 		return err
 	}
-	saveGateway(cfg, selected.SiteIDs)
+	cfg.SetExitNode(orgID, selected.NiceID)
+	saveExitNode(cfg)
 
 	logger.Success("Routing all traffic through exit node: %s", selected.Name)
 	return nil
 }
 
-// saveGateway persists the exit node so the next `pangolin up` re-applies it.
+// saveExitNode persists the exit node so the next `pangolin up` re-applies it.
 // A failure is only a warning: the change is already live on the client.
-func saveGateway(cfg *config.Config, siteIDs []int) {
-	cfg.Up.GatewaySiteIDs = siteIDs
+func saveExitNode(cfg *config.Config) {
 	if err := cfg.Save(); err != nil {
 		logger.Warning("Exit node applied but could not be saved for the next start: %v", err)
 	}
 }
 
 // selectExitNodeForm returns the index of the chosen gateway, or disableChoice.
-func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse, hasGateway bool) (int, error) {
+func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse, hasGateway bool, savedNiceID string) (int, error) {
 	options := make([]huh.Option[int], 0, len(gateways)+1)
 	if hasGateway {
 		options = append(options, huh.NewOption("None (disable exit node)", disableChoice))
@@ -154,7 +162,7 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 		if len(g.SiteNames) > 0 {
 			label += " - " + strings.Join(g.SiteNames, ", ")
 		}
-		if status.GatewayActive && sameSites(g.SiteIDs, status.GatewaySiteIDs) {
+		if status.GatewayActive && isActive(g, status, savedNiceID) {
 			label += " [active]"
 		}
 		options = append(options, huh.NewOption(label, i))
@@ -183,6 +191,15 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 	}
 
 	return selected, nil
+}
+
+// isActive matches by niceId when this CLI saved the selection, since two exit
+// nodes can share sites; otherwise (selected by other means) by site IDs.
+func isActive(g api.SiteResource, status *olm.StatusResponse, savedNiceID string) bool {
+	if savedNiceID != "" {
+		return g.NiceID == savedNiceID
+	}
+	return sameSites(g.SiteIDs, status.GatewaySiteIDs)
 }
 
 func sameSites(a, b []int) bool {

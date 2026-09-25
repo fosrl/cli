@@ -52,10 +52,23 @@ type UpConfig struct {
 	// Defaults to false.
 	PreferLocalRoutes *bool `mapstructure:"prefer_local_routes" json:"prefer_local_routes,omitempty"`
 
-	// GatewaySiteIDs are the site IDs of the exit node selected with
-	// `pangolin select exit-node`. `pangolin up` re-applies them at connect time
-	// so the same exit node is used across restarts. Empty means no exit node.
-	GatewaySiteIDs []int `mapstructure:"exit_node_site_ids" json:"exit_node_site_ids,omitempty"`
+	// The exit node selected with `pangolin select exit-node`, re-applied by
+	// `pangolin up`. Only the resource is stored (niceId is unique per org);
+	// its sites are looked up from the server on every start so they can't
+	// go stale. Use SetExitNode / ClearExitNode.
+	ExitNodeNiceID string `mapstructure:"exit_node_nice_id" json:"exit_node_nice_id,omitempty"`
+	ExitNodeOrgID  string `mapstructure:"exit_node_org_id" json:"exit_node_org_id,omitempty"`
+}
+
+// SetExitNode records the selected exit node (a gateway resource).
+func (c *Config) SetExitNode(orgID, niceID string) {
+	c.Up.ExitNodeOrgID = orgID
+	c.Up.ExitNodeNiceID = niceID
+}
+
+// ClearExitNode forgets the selected exit node.
+func (c *Config) ClearExitNode() {
+	c.SetExitNode("", "")
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -367,10 +380,13 @@ func (c *Config) Save() error {
 	if c.Up.PreferLocalRoutes != nil {
 		c.v.Set("up.prefer_local_routes", *c.Up.PreferLocalRoutes)
 	}
-	// A non-nil empty slice is written as [] so a cleared exit node overrides
-	// a previously persisted one.
-	if c.Up.GatewaySiteIDs != nil {
-		c.v.Set("up.exit_node_site_ids", c.Up.GatewaySiteIDs)
+	// Written even when empty once they're in the file, so clearing the exit
+	// node overwrites the previous value.
+	if c.Up.ExitNodeNiceID != "" || c.v.IsSet("up.exit_node_nice_id") {
+		c.v.Set("up.exit_node_nice_id", c.Up.ExitNodeNiceID)
+	}
+	if c.Up.ExitNodeOrgID != "" || c.v.IsSet("up.exit_node_org_id") {
+		c.v.Set("up.exit_node_org_id", c.Up.ExitNodeOrgID)
 	}
 
 	dir, err := GetPangolinConfigDir()

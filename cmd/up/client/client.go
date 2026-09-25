@@ -196,7 +196,7 @@ logs, and removes the service again when you press Ctrl+C.`,
 	cmd.Flags().BoolVar(&opts.DisableRelay, "disable-relay", false, "Disable relay connections (default false)")
 	cmd.Flags().BoolVar(&opts.SubnetRouter, "subnet-router", false, "Enable this client to act as a subnet router: traffic forwarded from the local network is NATed to this client's own tunnel IP before going out over the tunnel. Linux only, requires CAP_NET_ADMIN. (default false)")
 	cmd.Flags().IntSliceVar(&opts.GatewaySiteIDs, "exit-node-site-ids", nil, "Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any). Requires --exit-node-resource-id")
-	cmd.Flags().IntVar(&opts.GatewaySiteResourceID, "exit-node-resource-id", 0, "ID of the gateway site resource the --exit-node-site-ids belong to, so changes to that resource are applied while connected")
+	cmd.Flags().IntVar(&opts.GatewaySiteResourceID, "exit-node-resource-id", 0, "ID of the exit node resource the --exit-node-site-ids belong to, so changes to that resource are applied while connected")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 

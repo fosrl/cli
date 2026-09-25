@@ -77,7 +77,7 @@ func printJSON(status *olm.StatusResponse) error {
 // printStatusTable prints the status information in a table format
 func printStatusTable(status *olm.StatusResponse) {
 	// Print connection status
-	headers := []string{"AGENT", "VERSION", "STATUS", "ORG", "GATEWAY"}
+	headers := []string{"AGENT", "VERSION", "STATUS", "ORG", "EXIT NODE"}
 	rows := [][]string{
 		{
 			status.Agent,
@@ -92,7 +92,7 @@ func printStatusTable(status *olm.StatusResponse) {
 	// Print peers (and the exit node, if connected) if there are any
 	if len(status.PeerStatuses) > 0 || status.ExitNode != nil {
 		fmt.Println("")
-		peerHeaders := []string{"SITE", "ENDPOINT", "STATUS", "LAST SEEN", "CONNECTION", "GATEWAY"}
+		peerHeaders := []string{"SITE", "ENDPOINT", "STATUS", "LAST SEEN", "CONNECTION", "EXIT NODE"}
 		peerRows := [][]string{}
 
 		if status.ExitNode != nil {

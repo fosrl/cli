@@ -253,7 +253,7 @@ func (c *Client) JITConnectByResourceID(resourceID string) (*JITConnectionRespon
 // Every site must already be a connected peer of the running client.
 func (c *Client) SelectGateway(siteResourceID int, siteIDs []int) (*GatewayResponse, error) {
 	if siteResourceID <= 0 {
-		return nil, fmt.Errorf("a gateway site resource ID is required")
+		return nil, fmt.Errorf("an exit node resource ID is required")
 	}
 	if len(siteIDs) == 0 {
 		return nil, fmt.Errorf("at least one site ID is required")

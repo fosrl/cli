@@ -80,13 +80,6 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			usable = append(usable, g)
 		}
 	}
-	// The saved exit node, if it was selected in this org. It identifies the
-	// active one by niceId, since resources can share sites.
-	savedNiceID := ""
-	if cfg.Up.ExitNodeNiceID != "" && (cfg.Up.ExitNodeOrgID == "" || cfg.Up.ExitNodeOrgID == orgID) {
-		savedNiceID = cfg.Up.ExitNodeNiceID
-	}
-
 	// A saved exit node can outlive the active one (e.g. its sites weren't
 	// connected on startup), so offer to clear it either way.
 	hasGateway := status.GatewayActive || cfg.Up.ExitNodeNiceID != ""
@@ -111,7 +104,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			return err
 		}
 	} else {
-		choice, err = selectExitNodeForm(usable, status, hasGateway, savedNiceID)
+		choice, err = selectExitNodeForm(usable, status, hasGateway)
 		if err != nil {
 			logger.Error("%v", err)
 			return err
@@ -132,7 +125,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 	}
 
 	selected := usable[choice]
-	if _, err := olmClient.SelectGateway(selected.SiteIDs); err != nil {
+	if _, err := olmClient.SelectGateway(selected.SiteResourceID, selected.SiteIDs); err != nil {
 		logger.Error("Failed to select exit node: %v", err)
 		return err
 	}
@@ -152,7 +145,7 @@ func saveExitNode(cfg *config.Config) {
 }
 
 // selectExitNodeForm returns the index of the chosen gateway, or disableChoice.
-func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse, hasGateway bool, savedNiceID string) (int, error) {
+func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse, hasGateway bool) (int, error) {
 	options := make([]huh.Option[int], 0, len(gateways)+1)
 	if hasGateway {
 		options = append(options, huh.NewOption("None (disable exit node)", disableChoice))
@@ -162,7 +155,7 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 		if len(g.SiteNames) > 0 {
 			label += " - " + strings.Join(g.SiteNames, ", ")
 		}
-		if status.GatewayActive && isActive(g, status, savedNiceID) {
+		if status.GatewayActive && isActive(g, status) {
 			label += " [active]"
 		}
 		options = append(options, huh.NewOption(label, i))
@@ -193,27 +186,9 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 	return selected, nil
 }
 
-// isActive matches by niceId when this CLI saved the selection, since two exit
-// nodes can share sites; otherwise (selected by other means) by site IDs.
-func isActive(g api.SiteResource, status *olm.StatusResponse, savedNiceID string) bool {
-	if savedNiceID != "" {
-		return g.NiceID == savedNiceID
-	}
-	return sameSites(g.SiteIDs, status.GatewaySiteIDs)
-}
-
-func sameSites(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	set := make(map[int]struct{}, len(a))
-	for _, id := range a {
-		set[id] = struct{}{}
-	}
-	for _, id := range b {
-		if _, ok := set[id]; !ok {
-			return false
-		}
-	}
-	return true
+// isActive matches by the resource ID olm reports it selected. Site IDs can't
+// be used: two exit nodes can share sites, and the active set changes as the
+// server adds/removes sites on the resource.
+func isActive(g api.SiteResource, status *olm.StatusResponse) bool {
+	return status.GatewaySiteResourceID != 0 && g.SiteResourceID == status.GatewaySiteResourceID
 }

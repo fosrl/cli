@@ -39,6 +39,8 @@ type StatusResponse struct {
 	ExitNode        *OLMExitNodeStatus     `json:"exitNode,omitempty"`
 	GatewayActive   bool                   `json:"gatewayActive,omitempty"`
 	GatewaySiteIDs  []int                  `json:"gatewaySiteIds,omitempty"`
+
+	GatewaySiteResourceID int `json:"gatewaySiteResourceId,omitempty"` // the gateway resource the selection belongs to
 }
 
 // OLMExitNodeStatus represents the connectivity status of the client's own exit
@@ -92,7 +94,8 @@ type JITConnectionResponse struct {
 
 // GatewayRequest represents a select-gateway request
 type GatewayRequest struct {
-	SiteIDs []int `json:"siteIds"`
+	SiteResourceID int   `json:"siteResourceId"`
+	SiteIDs        []int `json:"siteIds"`
 }
 
 // GatewayResponse represents the response from a gateway select/disable request
@@ -245,13 +248,18 @@ func (c *Client) JITConnectByResourceID(resourceID string) (*JITConnectionRespon
 }
 
 // SelectGateway routes all tunnel traffic through the given sites (full tunnel).
+// siteResourceID is the numeric ID of the gateway resource the sites belong to;
+// olm uses it to apply later server-pushed changes to that resource only.
 // Every site must already be a connected peer of the running client.
-func (c *Client) SelectGateway(siteIDs []int) (*GatewayResponse, error) {
+func (c *Client) SelectGateway(siteResourceID int, siteIDs []int) (*GatewayResponse, error) {
+	if siteResourceID <= 0 {
+		return nil, fmt.Errorf("a gateway site resource ID is required")
+	}
 	if len(siteIDs) == 0 {
 		return nil, fmt.Errorf("at least one site ID is required")
 	}
 
-	jsonData, err := json.Marshal(GatewayRequest{SiteIDs: siteIDs})
+	jsonData, err := json.Marshal(GatewayRequest{SiteResourceID: siteResourceID, SiteIDs: siteIDs})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}

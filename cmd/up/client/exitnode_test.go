@@ -16,28 +16,30 @@ func TestResolveSavedExitNode(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		up   config.UpConfig
-		org  string
-		list func(string) ([]api.SiteResource, error)
-		want []int
+		name   string
+		up     config.UpConfig
+		org    string
+		list   func(string) ([]api.SiteResource, error)
+		want   []int
+		wantID int
 	}{
-		{"nothing saved", config.UpConfig{}, "org1", lister(), nil},
+		{"nothing saved", config.UpConfig{}, "org1", lister(), nil, 0},
 		{"uses the resource's current sites", saved, "org1",
-			lister(api.SiteResource{NiceID: "gw-b", Enabled: true, SiteIDs: []int{1, 2}}, api.SiteResource{NiceID: "gw-a", Enabled: true, SiteIDs: []int{2, 3}}), []int{2, 3}},
-		{"resource deleted", saved, "org1", lister(api.SiteResource{NiceID: "gw-b", Enabled: true, SiteIDs: []int{1, 2}}), nil},
-		{"same sites but different resource is not a match", saved, "org1", lister(api.SiteResource{NiceID: "gw-other", Enabled: true, SiteIDs: []int{1, 2}}), nil},
-		{"resource disabled", saved, "org1", lister(api.SiteResource{NiceID: "gw-a", Enabled: false, SiteIDs: []int{1, 2}}), nil},
-		{"resource has no sites", saved, "org1", lister(api.SiteResource{NiceID: "gw-a", Enabled: true}), nil},
-		{"different org", saved, "org2", lister(api.SiteResource{NiceID: "gw-a", Enabled: true, SiteIDs: []int{5}}), nil},
-		{"lookup fails: connect without it", saved, "org1", func(string) ([]api.SiteResource, error) { return nil, errors.New("boom") }, nil},
-		{"no session to look it up with", saved, "org1", nil, nil},
+			lister(api.SiteResource{SiteResourceID: 11, NiceID: "gw-b", Enabled: true, SiteIDs: []int{1, 2}}, api.SiteResource{SiteResourceID: 12, NiceID: "gw-a", Enabled: true, SiteIDs: []int{2, 3}}), []int{2, 3}, 12},
+		{"resource deleted", saved, "org1", lister(api.SiteResource{NiceID: "gw-b", Enabled: true, SiteIDs: []int{1, 2}}), nil, 0},
+		{"same sites but different resource is not a match", saved, "org1", lister(api.SiteResource{NiceID: "gw-other", Enabled: true, SiteIDs: []int{1, 2}}), nil, 0},
+		{"resource disabled", saved, "org1", lister(api.SiteResource{NiceID: "gw-a", Enabled: false, SiteIDs: []int{1, 2}}), nil, 0},
+		{"resource has no sites", saved, "org1", lister(api.SiteResource{NiceID: "gw-a", Enabled: true}), nil, 0},
+		{"different org", saved, "org2", lister(api.SiteResource{NiceID: "gw-a", Enabled: true, SiteIDs: []int{5}}), nil, 0},
+		{"lookup fails: connect without it", saved, "org1", func(string) ([]api.SiteResource, error) { return nil, errors.New("boom") }, nil, 0},
+		{"no session to look it up with", saved, "org1", nil, nil, 0},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := resolveSavedExitNode(tt.up, tt.org, tt.list); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("got %v, want %v", got, tt.want)
+			gotID, got := resolveSavedExitNode(tt.up, tt.org, tt.list)
+			if !reflect.DeepEqual(got, tt.want) || gotID != tt.wantID {
+				t.Fatalf("got %d %v, want %d %v", gotID, got, tt.wantID, tt.want)
 			}
 		})
 	}

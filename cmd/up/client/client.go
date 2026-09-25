@@ -58,6 +58,8 @@ type ClientUpCmdOpts struct {
 	DisableRelay      bool
 	SubnetRouter      bool
 	GatewaySiteIDs    []int
+
+	GatewaySiteResourceID int
 }
 
 // validateDNSIP ensures the given DNS server string is a valid IP address.
@@ -193,7 +195,8 @@ logs, and removes the service again when you press Ctrl+C.`,
 	cmd.Flags().BoolVar(&opts.PreferLocalRoutes, "prefer-local-routes", false, "Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)")
 	cmd.Flags().BoolVar(&opts.DisableRelay, "disable-relay", false, "Disable relay connections (default false)")
 	cmd.Flags().BoolVar(&opts.SubnetRouter, "subnet-router", false, "Enable this client to act as a subnet router: traffic forwarded from the local network is NATed to this client's own tunnel IP before going out over the tunnel. Linux only, requires CAP_NET_ADMIN. (default false)")
-	cmd.Flags().IntSliceVar(&opts.GatewaySiteIDs, "exit-node-site-ids", nil, "Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any)")
+	cmd.Flags().IntSliceVar(&opts.GatewaySiteIDs, "exit-node-site-ids", nil, "Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any). Requires --exit-node-resource-id")
+	cmd.Flags().IntVar(&opts.GatewaySiteResourceID, "exit-node-resource-id", 0, "ID of the gateway site resource the --exit-node-site-ids belong to, so changes to that resource are applied while connected")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
@@ -430,7 +433,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if credentialsFromKeyring {
 			list = apiClient.ListGatewayResources
 		}
-		opts.GatewaySiteIDs = resolveSavedExitNode(cfg.Up, orgID, list)
+		opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(cfg.Up, orgID, list)
+	} else if len(opts.GatewaySiteIDs) > 0 && opts.GatewaySiteResourceID <= 0 {
+		err := fmt.Errorf("--exit-node-site-ids requires --exit-node-resource-id")
+		logger.Error("%v", err)
+		return err
 	}
 
 	// Handle log file setup - if detached mode, always use log file
@@ -542,6 +549,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				ids[i] = strconv.Itoa(id)
 			}
 			cmdArgs = append(cmdArgs, "--exit-node-site-ids", strings.Join(ids, ","))
+			cmdArgs = append(cmdArgs, "--exit-node-resource-id", strconv.Itoa(opts.GatewaySiteResourceID))
 		}
 
 		// Add positional args if any
@@ -771,24 +779,25 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 
 	tunnelConfig := olmpkg.TunnelConfig{
-		Endpoint:             endpoint,
-		ID:                   olmID,
-		Secret:               olmSecret,
-		OrgID:                orgID,
-		MTU:                  opts.MTU,
-		DNS:                  opts.DNS,
-		InterfaceName:        opts.InterfaceName,
-		Holepunch:            opts.Holepunch,
-		TlsClientCert:        opts.TlsClientCert,
-		PingIntervalDuration: opts.PingInterval,
-		PingTimeoutDuration:  opts.PingTimeout,
-		OverrideDNS:          opts.OverrideDNS,
-		TunnelDNS:            opts.TunnelDNS,
-		UpstreamDNS:          upstreamDNS,
-		MatchDomains:         opts.MatchDomains,
-		PreferLocalRoutes:    opts.PreferLocalRoutes,
-		DisableRelay:         opts.DisableRelay,
-		GatewaySiteIds:       opts.GatewaySiteIDs,
+		Endpoint:              endpoint,
+		ID:                    olmID,
+		Secret:                olmSecret,
+		OrgID:                 orgID,
+		MTU:                   opts.MTU,
+		DNS:                   opts.DNS,
+		InterfaceName:         opts.InterfaceName,
+		Holepunch:             opts.Holepunch,
+		TlsClientCert:         opts.TlsClientCert,
+		PingIntervalDuration:  opts.PingInterval,
+		PingTimeoutDuration:   opts.PingTimeout,
+		OverrideDNS:           opts.OverrideDNS,
+		TunnelDNS:             opts.TunnelDNS,
+		UpstreamDNS:           upstreamDNS,
+		MatchDomains:          opts.MatchDomains,
+		PreferLocalRoutes:     opts.PreferLocalRoutes,
+		DisableRelay:          opts.DisableRelay,
+		GatewaySiteIds:        opts.GatewaySiteIDs,
+		GatewaySiteResourceId: opts.GatewaySiteResourceID,
 		// SubnetRouter:         opts.SubnetRouter,
 		UserToken:          userToken,
 		InitialFingerprint: initialFingerprint,

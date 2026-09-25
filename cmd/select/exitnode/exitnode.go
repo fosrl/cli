@@ -31,7 +31,9 @@ func ExitNodeCmd() *cobra.Command {
 tunnel traffic (full tunnel) through the sites backing it.
 
 While an exit node is active, a "None" option is shown to turn it off.
-Requires a running client.`,
+
+With a running client the change takes effect immediately. Without one, the
+choice is saved and applied the next time you run 'pangolin up'.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := exitNodeMain(cmd, &opts); err != nil {
 				os.Exit(1)
@@ -45,17 +47,19 @@ Requires a running client.`,
 }
 
 func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
+	// The client doesn't have to be running: the choice is saved to the config
+	// and applied by the next `pangolin up`. When it is running it is also
+	// applied live.
 	olmClient := olm.NewClient("")
-	if !olmClient.IsRunning() {
-		err := fmt.Errorf("no client is currently running; start one with 'pangolin up'")
-		logger.Error("%v", err)
-		return err
-	}
-
-	status, err := olmClient.GetStatus()
-	if err != nil {
-		logger.Error("Failed to get client status: %v", err)
-		return err
+	running := olmClient.IsRunning()
+	status := &olm.StatusResponse{}
+	if running {
+		var err error
+		status, err = olmClient.GetStatus()
+		if err != nil {
+			logger.Error("Failed to get client status: %v", err)
+			return err
+		}
 	}
 
 	cfg := config.ConfigFromContext(cmd.Context())
@@ -79,6 +83,19 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 		if g.Enabled && len(g.SiteIDs) > 0 {
 			usable = append(usable, g)
 		}
+	}
+	// The saved exit node, if it was selected in this org.
+	savedNiceID := ""
+	if cfg.Up.ExitNodeNiceID != "" && (cfg.Up.ExitNodeOrgID == "" || cfg.Up.ExitNodeOrgID == orgID) {
+		savedNiceID = cfg.Up.ExitNodeNiceID
+	}
+	// With a running client, the active exit node is the one it reports;
+	// otherwise it is the saved one, which the next start will apply.
+	isActive := func(g api.SiteResource) bool {
+		if running {
+			return status.GatewayActive && g.SiteResourceID == status.GatewaySiteResourceID
+		}
+		return savedNiceID != "" && g.NiceID == savedNiceID
 	}
 	// A saved exit node can outlive the active one (e.g. its sites weren't
 	// connected on startup), so offer to clear it either way.
@@ -104,7 +121,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			return err
 		}
 	} else {
-		choice, err = selectExitNodeForm(usable, status, hasGateway)
+		choice, err = selectExitNodeForm(usable, isActive, hasGateway)
 		if err != nil {
 			logger.Error("%v", err)
 			return err
@@ -112,40 +129,57 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 	}
 
 	if choice == disableChoice {
-		if status.GatewayActive {
+		if running && status.GatewayActive {
 			if _, err := olmClient.DisableGateway(); err != nil {
 				logger.Error("Failed to disable exit node: %v", err)
 				return err
 			}
 		}
 		cfg.ClearExitNode()
-		saveExitNode(cfg)
+		if !saveExitNode(cfg, running) {
+			return fmt.Errorf("failed to save exit node")
+		}
 		logger.Success("Exit node disabled")
 		return nil
 	}
 
 	selected := usable[choice]
-	if _, err := olmClient.SelectGateway(selected.SiteResourceID, selected.SiteIDs); err != nil {
-		logger.Error("Failed to select exit node: %v", err)
-		return err
+	if running {
+		if _, err := olmClient.SelectGateway(selected.SiteResourceID, selected.SiteIDs); err != nil {
+			logger.Error("Failed to select exit node: %v", err)
+			return err
+		}
 	}
 	cfg.SetExitNode(orgID, selected.NiceID)
-	saveExitNode(cfg)
+	if !saveExitNode(cfg, running) {
+		return fmt.Errorf("failed to save exit node")
+	}
 
-	logger.Success("Routing all traffic through exit node: %s", selected.Name)
+	if running {
+		logger.Success("Routing all traffic through exit node: %s", selected.Name)
+	} else {
+		logger.Success("Exit node %s saved; it will be used the next time you run 'pangolin up'", selected.Name)
+	}
 	return nil
 }
 
 // saveExitNode persists the exit node so the next `pangolin up` re-applies it.
-// A failure is only a warning: the change is already live on the client.
-func saveExitNode(cfg *config.Config) {
+// With a running client the change is already live, so a save failure is only
+// a warning; without one, saving is the whole point, so it is an error.
+func saveExitNode(cfg *config.Config, alreadyApplied bool) bool {
 	if err := cfg.Save(); err != nil {
-		logger.Warning("Exit node applied but could not be saved for the next start: %v", err)
+		if alreadyApplied {
+			logger.Warning("Exit node applied but could not be saved for the next start: %v", err)
+			return true
+		}
+		logger.Error("Failed to save exit node: %v", err)
+		return false
 	}
+	return true
 }
 
 // selectExitNodeForm returns the index of the chosen gateway, or disableChoice.
-func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse, hasGateway bool) (int, error) {
+func selectExitNodeForm(gateways []api.SiteResource, isActive func(api.SiteResource) bool, hasGateway bool) (int, error) {
 	options := make([]huh.Option[int], 0, len(gateways)+1)
 	if hasGateway {
 		options = append(options, huh.NewOption("None (disable exit node)", disableChoice))
@@ -155,7 +189,7 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 		if len(g.SiteNames) > 0 {
 			label += " - " + strings.Join(g.SiteNames, ", ")
 		}
-		if status.GatewayActive && isActive(g, status) {
+		if isActive(g) {
 			label += " [active]"
 		}
 		options = append(options, huh.NewOption(label, i))
@@ -184,11 +218,4 @@ func selectExitNodeForm(gateways []api.SiteResource, status *olm.StatusResponse,
 	}
 
 	return selected, nil
-}
-
-// isActive matches by the resource ID olm reports it selected. Site IDs can't
-// be used: two exit nodes can share sites, and the active set changes as the
-// server adds/removes sites on the resource.
-func isActive(g api.SiteResource, status *olm.StatusResponse) bool {
-	return status.GatewaySiteResourceID != 0 && g.SiteResourceID == status.GatewaySiteResourceID
 }

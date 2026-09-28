@@ -35,29 +35,30 @@ const (
 )
 
 type ClientUpCmdOpts struct {
-	ID                string
-	Secret            string
-	Endpoint          string
-	OrgID             string
-	MTU               int
-	DNS               string
-	InterfaceName     string
-	LogLevel          string
-	HTTPAddr          string
-	PingInterval      time.Duration
-	PingTimeout       time.Duration
-	Holepunch         bool
-	TlsClientCert     string
-	Attached          bool
-	Silent            bool
-	OverrideDNS       bool
-	TunnelDNS         bool
-	UpstreamDNS       []string
-	MatchDomains      []string
-	PreferLocalRoutes bool
-	DisableRelay      bool
-	SubnetRouter      bool
-	GatewaySiteIDs    []int
+	ID                      string
+	Secret                  string
+	Endpoint                string
+	OrgID                   string
+	MTU                     int
+	DNS                     string
+	InterfaceName           string
+	LogLevel                string
+	HTTPAddr                string
+	PingInterval            time.Duration
+	PingTimeout             time.Duration
+	Holepunch               bool
+	TlsClientCert           string
+	Attached                bool
+	Silent                  bool
+	OverrideDNS             bool
+	TunnelDNS               bool
+	UpstreamDNS             []string
+	MatchDomains            []string
+	PreferLocalRoutes       bool
+	ExitNodeTakesPrecedence bool
+	DisableRelay            bool
+	SubnetRouter            bool
+	GatewaySiteIDs          []int
 
 	GatewaySiteResourceID int
 }
@@ -193,6 +194,7 @@ logs, and removes the service again when you press Ctrl+C.`,
 	cmd.Flags().StringSliceVar(&opts.UpstreamDNS, "upstream-dns", []string{}, "List of DNS servers to use for external DNS resolution if overriding system DNS")
 	cmd.Flags().StringSliceVar(&opts.MatchDomains, "match-domains", nil, "FQDN wildcard patterns (e.g. '*.proxy.internal') to check against local records/upstream DNS; queries for non-matching domains go directly to the system's DNS servers (default: match all domains, or the value from config if set)")
 	cmd.Flags().BoolVar(&opts.PreferLocalRoutes, "prefer-local-routes", false, "Add tunnel routes with a high metric so overlapping local/connected routes take precedence (default false)")
+	cmd.Flags().BoolVar(&opts.ExitNodeTakesPrecedence, "exit-node-takes-precedence", false, "Do not add routes or resolve aliases for individual resources, so all traffic is sent through the exit node instead of directly to resources (default false)")
 	cmd.Flags().BoolVar(&opts.DisableRelay, "disable-relay", false, "Disable relay connections (default false)")
 	cmd.Flags().BoolVar(&opts.SubnetRouter, "subnet-router", false, "Enable this client to act as a subnet router: traffic forwarded from the local network is NATed to this client's own tunnel IP before going out over the tunnel. Linux only, requires CAP_NET_ADMIN. (default false)")
 	cmd.Flags().IntSliceVar(&opts.GatewaySiteIDs, "exit-node-site-ids", nil, "Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any). Requires --exit-node-resource-id")
@@ -226,6 +228,7 @@ var olmEnvFlagOverrides = []struct {
 	{"TUNNEL_DNS", "tunnel-dns"},
 	{"DISABLE_RELAY", "disable-relay"},
 	{"PREFER_LOCAL_ROUTES", "prefer-local-routes"},
+	{"DISABLE_ROUTES_AND_ALIASES", "exit-node-takes-precedence"},
 	{"SUBNET_ROUTER", "subnet-router"},
 }
 
@@ -281,6 +284,9 @@ func applyUpDefaults(cmd *cobra.Command, opts *ClientUpCmdOpts, cfg *config.Conf
 	}
 	if !cmd.Flags().Changed("prefer-local-routes") && cfg.IsSet("up.prefer_local_routes") {
 		opts.PreferLocalRoutes = cfg.GetBool("up.prefer_local_routes")
+	}
+	if !cmd.Flags().Changed("exit-node-takes-precedence") && cfg.IsSet("up.exit_node_takes_precedence") {
+		opts.ExitNodeTakesPrecedence = cfg.GetBool("up.exit_node_takes_precedence")
 	}
 }
 
@@ -537,6 +543,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			// same reason as MatchDomains above - it may have come from config.
 			cmdArgs = append(cmdArgs, "--prefer-local-routes")
 		}
+		if opts.ExitNodeTakesPrecedence {
+			// Always forwarded when true (rather than gated on Changed) for the
+			// same reason as MatchDomains above - it may have come from config.
+			cmdArgs = append(cmdArgs, "--exit-node-takes-precedence")
+		}
 		if opts.DisableRelay {
 			cmdArgs = append(cmdArgs, "--disable-relay")
 		}
@@ -779,25 +790,26 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 
 	tunnelConfig := olmpkg.TunnelConfig{
-		Endpoint:              endpoint,
-		ID:                    olmID,
-		Secret:                olmSecret,
-		OrgID:                 orgID,
-		MTU:                   opts.MTU,
-		DNS:                   opts.DNS,
-		InterfaceName:         opts.InterfaceName,
-		Holepunch:             opts.Holepunch,
-		TlsClientCert:         opts.TlsClientCert,
-		PingIntervalDuration:  opts.PingInterval,
-		PingTimeoutDuration:   opts.PingTimeout,
-		OverrideDNS:           opts.OverrideDNS,
-		TunnelDNS:             opts.TunnelDNS,
-		UpstreamDNS:           upstreamDNS,
-		MatchDomains:          opts.MatchDomains,
-		PreferLocalRoutes:     opts.PreferLocalRoutes,
-		DisableRelay:          opts.DisableRelay,
-		GatewaySiteIds:        opts.GatewaySiteIDs,
-		GatewaySiteResourceId: opts.GatewaySiteResourceID,
+		Endpoint:                          endpoint,
+		ID:                                olmID,
+		Secret:                            olmSecret,
+		OrgID:                             orgID,
+		MTU:                               opts.MTU,
+		DNS:                               opts.DNS,
+		InterfaceName:                     opts.InterfaceName,
+		Holepunch:                         opts.Holepunch,
+		TlsClientCert:                     opts.TlsClientCert,
+		PingIntervalDuration:              opts.PingInterval,
+		PingTimeoutDuration:               opts.PingTimeout,
+		OverrideDNS:                       opts.OverrideDNS,
+		TunnelDNS:                         opts.TunnelDNS,
+		UpstreamDNS:                       upstreamDNS,
+		MatchDomains:                      opts.MatchDomains,
+		PreferLocalRoutes:                 opts.PreferLocalRoutes,
+		DisableRoutesAndAliasesOnExitNode: opts.ExitNodeTakesPrecedence,
+		DisableRelay:                      opts.DisableRelay,
+		GatewaySiteIds:                    opts.GatewaySiteIDs,
+		GatewaySiteResourceId:             opts.GatewaySiteResourceID,
 		// SubnetRouter:         opts.SubnetRouter,
 		UserToken:          userToken,
 		InitialFingerprint: initialFingerprint,

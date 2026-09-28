@@ -52,6 +52,14 @@ type UpConfig struct {
 	// Defaults to false.
 	PreferLocalRoutes *bool `mapstructure:"prefer_local_routes" json:"prefer_local_routes,omitempty"`
 
+	// ExitNodeTakesPrecedence, when enabled, stops routes from being added
+	// for individual resources and stops their aliases from being resolved,
+	// so all traffic is sent through the exit node instead of directly to
+	// resources. Used as the default for `pangolin up`'s
+	// --exit-node-takes-precedence flag when the flag isn't passed
+	// explicitly. Defaults to false.
+	ExitNodeTakesPrecedence *bool `mapstructure:"exit_node_takes_precedence" json:"exit_node_takes_precedence,omitempty"`
+
 	// The exit node selected with `pangolin select exit-node`, re-applied by
 	// `pangolin up`. Only the resource is stored (niceId is unique per org);
 	// its sites are looked up from the server on every start so they can't
@@ -87,6 +95,7 @@ var ConfigOptions = []string{
 	"up.override_dns",
 	"up.match_domains_dns",
 	"up.prefer_local_routes",
+	"up.exit_node_takes_precedence",
 	"session_cookie_name",
 }
 
@@ -274,6 +283,13 @@ func (c *Config) SetKey(key, value string) error {
 		}
 		c.Up.PreferLocalRoutes = &b
 		c.v.Set(key, b)
+	case "up.exit_node_takes_precedence":
+		b, err := parseBool(value)
+		if err != nil {
+			return err
+		}
+		c.Up.ExitNodeTakesPrecedence = &b
+		c.v.Set(key, b)
 	case "session_cookie_name":
 		c.SessionCookieName = value
 		c.v.Set(key, value)
@@ -315,6 +331,11 @@ func (c *Config) GetKey(key string) (string, error) {
 		}
 		return strings.Join(c.GetStringSlice(key), ","), nil
 	case "up.prefer_local_routes":
+		if !c.IsSet(key) {
+			return "", errConfigKeyUnset(key)
+		}
+		return fmt.Sprintf("%t", c.GetBool(key)), nil
+	case "up.exit_node_takes_precedence":
 		if !c.IsSet(key) {
 			return "", errConfigKeyUnset(key)
 		}
@@ -379,6 +400,9 @@ func (c *Config) Save() error {
 	}
 	if c.Up.PreferLocalRoutes != nil {
 		c.v.Set("up.prefer_local_routes", *c.Up.PreferLocalRoutes)
+	}
+	if c.Up.ExitNodeTakesPrecedence != nil {
+		c.v.Set("up.exit_node_takes_precedence", *c.Up.ExitNodeTakesPrecedence)
 	}
 	// Written even when empty once they're in the file, so clearing the exit
 	// node overwrites the previous value.

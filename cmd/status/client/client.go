@@ -147,7 +147,7 @@ func formatGateway(status *olm.StatusResponse) string {
 		return "Off"
 	}
 	if status.GatewaySiteResourceID != 0 {
-		return fmt.Sprintf("Active (resource %d)", status.GatewaySiteResourceID)
+		return fmt.Sprintf("Active")
 	}
 	return "Active"
 }

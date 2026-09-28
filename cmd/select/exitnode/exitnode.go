@@ -62,11 +62,16 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 		}
 	}
 
-	cfg := config.ConfigFromContext(cmd.Context())
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 
 	orgID, err := utils.ResolveOrgID(accountStore, "")
+	if err != nil {
+		logger.Error("%v", err)
+		return err
+	}
+
+	activeAccount, err := accountStore.ActiveAccount()
 	if err != nil {
 		logger.Error("%v", err)
 		return err
@@ -84,22 +89,19 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			usable = append(usable, g)
 		}
 	}
-	// The saved exit node, if it was selected in this org.
-	savedNiceID := ""
-	if cfg.Up.ExitNodeNiceID != "" && (cfg.Up.ExitNodeOrgID == "" || cfg.Up.ExitNodeOrgID == orgID) {
-		savedNiceID = cfg.Up.ExitNodeNiceID
-	}
+	// The saved exit node, scoped to the account's current org.
+	savedResourceID := activeAccount.ExitNodeResourceID
 	// With a running client, the active exit node is the one it reports;
 	// otherwise it is the saved one, which the next start will apply.
 	isActive := func(g api.SiteResource) bool {
 		if running {
 			return status.GatewayActive && g.SiteResourceID == status.GatewaySiteResourceID
 		}
-		return savedNiceID != "" && g.NiceID == savedNiceID
+		return savedResourceID != 0 && g.SiteResourceID == savedResourceID
 	}
 	// A saved exit node can outlive the active one (e.g. its sites weren't
 	// connected on startup), so offer to clear it either way.
-	hasGateway := status.GatewayActive || cfg.Up.ExitNodeNiceID != ""
+	hasGateway := status.GatewayActive || savedResourceID != 0
 	if len(usable) == 0 && !hasGateway {
 		err := fmt.Errorf("no exit nodes available in this organization")
 		logger.Error("%v", err)
@@ -135,8 +137,8 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 				return err
 			}
 		}
-		cfg.ClearExitNode()
-		if !saveExitNode(cfg, running) {
+		activeAccount.ClearExitNode()
+		if !saveExitNode(accountStore, activeAccount, running) {
 			return fmt.Errorf("failed to save exit node")
 		}
 		logger.Success("Exit node disabled")
@@ -150,8 +152,8 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			return err
 		}
 	}
-	cfg.SetExitNode(orgID, selected.NiceID)
-	if !saveExitNode(cfg, running) {
+	activeAccount.SetExitNode(selected.SiteResourceID)
+	if !saveExitNode(accountStore, activeAccount, running) {
 		return fmt.Errorf("failed to save exit node")
 	}
 
@@ -163,11 +165,16 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 	return nil
 }
 
-// saveExitNode persists the exit node so the next `pangolin up` re-applies it.
-// With a running client the change is already live, so a save failure is only
-// a warning; without one, saving is the whole point, so it is an error.
-func saveExitNode(cfg *config.Config, alreadyApplied bool) bool {
-	if err := cfg.Save(); err != nil {
+// saveExitNode persists the exit node on the account so the next `pangolin up`
+// re-applies it. With a running client the change is already live, so a save
+// failure is only a warning; without one, saving is the whole point, so it is
+// an error.
+func saveExitNode(accountStore *config.AccountStore, account *config.Account, alreadyApplied bool) bool {
+	err := accountStore.UpdateActiveAccount(account)
+	if err == nil {
+		err = accountStore.Save()
+	}
+	if err != nil {
 		if alreadyApplied {
 			logger.Warning("Exit node applied but could not be saved for the next start: %v", err)
 			return true

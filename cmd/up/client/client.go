@@ -436,10 +436,14 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// isn't applied.
 	if !cmd.Flags().Changed("exit-node-site-ids") {
 		var list func(string) ([]api.SiteResource, error)
+		savedResourceID := 0
 		if credentialsFromKeyring {
 			list = apiClient.ListGatewayResources
+			if activeAccount, err := accountStore.ActiveAccount(); err == nil {
+				savedResourceID = activeAccount.ExitNodeResourceID
+			}
 		}
-		opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(cfg.Up, orgID, list)
+		opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(savedResourceID, orgID, list)
 	} else if len(opts.GatewaySiteIDs) > 0 && opts.GatewaySiteResourceID <= 0 {
 		err := fmt.Errorf("--exit-node-site-ids requires --exit-node-resource-id")
 		logger.Error("%v", err)

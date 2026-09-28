@@ -59,24 +59,6 @@ type UpConfig struct {
 	// --exit-node-takes-precedence flag when the flag isn't passed
 	// explicitly. Defaults to false.
 	ExitNodeTakesPrecedence *bool `mapstructure:"exit_node_takes_precedence" json:"exit_node_takes_precedence,omitempty"`
-
-	// The exit node selected with `pangolin select exit-node`, re-applied by
-	// `pangolin up`. Only the resource is stored (niceId is unique per org);
-	// its sites are looked up from the server on every start so they can't
-	// go stale. Use SetExitNode / ClearExitNode.
-	ExitNodeNiceID string `mapstructure:"exit_node_nice_id" json:"exit_node_nice_id,omitempty"`
-	ExitNodeOrgID  string `mapstructure:"exit_node_org_id" json:"exit_node_org_id,omitempty"`
-}
-
-// SetExitNode records the selected exit node (a gateway resource).
-func (c *Config) SetExitNode(orgID, niceID string) {
-	c.Up.ExitNodeOrgID = orgID
-	c.Up.ExitNodeNiceID = niceID
-}
-
-// ClearExitNode forgets the selected exit node.
-func (c *Config) ClearExitNode() {
-	c.SetExitNode("", "")
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -403,14 +385,6 @@ func (c *Config) Save() error {
 	}
 	if c.Up.ExitNodeTakesPrecedence != nil {
 		c.v.Set("up.exit_node_takes_precedence", *c.Up.ExitNodeTakesPrecedence)
-	}
-	// Written even when empty once they're in the file, so clearing the exit
-	// node overwrites the previous value.
-	if c.Up.ExitNodeNiceID != "" || c.v.IsSet("up.exit_node_nice_id") {
-		c.v.Set("up.exit_node_nice_id", c.Up.ExitNodeNiceID)
-	}
-	if c.Up.ExitNodeOrgID != "" || c.v.IsSet("up.exit_node_org_id") {
-		c.v.Set("up.exit_node_org_id", c.Up.ExitNodeOrgID)
 	}
 
 	dir, err := GetPangolinConfigDir()

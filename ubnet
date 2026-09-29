@@ -1,0 +1,3343 @@
+[33mcommit 408b53e38ddc91d08edae234120af77918ab4d98[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m, [m[1;31morigin/dev[m[33m)[m
+Author: Owen <owen@txv.io>
+Date:   Mon Sep 28 17:33:37 2026 -0400
+
+    Remove resource from status
+
+[33mcommit c06a554cb42974a8a3129d65b1540fd266ba8e68[m
+Author: Owen <owen@txv.io>
+Date:   Mon Sep 28 16:46:48 2026 -0400
+
+    Move exit node save to the account storage
+
+[33mcommit 570e9cc93b9f108268e2d1682123545e79570ac2[m
+Author: Owen <owen@txv.io>
+Date:   Mon Sep 28 14:41:24 2026 -0400
+
+    Support the exit node takes precedence option
+
+[33mcommit 281ac1db9b086102870844dabbf7bc4cf38c9d26[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 25 17:19:19 2026 -0400
+
+    Gateway -> exit node
+
+[33mcommit f4bc3cd18dc95159da5a8454f26503e92edd06e7[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 25 15:11:40 2026 -0400
+
+    Support selecting exit node prior to starting
+
+[33mcommit cf1615326fab828f7105ed9dc49442649e0e6ed1[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 25 12:10:50 2026 -0400
+
+    Show gateway status
+
+[33mcommit b1dbaf5d34a7fd1ee7a285065a34c9b62869891f[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 25 11:51:25 2026 -0400
+
+    Use the resource id for the gateway
+
+[33mcommit 2a3c161d93319b729983053212a289f17d40a2e7[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 25 11:18:29 2026 -0400
+
+    Handle exit nodes with nice id
+
+[33mcommit 3a68064c3e19f884c856b778ccf150e62a9a487d[m
+Author: Owen <owen@txv.io>
+Date:   Thu Sep 24 17:28:30 2026 -0400
+
+    Make the none preselected
+
+[33mcommit 1f3239ea00e1eba17c594fa33b7d99fc94da972d[m
+Author: Owen <owen@txv.io>
+Date:   Thu Sep 24 17:25:27 2026 -0400
+
+    Implement exit node selection
+
+[33mcommit 072e360ae8ce675bef3871ca328f3cdda3ea06da[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 17:03:16 2026 -0400
+
+    Update docs
+
+[33mcommit b1ae3cc2922039f7d2cb7502a71187d426572306[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 15:26:39 2026 -0400
+
+    Update version
+
+[33mcommit 57863c8c5e69cd332ee5c073aa59bc6cdbbf5806[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:42:17 2026 -0400
+
+    Update flake for go
+
+[33mcommit 07e3e03f009f6472fb5c3c20c5853efee4a584c5[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:35:34 2026 -0400
+
+    Update go in test
+
+[33mcommit 72e706d6ef4fdf113b8db875000b46a694ffed07[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:33:38 2026 -0400
+
+    Remove subnet router
+
+[33mcommit 545c8ca598cab9c29030461ea14e2c437b69f195[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:28:20 2026 -0400
+
+    Update to go 26
+
+[33mcommit 3619cab2543a8e57240dbf6b5e64f922af24cdb0[m
+Merge: f79982e 68787e5
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:25:39 2026 -0400
+
+    Merge branch 'main' into dev
+
+[33mcommit f79982e220421f9dfcea1b01eaa4e9b2b8f5f74d[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:23:03 2026 -0400
+
+    Bump flake version
+    
+    Closes #129
+
+[33mcommit 68787e5b920f9d58a07b43aa21fad785b3d090d3[m
+Merge: d7e0e85 ca71535
+Author: Owen Schwartz <owen@txv.io>
+Date:   Tue Sep 15 11:22:14 2026 -0400
+
+    Merge pull request #140 from fosrl/dependabot/go_modules/go-dependencies-71b28d097c
+    
+    chore(deps): bump the go-dependencies group across 1 directory with 10 updates
+
+[33mcommit d7e0e85ef50267dc1a07385ed44c288605b48fdf[m
+Merge: 24126b4 8e58a76
+Author: Owen Schwartz <owen@txv.io>
+Date:   Tue Sep 15 11:21:34 2026 -0400
+
+    Merge pull request #141 from fosrl/dependabot/github_actions/github-actions-dependencies-75d2e5028a
+    
+    chore(deps): bump the github-actions-dependencies group across 1 directory with 8 updates
+
+[33mcommit 330d2b6da3ff5dc621ec85fee8fbe648188e1ad4[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 15 11:20:41 2026 -0400
+
+    Update newt
+
+[33mcommit 6cd76fb91ce6bf582008685a13aab62810cf41a3[m
+Author: Owen <owen@txv.io>
+Date:   Mon Sep 14 15:12:40 2026 -0400
+
+    Write site config to the same location
+
+[33mcommit 6f4c09cb90085967dc38ff70468b897d2f2ae93a[m
+Author: Owen <owen@txv.io>
+Date:   Mon Sep 14 12:21:38 2026 -0400
+
+    Include correct version information and auto update
+
+[33mcommit 965b820aafd1dbd17cf6539a9123c8e44aace2ce[m
+Author: Owen <owen@txv.io>
+Date:   Mon Sep 14 12:21:28 2026 -0400
+
+    Use existing account if already logged in
+
+[33mcommit ecd32d7091ae588b56c5015700f87738580c7e09[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 11 13:55:56 2026 -0400
+
+    Add AI disclosure
+
+[33mcommit 8e58a761a35fec50e7510bf4f2c4fb5a343d5cc6[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Sep 9 20:34:55 2026 +0000
+
+    chore(deps): bump the github-actions-dependencies group across 1 directory with 8 updates
+    
+    Bumps the github-actions-dependencies group with 8 updates in the / directory:
+    
+    | Package | From | To |
+    | --- | --- | --- |
+    | [aws-actions/configure-aws-credentials](https://github.com/aws-actions/configure-aws-credentials) | `6.2.3` | `6.2.4` |
+    | [docker/login-action](https://github.com/docker/login-action) | `4.4.0` | `4.6.0` |
+    | [docker/setup-buildx-action](https://github.com/docker/setup-buildx-action) | `4.2.0` | `4.3.0` |
+    | [docker/setup-qemu-action](https://github.com/docker/setup-qemu-action) | `4.2.0` | `4.3.0` |
+    | [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) | `4.1.1` | `4.2.2` |
+    | [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action) | `c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8` | `d2a0b60797ff03db6132bd4e2b293f9b37081297` |
+    | [softprops/action-gh-release](https://github.com/softprops/action-gh-release) | `3.0.2` | `3.0.3` |
+    | [actions/stale](https://github.com/actions/stale) | `10.4.0` | `11.0.0` |
+    
+    
+    
+    Updates `aws-actions/configure-aws-credentials` from 6.2.3 to 6.2.4
+    - [Release notes](https://github.com/aws-actions/configure-aws-credentials/releases)
+    - [Changelog](https://github.com/aws-actions/configure-aws-credentials/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/aws-actions/configure-aws-credentials/compare/e6de054238d6b7531b4efff3b6587d9aade6a06c...cbe3b392738ccf3f987d68400dafcf4b0624a56c)
+    
+    Updates `docker/login-action` from 4.4.0 to 4.6.0
+    - [Release notes](https://github.com/docker/login-action/releases)
+    - [Commits](https://github.com/docker/login-action/compare/af1e73f918a031802d376d3c8bbc3fe56130a9b0...dbcb813823bdd20940b903addbd779551569679f)
+    
+    Updates `docker/setup-buildx-action` from 4.2.0 to 4.3.0
+    - [Release notes](https://github.com/docker/setup-buildx-action/releases)
+    - [Commits](https://github.com/docker/setup-buildx-action/compare/bb05f3f5519dd87d3ba754cc423b652a5edd6d2c...37fe631027851001ddb9b187196cc803df7f5f0e)
+    
+    Updates `docker/setup-qemu-action` from 4.2.0 to 4.3.0
+    - [Release notes](https://github.com/docker/setup-qemu-action/releases)
+    - [Commits](https://github.com/docker/setup-qemu-action/compare/96fe6ef7f33517b61c61be40b68a1882f3264fb8...1f40c72289eff860ee54a304f1438e3cff362e0a)
+    
+    Updates `actions/attest-build-provenance` from 4.1.1 to 4.2.2
+    - [Release notes](https://github.com/actions/attest-build-provenance/releases)
+    - [Changelog](https://github.com/actions/attest-build-provenance/blob/main/RELEASE.md)
+    - [Commits](https://github.com/actions/attest-build-provenance/compare/0f67c3f4856b2e3261c31976d6725780e5e4c373...4d101475d8b20a2381f78447822ac1eab6504dd8)
+    
+    Updates `aquasecurity/trivy-action` from c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8 to d2a0b60797ff03db6132bd4e2b293f9b37081297
+    - [Release notes](https://github.com/aquasecurity/trivy-action/releases)
+    - [Commits](https://github.com/aquasecurity/trivy-action/compare/c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8...d2a0b60797ff03db6132bd4e2b293f9b37081297)
+    
+    Updates `softprops/action-gh-release` from 3.0.2 to 3.0.3
+    - [Release notes](https://github.com/softprops/action-gh-release/releases)
+    - [Changelog](https://github.com/softprops/action-gh-release/blob/master/CHANGELOG.md)
+    - [Commits](https://github.com/softprops/action-gh-release/compare/3d0d9888cb7fd7b750713d6e236d1fcb99157228...efb35369e0ad2afab669f228072c1b0d510eae64)
+    
+    Updates `actions/stale` from 10.4.0 to 11.0.0
+    - [Release notes](https://github.com/actions/stale/releases)
+    - [Changelog](https://github.com/actions/stale/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/actions/stale/compare/1e223db275d687790206a7acac4d1a11bd6fe629...4391f3da665fdf50b6810c1a66712fb9ba21aa93)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: aws-actions/configure-aws-credentials
+      dependency-version: 6.2.4
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/login-action
+      dependency-version: 4.6.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/setup-buildx-action
+      dependency-version: 4.3.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/setup-qemu-action
+      dependency-version: 4.3.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: actions/attest-build-provenance
+      dependency-version: 4.2.2
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: aquasecurity/trivy-action
+      dependency-version: d2a0b60797ff03db6132bd4e2b293f9b37081297
+      dependency-type: direct:production
+      dependency-group: github-actions-dependencies
+    - dependency-name: softprops/action-gh-release
+      dependency-version: 3.0.3
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: github-actions-dependencies
+    - dependency-name: actions/stale
+      dependency-version: 11.0.0
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: github-actions-dependencies
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit fefb20d4996699faa0a9921ce425d9e86697d083[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 8 17:40:09 2026 -0400
+
+    Support env vars identical to olm
+
+[33mcommit 2b74f13ff2426e297ea13590e7a15d23cbf86978[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 8 14:43:40 2026 -0400
+
+    Process status output and handle proper log storage location
+
+[33mcommit a8be3ded1d301f1311bddf640d7b7b2e4a417ce2[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 8 14:17:36 2026 -0400
+
+    Allow windows machine clients in the cli
+
+[33mcommit 51ae2fcb5a58557771dc57da414abe41b5f1e10c[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 8 14:00:15 2026 -0400
+
+    Remove olm branding
+
+[33mcommit 24d1e7c2f3e5036d41dc4c2e56574c9906e7b813[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 8 12:20:26 2026 -0400
+
+    Clear logs when uninstalling the service
+
+[33mcommit 770a504043f6d0a8d27fbc232ad7dd716d71bdd4[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 8 11:48:26 2026 -0400
+
+    Add service control for windows, macos
+
+[33mcommit ca7153531df429bda69528657b61f08b349dac5b[m
+Author: dependabot[bot] <dependabot[bot]@users.noreply.github.com>
+Date:   Fri Sep 4 20:34:35 2026 +0000
+
+    chore(nix): fix hash for updated go dependencies
+
+[33mcommit 7d880fd190cd9eb5aeff461ad3ba4a472e419765[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Fri Sep 4 20:33:39 2026 +0000
+
+    chore(deps): bump the go-dependencies group across 1 directory with 10 updates
+    
+    Bumps the go-dependencies group with 8 updates in the / directory:
+    
+    | Package | From | To |
+    | --- | --- | --- |
+    | [github.com/Masterminds/semver/v3](https://github.com/Masterminds/semver) | `3.4.0` | `3.5.0` |
+    | [github.com/charmbracelet/bubbles](https://github.com/charmbracelet/bubbles) | `0.21.1-0.20250623103423-23b8fd6302d7` | `1.0.0` |
+    | [github.com/charmbracelet/huh](https://github.com/charmbracelet/huh) | `0.8.0` | `1.0.0` |
+    | [github.com/fosrl/olm](https://github.com/fosrl/olm) | `1.9.0` | `1.9.1` |
+    | [github.com/mattn/go-isatty](https://github.com/mattn/go-isatty) | `0.0.20` | `0.0.24` |
+    | [github.com/pelletier/go-toml/v2](https://github.com/pelletier/go-toml) | `2.2.4` | `2.4.3` |
+    | [go.yaml.in/yaml/v3](https://github.com/yaml/go-yaml) | `3.0.4` | `3.0.5` |
+    | [golang.org/x/crypto](https://github.com/golang/crypto) | `0.53.0` | `0.55.0` |
+    
+    
+    
+    Updates `github.com/Masterminds/semver/v3` from 3.4.0 to 3.5.0
+    - [Release notes](https://github.com/Masterminds/semver/releases)
+    - [Changelog](https://github.com/Masterminds/semver/blob/master/CHANGELOG.md)
+    - [Commits](https://github.com/Masterminds/semver/compare/v3.4.0...v3.5.0)
+    
+    Updates `github.com/charmbracelet/bubbles` from 0.21.1-0.20250623103423-23b8fd6302d7 to 1.0.0
+    - [Release notes](https://github.com/charmbracelet/bubbles/releases)
+    - [Commits](https://github.com/charmbracelet/bubbles/commits/v1.0.0)
+    
+    Updates `github.com/charmbracelet/huh` from 0.8.0 to 1.0.0
+    - [Release notes](https://github.com/charmbracelet/huh/releases)
+    - [Commits](https://github.com/charmbracelet/huh/compare/v0.8.0...v1.0.0)
+    
+    Updates `github.com/fosrl/olm` from 1.9.0 to 1.9.1
+    - [Release notes](https://github.com/fosrl/olm/releases)
+    - [Commits](https://github.com/fosrl/olm/compare/1.9.0...1.9.1)
+    
+    Updates `github.com/mattn/go-isatty` from 0.0.20 to 0.0.24
+    - [Commits](https://github.com/mattn/go-isatty/compare/v0.0.20...v0.0.24)
+    
+    Updates `github.com/pelletier/go-toml/v2` from 2.2.4 to 2.4.3
+    - [Release notes](https://github.com/pelletier/go-toml/releases)
+    - [Commits](https://github.com/pelletier/go-toml/compare/v2.2.4...v2.4.3)
+    
+    Updates `go.yaml.in/yaml/v3` from 3.0.4 to 3.0.5
+    - [Commits](https://github.com/yaml/go-yaml/compare/v3.0.4...v3.0.5)
+    
+    Updates `golang.org/x/crypto` from 0.53.0 to 0.55.0
+    - [Commits](https://github.com/golang/crypto/compare/v0.53.0...v0.55.0)
+    
+    Updates `golang.org/x/sys` from 0.46.0 to 0.47.0
+    - [Commits](https://github.com/golang/sys/compare/v0.46.0...v0.47.0)
+    
+    Updates `golang.org/x/term` from 0.44.0 to 0.45.0
+    - [Commits](https://github.com/golang/term/compare/v0.44.0...v0.45.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: github.com/Masterminds/semver/v3
+      dependency-version: 3.5.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: go-dependencies
+    - dependency-name: github.com/charmbracelet/bubbles
+      dependency-version: 1.0.0
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: go-dependencies
+    - dependency-name: github.com/charmbracelet/huh
+      dependency-version: 1.0.0
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: go-dependencies
+    - dependency-name: github.com/fosrl/olm
+      dependency-version: 1.9.1
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: go-dependencies
+    - dependency-name: github.com/mattn/go-isatty
+      dependency-version: 0.0.24
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: go-dependencies
+    - dependency-name: github.com/pelletier/go-toml/v2
+      dependency-version: 2.4.3
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: go-dependencies
+    - dependency-name: go.yaml.in/yaml/v3
+      dependency-version: 3.0.5
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: go-dependencies
+    - dependency-name: golang.org/x/crypto
+      dependency-version: 0.55.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: go-dependencies
+    - dependency-name: golang.org/x/sys
+      dependency-version: 0.47.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: go-dependencies
+    - dependency-name: golang.org/x/term
+      dependency-version: 0.45.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: go-dependencies
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit a479fd6bc77064813517087cdc4dd04417456424[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 4 13:04:32 2026 -0400
+
+    Move service controls to service subcommand instead of under up
+
+[33mcommit 79eaada67a4f55a1271575441d1f8f44c93bf36a[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 4 12:48:59 2026 -0400
+
+    Support installing systemd service
+
+[33mcommit e8063204e40b991f546f5fb1301c1149bc796d01[m
+Author: Owen <owen@txv.io>
+Date:   Fri Sep 4 10:35:28 2026 -0400
+
+    Use the actual newt version
+
+[33mcommit 34e6e19871ecd773f218616cf3b32bb05baf07ce[m
+Author: Owen <owen@txv.io>
+Date:   Thu Sep 3 17:22:10 2026 -0400
+
+    Support site entrypoint
+
+[33mcommit 31db0241a9915ca4baff5a765f9527bc449ae97c[m
+Author: Owen <owen@txv.io>
+Date:   Thu Sep 3 16:57:46 2026 -0400
+
+    Include site up command to run newt
+
+[33mcommit 24126b4cee3c3b4f87c8323f4f975d23401d0033[m
+Merge: dd61170 5e7e964
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Thu Sep 3 16:51:24 2026 -0400
+
+    Merge pull request #139 from fosrl/dev
+    
+    update readme
+
+[33mcommit 5e7e964ba0d89900b71f5d5fb1cba0fe5560e93a[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Sep 3 16:50:28 2026 -0400
+
+    update readme
+
+[33mcommit 676fe2db36fe1ae7be0081733819d1dc391ee248[m
+Author: Owen <owen@txv.io>
+Date:   Tue Sep 1 13:37:52 2026 -0400
+
+    Require sudo
+
+[33mcommit a2e021c779c31d90c85d898fce9e32c6b6d45a7e[m
+Author: Owen <owen@txv.io>
+Date:   Fri Aug 21 10:15:25 2026 -0400
+
+    Update version
+
+[33mcommit dd61170ef18ee8b76286f18416ce6124a86e4098[m[33m ([m[1;33mtag: [m[1;33m0.16.0[m[33m)[m
+Merge: fa90273 7282f9c
+Author: Owen Schwartz <owen@txv.io>
+Date:   Fri Aug 21 09:20:27 2026 -0400
+
+    Merge pull request #133 from fosrl/dev
+    
+    0.16.0
+
+[33mcommit 7282f9cf1597d452ff7b2e066d8414c1ef67441f[m
+Author: Owen <owen@txv.io>
+Date:   Fri Aug 21 09:18:38 2026 -0400
+
+    Update flake
+
+[33mcommit 425f036e5f827d51c96fe67d6aed7ad2daf7d16a[m
+Author: Owen <owen@txv.io>
+Date:   Thu Aug 20 11:38:30 2026 -0400
+
+    Properly handled private resources keys for each client type
+
+[33mcommit 7a3623881b7a3db2b41be1d2a62dcef1e6b92bd2[m
+Merge: 2f0ce67 2962fee
+Author: Owen <owen@txv.io>
+Date:   Thu Aug 20 10:30:13 2026 -0400
+
+    Merge branch 'aig' into dev
+
+[33mcommit 2962fee974d60db106e2b6fd4ae66b4eee3d2c8f[m
+Author: Owen <owen@txv.io>
+Date:   Thu Aug 20 10:22:25 2026 -0400
+
+    Update olm and newt
+
+[33mcommit da509ac641668bbece1ee23489ad96197b7e2744[m
+Author: Owen <owen@txv.io>
+Date:   Thu Aug 20 10:21:35 2026 -0400
+
+    Add gemini
+
+[33mcommit 11948fd7f95d1be5583bd952f9a0ec37054433be[m
+Author: Owen <owen@txv.io>
+Date:   Wed Aug 19 15:37:48 2026 -0400
+
+    Prompt for opencode providers
+
+[33mcommit ebdfcbaebb328e0314659338856a76f0aa4afb53[m
+Author: Owen <owen@txv.io>
+Date:   Wed Aug 19 15:07:03 2026 -0400
+
+    Add a reset command to restore the config without the changes
+
+[33mcommit f537e1c69baafef9717052f7c02d66b316c48fc6[m
+Author: Owen <owen@txv.io>
+Date:   Tue Aug 18 17:11:41 2026 -0400
+
+    Make sure config is cross platform
+
+[33mcommit b8ada5547f8ebc42c58f4687654d6519039d2d47[m
+Author: Owen <owen@txv.io>
+Date:   Tue Aug 18 16:58:44 2026 -0400
+
+    Implement commands to write config for ai clients
+
+[33mcommit 8d7f1b37538989bbcb39a3043ab42dc1f42e5606[m
+Author: Owen <owen@txv.io>
+Date:   Fri Aug 14 14:05:04 2026 -0400
+
+    Support applying blueprints with glob pattern *
+
+[33mcommit d0421836f2271fcbdcac0a674aa16de652bd3d0f[m
+Author: Owen <owen@txv.io>
+Date:   Wed Aug 5 10:33:54 2026 -0400
+
+    show the exit node status
+
+[33mcommit 0cbd465f8da13f94873da7ae908c92427549d4ae[m
+Author: Owen <owen@txv.io>
+Date:   Tue Aug 4 15:46:06 2026 -0400
+
+    add uapi to the tunnel config
+
+[33mcommit 2f0ce67fac668a94677f36c7600398a18260dfc2[m
+Author: Owen <owen@txv.io>
+Date:   Mon Aug 3 17:33:16 2026 -0400
+
+    Bump version
+
+[33mcommit fa90273f53fe77d1cbd950cb0bcba69dd4318faf[m[33m ([m[1;33mtag: [m[1;33m0.15.1[m[33m)[m
+Merge: 6234839 4728563
+Author: Owen Schwartz <owen@txv.io>
+Date:   Mon Aug 3 16:31:35 2026 -0400
+
+    Merge pull request #105 from fosrl/dependabot/github_actions/github-actions-dependencies-afb104c379
+    
+    chore(deps): bump the github-actions-dependencies group across 1 directory with 11 updates
+
+[33mcommit 6234839b22c4a7f90d272b8b0ae7c2008965b064[m
+Merge: 61a4bd7 b2400ba
+Author: Owen Schwartz <owen@txv.io>
+Date:   Mon Aug 3 16:30:20 2026 -0400
+
+    Merge pull request #123 from fosrl/dev
+    
+    0.15.1
+
+[33mcommit b2400ba3013407ef7b1523d9e05fa195f6d0b975[m
+Author: Owen <owen@txv.io>
+Date:   Mon Aug 3 15:57:37 2026 -0400
+
+    Update vendor hash
+
+[33mcommit 0c8d8026c4dab99c11fa49fca8d2f7280e39455f[m
+Author: Owen <owen@txv.io>
+Date:   Mon Aug 3 15:54:27 2026 -0400
+
+    Update olm
+     #
+
+[33mcommit 3e923b90edb72900cfdd5a190b421979096dacd1[m
+Author: Owen <owen@txv.io>
+Date:   Mon Aug 3 15:26:27 2026 -0400
+
+    Support -i?
+
+[33mcommit 71cd7543a1dadc80ff13c7bcd96083c7aea0b656[m
+Author: Owen <owen@txv.io>
+Date:   Fri Jul 31 15:16:58 2026 -0400
+
+    Allow the cookie name to be configurable
+
+[33mcommit 4728563837f7e9e36c216f9df1524c3be8afa9d5[m[33m ([m[1;31morigin/dependabot/github_actions/github-actions-dependencies-afb104c379[m[33m)[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jul 22 20:34:09 2026 +0000
+
+    chore(deps): bump the github-actions-dependencies group across 1 directory with 11 updates
+    
+    Bumps the github-actions-dependencies group with 11 updates in the / directory:
+    
+    | Package | From | To |
+    | --- | --- | --- |
+    | [aws-actions/configure-aws-credentials](https://github.com/aws-actions/configure-aws-credentials) | `6.0.0` | `6.2.3` |
+    | [actions/checkout](https://github.com/actions/checkout) | `6` | `7` |
+    | [docker/login-action](https://github.com/docker/login-action) | `4.2.0` | `4.4.0` |
+    | [docker/setup-buildx-action](https://github.com/docker/setup-buildx-action) | `3.12.0` | `4.2.0` |
+    | [docker/build-push-action](https://github.com/docker/build-push-action) | `6.19.2` | `7.3.0` |
+    | [docker/setup-qemu-action](https://github.com/docker/setup-qemu-action) | `3.7.0` | `4.2.0` |
+    | [actions/setup-go](https://github.com/actions/setup-go) | `6.1.0` | `7.0.0` |
+    | [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) | `4.1.0` | `4.1.1` |
+    | [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action) | `bfa4b33a029b9aa80ddb784b45574c30e072c59e` | `c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8` |
+    | [softprops/action-gh-release](https://github.com/softprops/action-gh-release) | `3.0.0` | `3.0.2` |
+    | [actions/stale](https://github.com/actions/stale) | `10.1.1` | `10.4.0` |
+    
+    
+    
+    Updates `aws-actions/configure-aws-credentials` from 6.0.0 to 6.2.3
+    - [Release notes](https://github.com/aws-actions/configure-aws-credentials/releases)
+    - [Changelog](https://github.com/aws-actions/configure-aws-credentials/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/aws-actions/configure-aws-credentials/compare/8df5847569e6427dd6c4fb1cf565c83acfa8afa7...e6de054238d6b7531b4efff3b6587d9aade6a06c)
+    
+    Updates `actions/checkout` from 6 to 7
+    - [Release notes](https://github.com/actions/checkout/releases)
+    - [Commits](https://github.com/actions/checkout/compare/v6...v7)
+    
+    Updates `docker/login-action` from 4.2.0 to 4.4.0
+    - [Release notes](https://github.com/docker/login-action/releases)
+    - [Commits](https://github.com/docker/login-action/compare/650006c6eb7dba73a995cc03b0b2d7f5ca915bee...af1e73f918a031802d376d3c8bbc3fe56130a9b0)
+    
+    Updates `docker/setup-buildx-action` from 3.12.0 to 4.2.0
+    - [Release notes](https://github.com/docker/setup-buildx-action/releases)
+    - [Commits](https://github.com/docker/setup-buildx-action/compare/8d2750c68a42422c14e847fe6c8ac0403b4cbd6f...bb05f3f5519dd87d3ba754cc423b652a5edd6d2c)
+    
+    Updates `docker/build-push-action` from 6.19.2 to 7.3.0
+    - [Release notes](https://github.com/docker/build-push-action/releases)
+    - [Commits](https://github.com/docker/build-push-action/compare/10e90e3645eae34f1e60eeb005ba3a3d33f178e8...53b7df96c91f9c12dcc8a07bcb9ccacbed38856a)
+    
+    Updates `docker/setup-qemu-action` from 3.7.0 to 4.2.0
+    - [Release notes](https://github.com/docker/setup-qemu-action/releases)
+    - [Commits](https://github.com/docker/setup-qemu-action/compare/c7c53464625b32c7a7e944ae62b3e17d2b600130...96fe6ef7f33517b61c61be40b68a1882f3264fb8)
+    
+    Updates `actions/setup-go` from 6.1.0 to 7.0.0
+    - [Release notes](https://github.com/actions/setup-go/releases)
+    - [Commits](https://github.com/actions/setup-go/compare/v6.1.0...b7ad1dad31e06c5925ef5d2fc7ad053ef454303e)
+    
+    Updates `actions/attest-build-provenance` from 4.1.0 to 4.1.1
+    - [Release notes](https://github.com/actions/attest-build-provenance/releases)
+    - [Changelog](https://github.com/actions/attest-build-provenance/blob/main/RELEASE.md)
+    - [Commits](https://github.com/actions/attest-build-provenance/compare/a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32...0f67c3f4856b2e3261c31976d6725780e5e4c373)
+    
+    Updates `aquasecurity/trivy-action` from bfa4b33a029b9aa80ddb784b45574c30e072c59e to c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8
+    - [Release notes](https://github.com/aquasecurity/trivy-action/releases)
+    - [Commits](https://github.com/aquasecurity/trivy-action/compare/bfa4b33a029b9aa80ddb784b45574c30e072c59e...c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8)
+    
+    Updates `softprops/action-gh-release` from 3.0.0 to 3.0.2
+    - [Release notes](https://github.com/softprops/action-gh-release/releases)
+    - [Changelog](https://github.com/softprops/action-gh-release/blob/master/CHANGELOG.md)
+    - [Commits](https://github.com/softprops/action-gh-release/compare/b4309332981a82ec1c5618f44dd2e27cc8bfbfda...3d0d9888cb7fd7b750713d6e236d1fcb99157228)
+    
+    Updates `actions/stale` from 10.1.1 to 10.4.0
+    - [Release notes](https://github.com/actions/stale/releases)
+    - [Changelog](https://github.com/actions/stale/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/actions/stale/compare/997185467fa4f803885201cee163a9f38240193d...1e223db275d687790206a7acac4d1a11bd6fe629)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/attest-build-provenance
+      dependency-version: 4.1.1
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: github-actions-dependencies
+    - dependency-name: actions/checkout
+      dependency-version: '7'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: github-actions-dependencies
+    - dependency-name: actions/setup-go
+      dependency-version: 6.5.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: actions/stale
+      dependency-version: 10.3.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: aquasecurity/trivy-action
+      dependency-version: c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8
+      dependency-type: direct:production
+      dependency-group: github-actions-dependencies
+    - dependency-name: aws-actions/configure-aws-credentials
+      dependency-version: 6.2.2
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/build-push-action
+      dependency-version: 7.3.0
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/login-action
+      dependency-version: 4.4.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/setup-buildx-action
+      dependency-version: 4.2.0
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: github-actions-dependencies
+    - dependency-name: docker/setup-qemu-action
+      dependency-version: 4.2.0
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+      dependency-group: github-actions-dependencies
+    - dependency-name: softprops/action-gh-release
+      dependency-version: 3.0.1
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: github-actions-dependencies
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 61a4bd7f38da315fb3614ffd983f94fe0c66bdc8[m
+Merge: 824ca1f 89b4a4b
+Author: Owen Schwartz <owen@pangolin.net>
+Date:   Mon Jul 20 11:53:12 2026 -0400
+
+    Merge pull request #115 from fosrl/dev
+    
+    Add new cli args
+
+[33mcommit 89b4a4bd7d6496b3b08096cf2a704d38855e843f[m
+Author: Owen <owen@txv.io>
+Date:   Mon Jul 20 11:52:49 2026 -0400
+
+    Add new cli args
+
+[33mcommit 824ca1f14d1ffd4fecefb599b85f1130e5d7b45e[m
+Merge: 91aed8f 5a7237a
+Author: Owen Schwartz <owen@pangolin.net>
+Date:   Sun Jul 19 14:52:23 2026 -0400
+
+    Merge pull request #114 from fosrl/dev
+    
+    Update version
+
+[33mcommit 5a7237a53993ab6eda6fb39d1b53c2819b9283f2[m
+Author: Owen <owen@txv.io>
+Date:   Sun Jul 19 14:51:51 2026 -0400
+
+    Update version
+
+[33mcommit 91aed8f6aef125aa7e20d259c94167cd92d2ebd9[m[33m ([m[1;33mtag: [m[1;33m0.15.0[m[33m)[m
+Merge: 6d2e563 7c481c6
+Author: Owen Schwartz <owen@txv.io>
+Date:   Sun Jul 19 14:39:36 2026 -0400
+
+    Merge pull request #113 from fosrl/dev
+    
+    0.15.0
+
+[33mcommit 7c481c65c913290f8fb6a980a4249955731b9e1a[m
+Author: Owen <owen@txv.io>
+Date:   Sun Jul 19 14:37:13 2026 -0400
+
+    Update go mod and flake and add script
+
+[33mcommit d082617ada25a35dd51043205b39243294140e5f[m
+Author: Owen <owen@txv.io>
+Date:   Sat Jul 18 17:38:33 2026 -0400
+
+    add prefer local routes config
+
+[33mcommit 906fca6d2ba01c8a6e3d9450760f841cda7eb57f[m
+Author: Owen <owen@txv.io>
+Date:   Fri Jul 17 17:17:04 2026 -0400
+
+    Rename to match_domains_dns
+
+[33mcommit 0f5968c5338fd7f4ed5a8db981172f646bd0b55c[m
+Author: Owen <owen@txv.io>
+Date:   Fri Jul 17 16:41:57 2026 -0400
+
+    Properly allow setting match domains
+
+[33mcommit b05d9bae63c58571fe69ee389a676fe73889506f[m
+Author: Owen <owen@txv.io>
+Date:   Fri Jul 17 13:58:24 2026 -0400
+
+    Reflect local status in the status command
+
+[33mcommit 1ac23ad48f76a7cfe0dc4824778c9fd52f9c0e1f[m
+Author: Owen <owen@txv.io>
+Date:   Fri Jul 17 13:54:01 2026 -0400
+
+    Fix matched domains not compiling
+
+[33mcommit 79b531a3d0bd53b838b37515c10a3bf2b098a47b[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jul 15 16:41:34 2026 -0400
+
+    Add match domains to config
+
+[33mcommit 6d2e563ca6d4e72417b341ba5caaa090834a95a1[m[33m ([m[1;33mtag: [m[1;33m0.14.0[m[33m)[m
+Merge: 5ca974c 2f97dd0
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Jul 15 16:29:55 2026 -0400
+
+    Merge pull request #110 from fosrl/dev
+    
+    0.14.0
+
+[33mcommit 2f97dd064f6c2c9ec7cc3214ca2414f31c48b77c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Jul 15 15:47:29 2026 -0400
+
+    add config show command and update docs
+
+[33mcommit 558ff0d3674ae941f45857273871195b4f8c723e[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jul 10 18:05:04 2026 -0400
+
+    only list approved alises
+
+[33mcommit 956bc08896cc845f561e8eacfaa2082f9b1f40c0[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jul 10 16:01:45 2026 -0400
+
+    add config options to up
+
+[33mcommit 5ca974ca6dfb9fd529d6bf740bf31c6033542a84[m[33m ([m[1;33mtag: [m[1;33m0.13.0[m[33m)[m
+Merge: 8c1021f 172911d
+Author: Owen Schwartz <owen@txv.io>
+Date:   Wed Jul 8 10:08:03 2026 -0400
+
+    Merge pull request #106 from fosrl/dev
+    
+    1.13.0
+
+[33mcommit 172911d7f845143f0eddde4271aea28a7e370aef[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jul 8 10:05:24 2026 -0400
+
+    Update flake
+
+[33mcommit f38b8ff6817a7d55e1c38d26e5716697a8cf826a[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jul 8 09:46:46 2026 -0400
+
+    Update olm and newt
+
+[33mcommit d47575108ec29466ba52e2219b52bb27c1fcb602[m
+Author: Owen <owen@txv.io>
+Date:   Tue Jul 7 17:56:34 2026 -0400
+
+    Update docs
+
+[33mcommit fea1230e95850441cee9f3ad74a11dfad66c283b[m
+Author: Owen <owen@txv.io>
+Date:   Tue Jul 7 11:08:50 2026 -0400
+
+    Remove the default dns for upstream and netstack
+
+[33mcommit 8c1021f7eceab18b54f5ef5d1bb16bae753e2670[m
+Merge: 927532c 8df17a7
+Author: Owen Schwartz <owen@txv.io>
+Date:   Tue Jul 7 15:00:35 2026 -0400
+
+    Merge pull request #85 from fosrl/chore/dependabot-single-pr-groups
+    
+    chore(dependabot): group dependency updates into single PRs per ecosystem
+
+[33mcommit 927532c79e3210427a9b4eb1b0934903c09768c0[m[33m ([m[1;33mtag: [m[1;33m0.12.0[m[33m)[m
+Merge: 5c57163 fbdac30
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Jul 1 20:47:45 2026 -0400
+
+    Merge pull request #102 from fosrl/dev
+    
+    update docs
+
+[33mcommit fbdac30019726907dc81762f2c1f38460b3938b5[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Jul 1 20:47:19 2026 -0400
+
+    update docs
+
+[33mcommit 5c5716369d6f4a9f16156dfb48618180340cc6ab[m
+Merge: 7b911a4 3a4b71a
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Jul 1 20:47:01 2026 -0400
+
+    Merge pull request #101 from fosrl/dev
+    
+    support labels in list alises
+
+[33mcommit 3a4b71a3580688e7db68ca6fa7624fd60197a5e2[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Jul 1 16:17:40 2026 -0400
+
+    support labels in list alises
+
+[33mcommit 7b911a44496e036f80ccdcac982f411449e76a28[m[33m ([m[1;33mtag: [m[1;33m0.11.0[m[33m)[m
+Merge: 55be9ff 9bb77ba
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Fri Jun 26 18:09:21 2026 -0400
+
+    Merge pull request #100 from fosrl/dev
+    
+    update docs
+
+[33mcommit 9bb77bad9e281f614616d88f756b1e827e3ad442[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jun 26 18:08:49 2026 -0400
+
+    disable docs action
+
+[33mcommit cb61d118d05a84deadfa242b1c9d7f01476cb90c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jun 26 18:08:17 2026 -0400
+
+    update docs
+
+[33mcommit 55be9ff48407e0a56d49368e78d31565547e36f9[m
+Merge: 8baf493 f8f042e
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Fri Jun 26 17:59:10 2026 -0400
+
+    Merge pull request #99 from fosrl/dev
+    
+    0.11.0
+
+[33mcommit f8f042e4aaff0b47c5e1832df78521a0fd8acbeb[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jun 26 17:26:41 2026 -0400
+
+    add window companion mode support
+
+[33mcommit 8baf493206f780d6708b3cb1cc9562bf6f9d82d1[m[33m ([m[1;33mtag: [m[1;33m0.10.2[m[33m)[m
+Merge: b42ee2f 10530d7
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 25 08:10:33 2026 -0700
+
+    Merge pull request #96 from fosrl/dev
+    
+    Fix windows update to use the api
+
+[33mcommit 10530d7e0ffcc1bf1d72a639962621bc004b579e[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 25 11:10:06 2026 -0400
+
+    Fix windows update to use the api
+
+[33mcommit b42ee2ff732f837f0467eec11e54d75c7513735e[m[33m ([m[1;33mtag: [m[1;33m1.10.2[m[33m)[m
+Merge: 3548f84 ec6b021
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 25 07:50:36 2026 -0700
+
+    Merge pull request #95 from fosrl/dev
+    
+    0.10.2
+
+[33mcommit ec6b021fce21799b787cf8090ec119039ade4dcd[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 25 10:49:33 2026 -0400
+
+    Update flake
+
+[33mcommit 09f8c01072298a9d6ee841d21ddbe858de724128[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 25 10:29:25 2026 -0400
+
+    Use the api for version checking; no gh rate limit
+    
+    Make debug work and check api for version
+
+[33mcommit afcbaeaede460529af3637a94e68df0276485282[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 25 10:18:53 2026 -0400
+
+    Update olm and newt
+
+[33mcommit ecaba475dc24a80869422416f45e104980380517[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Jun 24 16:31:43 2026 -0400
+
+    improve error message responses
+
+[33mcommit 3548f843a2fbac0b1659267be6bfdfb8e1ad9b98[m[33m ([m[1;33mtag: [m[1;33m0.10.1[m[33m)[m
+Merge: c1b5b11 8872706
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 11 15:06:49 2026 -0700
+
+    Merge pull request #94 from fosrl/dev
+    
+    Remove cert validation check
+
+[33mcommit 887270696695752b4355435e15cecc9e7b146398[m
+Merge: 404f1bf c1b5b11
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 11 12:22:34 2026 -0700
+
+    Merge branch 'main' into dev
+
+[33mcommit 404f1bfb5f8deaa717406cb3c901e2104f6dc82b[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 11 11:25:38 2026 -0700
+
+    Remove cert validation check
+
+[33mcommit c1b5b1164a4096843d2cdb90c22b7db5a7f4e975[m
+Merge: 485ffd7 8d9c986
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Jun 10 16:00:05 2026 -0700
+
+    Merge pull request #87 from fosrl/chore/bot-regenerate-cli-docs
+    
+    chore: regenerate CLI documentation
+
+[33mcommit 8d9c986c8de1c26515b3a5667f758a66f5b92a27[m[33m ([m[1;31morigin/chore/bot-regenerate-cli-docs[m[33m)[m
+Author: oschwartz10612 <4999704+oschwartz10612@users.noreply.github.com>
+Date:   Wed Jun 10 18:38:55 2026 +0000
+
+    chore: regenerate CLI documentation
+
+[33mcommit 485ffd7eb3c8930849715a64df40cafecd64c8ce[m[33m ([m[1;33mtag: [m[1;33m0.10.0[m[33m)[m
+Merge: 26ed4be 9bccb68
+Author: Owen Schwartz <owen@txv.io>
+Date:   Wed Jun 10 11:38:18 2026 -0700
+
+    Merge pull request #86 from fosrl/dev
+    
+    0.10.0
+
+[33mcommit 9bccb68febfe0372584ad965cc97b6ee7269975e[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jun 10 11:34:41 2026 -0700
+
+    Update flake
+
+[33mcommit 756b73cbeb8f45a3634d65cac714d8ba9a4d61d3[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jun 10 11:33:10 2026 -0700
+
+    Update nix
+
+[33mcommit 62677e9da65921d2cccc67a67a1902cf0a329d9d[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jun 10 11:21:44 2026 -0700
+
+    Bump olm
+
+[33mcommit d583e023b5ac2f73fc7018db049b0154eaa67d8c[m
+Merge: bd88e4f bc40199
+Author: Owen <owen@txv.io>
+Date:   Wed Jun 10 11:03:22 2026 -0700
+
+    Merge branch 'dns' into dev
+
+[33mcommit bd88e4f554f24cbf9ad3beec53729cbbb0c48735[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jun 10 10:41:20 2026 -0700
+
+    Fix scp -r flag
+
+[33mcommit bc401991edff1a3ebbb59055eb4e899172d0351e[m
+Author: Owen <owen@txv.io>
+Date:   Tue Jun 9 20:51:15 2026 -0700
+
+    Add watchdog command and reset command
+
+[33mcommit 6c4b62642bd27af101baa93807f2a6c2899a0dc9[m
+Author: Owen <owen@txv.io>
+Date:   Mon Jun 8 21:26:15 2026 -0700
+
+    Adjust exec args
+
+[33mcommit cf6fb93921b07e7076c85e85f3e53e62852811fa[m
+Merge: 3a20145 26ed4be
+Author: Owen <owen@txv.io>
+Date:   Sun Jun 7 12:11:05 2026 -0700
+
+    Merge branch 'main' into dev
+
+[33mcommit 8df17a76b87c4f8620aad83869fe5769449e7bbf[m[33m ([m[1;31morigin/chore/dependabot-single-pr-groups[m[33m)[m
+Author: Marc Schäfer <git@marcschaeferger.de>
+Date:   Sun Jun 7 11:15:14 2026 +0200
+
+    chore(dependabot): group dependency updates into single PRs per ecosystem
+
+[33mcommit 3a2014585b551fb283d08b01b311fd3423089cc3[m
+Author: Owen <owen@txv.io>
+Date:   Fri Jun 5 13:56:14 2026 -0700
+
+    Filter the options for the ssh command if native
+
+[33mcommit 26ed4be0e13de906fc8591dd86a02bd6187f8d00[m
+Merge: b88f104 0137b14
+Author: Owen Schwartz <owen@txv.io>
+Date:   Fri Jun 5 11:18:09 2026 -0700
+
+    Merge pull request #81 from fosrl/chore/bot-regenerate-cli-docs
+    
+    chore: regenerate CLI documentation
+
+[33mcommit d7c0e14cd53dc27809fa80f52d80c793ccfffb02[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 4 14:55:09 2026 -0700
+
+    Allow ctrl-c to exit the connecting spinner
+
+[33mcommit 0137b14884bdace3cbe63da3d9a1eef0cd1aff36[m
+Author: oschwartz10612 <4999704+oschwartz10612@users.noreply.github.com>
+Date:   Thu Jun 4 19:11:20 2026 +0000
+
+    chore: regenerate CLI documentation
+
+[33mcommit b88f10451ad1a786138d8c1e8af736b392faa7c2[m[33m ([m[1;33mtag: [m[1;33m0.9.0[m[33m)[m
+Merge: 817148d d199a78
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:11:06 2026 -0700
+
+    Merge pull request #80 from fosrl/dev
+    
+    0.9.0
+
+[33mcommit d199a788d552bea2aa3c9508e83f319d56be10c4[m
+Merge: d7c1526 817148d
+Author: Owen <owen@txv.io>
+Date:   Thu Jun 4 12:07:06 2026 -0700
+
+    Merge branch 'main' into dev
+
+[33mcommit 817148dd651e6991d9034538b333f3abee0cd82f[m
+Merge: 51273d7 a1c21c6
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:06:55 2026 -0700
+
+    Merge pull request #48 from fosrl/dependabot/github_actions/sigstore/cosign-installer-4.1.0
+    
+    chore(deps): bump sigstore/cosign-installer from 4.0.0 to 4.1.2
+
+[33mcommit a1c21c697be533415548f87332108a260e23fe42[m[33m ([m[1;31morigin/dependabot/github_actions/sigstore/cosign-installer-4.1.0[m[33m)[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:05:29 2026 +0000
+
+    chore(deps): bump sigstore/cosign-installer from 4.0.0 to 4.1.2
+    
+    Bumps [sigstore/cosign-installer](https://github.com/sigstore/cosign-installer) from 4.0.0 to 4.1.2.
+    - [Release notes](https://github.com/sigstore/cosign-installer/releases)
+    - [Commits](https://github.com/sigstore/cosign-installer/compare/faadad0cce49287aee09b3a48701e75088a2c6ad...6f9f17788090df1f26f669e9d70d6ae9567deba6)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: sigstore/cosign-installer
+      dependency-version: 4.1.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 51273d7ad4d6a798aa98f0da0472b6b6a2d873ff[m
+Merge: 02f2eae 4986d2b
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:04:22 2026 -0700
+
+    Merge pull request #29 from fosrl/dependabot/github_actions/actions/attest-build-provenance-3.2.0
+    
+    chore(deps): bump actions/attest-build-provenance from 3.2.0 to 4.1.0
+
+[33mcommit 02f2eaee1cf07dff934f60648dc0f118029d44b8[m
+Merge: a2abbed bd26695
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:04:12 2026 -0700
+
+    Merge pull request #31 from fosrl/dependabot/github_actions/aquasecurity/trivy-action-0.34.0
+    
+    chore(deps): bump aquasecurity/trivy-action from 97e0b3872f55f89b95b2f65b3dbab56962816478 to bfa4b33a029b9aa80ddb784b45574c30e072c59e
+
+[33mcommit a2abbed59e80dfa1db2109fe0d97e0a3b5a80f58[m
+Merge: 2394a69 98b7dd1
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:04:09 2026 -0700
+
+    Merge pull request #32 from fosrl/dependabot/github_actions/docker/login-action-3.7.0
+    
+    chore(deps): bump docker/login-action from 3.7.0 to 4.2.0
+
+[33mcommit 2394a695f25334bda852f7148affbfce537321d1[m
+Merge: 36ed73b f2245fe
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:03:47 2026 -0700
+
+    Merge pull request #33 from fosrl/dependabot/github_actions/softprops/action-gh-release-2.5.0
+    
+    chore(deps): bump softprops/action-gh-release from 2.4.2 to 3.0.0
+
+[33mcommit 4986d2b390bb6edca14961b1aafc502f44b0cca7[m
+Author: dependabot[bot] <dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:03:33 2026 +0000
+
+    chore(nix): fix hash for updated go dependencies
+
+[33mcommit 98b7dd14d379208d88f0da8d0fc7eeedeec237ed[m
+Author: dependabot[bot] <dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:03:14 2026 +0000
+
+    chore(nix): fix hash for updated go dependencies
+
+[33mcommit bd26695d34a7739b0957bff385fd48660ac920a0[m
+Author: dependabot[bot] <dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:03:10 2026 +0000
+
+    chore(nix): fix hash for updated go dependencies
+
+[33mcommit f2245fee161cbdac650f8c505ab88778b17073e6[m
+Author: dependabot[bot] <dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:03:05 2026 +0000
+
+    chore(nix): fix hash for updated go dependencies
+
+[33mcommit 20ebe6940b9e7fca8c7eb56ddb72ed5057db6e91[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:02:25 2026 +0000
+
+    chore(deps): bump actions/attest-build-provenance from 3.2.0 to 4.1.0
+    
+    Bumps [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) from 3.2.0 to 4.1.0.
+    - [Release notes](https://github.com/actions/attest-build-provenance/releases)
+    - [Changelog](https://github.com/actions/attest-build-provenance/blob/main/RELEASE.md)
+    - [Commits](https://github.com/actions/attest-build-provenance/compare/96278af6caaf10aea03fd8d33a09a777ca52d62f...a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/attest-build-provenance
+      dependency-version: 3.2.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 3dc28eab01a7a5b52b8bb065d17f024437126835[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:02:14 2026 +0000
+
+    chore(deps): bump docker/login-action from 3.7.0 to 4.2.0
+    
+    Bumps [docker/login-action](https://github.com/docker/login-action) from 3.7.0 to 4.2.0.
+    - [Release notes](https://github.com/docker/login-action/releases)
+    - [Commits](https://github.com/docker/login-action/compare/c94ce9fb468520275223c153574b00df6fe4bcc9...650006c6eb7dba73a995cc03b0b2d7f5ca915bee)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: docker/login-action
+      dependency-version: 3.7.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 7bc735e095600e25111b013db38118d457d10cea[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:01:58 2026 +0000
+
+    chore(deps): bump aquasecurity/trivy-action
+    
+    Bumps [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action) from 97e0b3872f55f89b95b2f65b3dbab56962816478 to bfa4b33a029b9aa80ddb784b45574c30e072c59e.
+    - [Release notes](https://github.com/aquasecurity/trivy-action/releases)
+    - [Commits](https://github.com/aquasecurity/trivy-action/compare/97e0b3872f55f89b95b2f65b3dbab56962816478...bfa4b33a029b9aa80ddb784b45574c30e072c59e)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: aquasecurity/trivy-action
+      dependency-version: 0.34.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 26d77dbcfc67e977ec9ca39b89bbe3d92c9b3645[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jun 4 19:01:58 2026 +0000
+
+    chore(deps): bump softprops/action-gh-release from 2.4.2 to 3.0.0
+    
+    Bumps [softprops/action-gh-release](https://github.com/softprops/action-gh-release) from 2.4.2 to 3.0.0.
+    - [Release notes](https://github.com/softprops/action-gh-release/releases)
+    - [Changelog](https://github.com/softprops/action-gh-release/blob/master/CHANGELOG.md)
+    - [Commits](https://github.com/softprops/action-gh-release/compare/5be0e66d93ac7ed76da52eca8bb058f665c3a5fe...b4309332981a82ec1c5618f44dd2e27cc8bfbfda)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: softprops/action-gh-release
+      dependency-version: 2.5.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 36ed73bbc162e93400359e51e3282b66645d519f[m
+Merge: 0d92418 eca7fa8
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Jun 4 12:00:26 2026 -0700
+
+    Merge pull request #68 from fosrl/dependabot/go_modules/dminor-updates-0e33d7484c
+    
+    Bump the dminor-updates group across 1 directory with 3 updates
+
+[33mcommit d7c15268e47c385f9fedd1698385530d4d2f4269[m
+Author: Owen <owen@txv.io>
+Date:   Mon Jun 1 11:32:12 2026 -0700
+
+    Add scp
+
+[33mcommit ee7cea56ed2f82ba521620b1fc8798dfbc7cac63[m
+Author: Owen <owen@txv.io>
+Date:   Sun May 31 20:59:34 2026 -0700
+
+    Cert auth working with push mode native
+
+[33mcommit 0d924187ec21ba4f73b5a9a10ccc47b70309982b[m
+Merge: 229f295 23c61c8
+Author: Owen Schwartz <owen@txv.io>
+Date:   Wed May 20 15:33:32 2026 -0700
+
+    Merge pull request #76 from fosrl/dev
+    
+    Fix unsupported env context usage in a job if
+
+[33mcommit 23c61c80a6dca34fb71b8370f7d4106c4fe59d90[m
+Author: Owen <owen@txv.io>
+Date:   Wed May 20 15:33:03 2026 -0700
+
+    Fix unsupported env context usage in a job if
+
+[33mcommit 229f295805a86cebe626321d2ce1572cc76c8fc4[m[33m ([m[1;33mtag: [m[1;33m0.8.3[m[33m)[m
+Merge: 768f5b0 e3d9d3b
+Author: Owen Schwartz <owen@txv.io>
+Date:   Wed May 20 15:28:58 2026 -0700
+
+    Merge pull request #75 from fosrl/dev
+    
+    Better feedback when connecting with jit
+
+[33mcommit e3d9d3b9e967ffa62c4296b45926018c9e12f688[m
+Author: Owen <owen@txv.io>
+Date:   Wed May 20 15:06:45 2026 -0700
+
+    Add better feedback when doing jit
+
+[33mcommit 3a30c98a336c7b554bc89269e71d480d1e6f6842[m
+Author: Owen <owen@txv.io>
+Date:   Wed May 20 15:06:34 2026 -0700
+
+    Support both the cli docker hub repos
+
+[33mcommit 768f5b0822a5ea866c68806bb61c6638a2381017[m[33m ([m[1;33mtag: [m[1;33m0.8.2[m[33m)[m
+Merge: 6e635d1 37e6869
+Author: Owen Schwartz <owen@txv.io>
+Date:   Wed May 13 15:21:18 2026 -0700
+
+    Merge pull request #73 from fosrl/dev
+    
+    Update olm
+
+[33mcommit 37e686980b8357eec237710402a2a5d505fc5f9e[m
+Author: Owen <owen@txv.io>
+Date:   Wed May 13 15:20:30 2026 -0700
+
+    Update olm
+
+[33mcommit 8f168b856a1e2eb11d4589e3b48d702cca4eb654[m
+Author: Owen <owen@txv.io>
+Date:   Wed May 13 15:11:47 2026 -0700
+
+    Adjust log message
+
+[33mcommit 6e635d195056d8c5b570721877abafffab041016[m[33m ([m[1;33mtag: [m[1;33m0.8.1[m[33m)[m
+Merge: 5afbd94 c4c6002
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Fri May 8 16:58:39 2026 -0700
+
+    Merge pull request #72 from fosrl/dev
+    
+    Dev
+
+[33mcommit c4c60024b9339e9039c34c6626403fe72c021511[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri May 8 16:54:37 2026 -0700
+
+    bump olm
+
+[33mcommit 017092f4e0c5598a10fa6400613eab89f257f295[m
+Merge: d6a999a 5afbd94
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue May 5 14:15:05 2026 -0700
+
+    Merge branch 'main' into dev
+
+[33mcommit d6a999aee89ed3737ef33d77c32cb3775443e248[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue May 5 14:14:49 2026 -0700
+
+    improve no up client message on ssh
+
+[33mcommit eca7fa88d4f5a881ee48406d846f160ab0d6b57e[m[33m ([m[1;31morigin/dependabot/go_modules/dminor-updates-0e33d7484c[m[33m)[m
+Author: dependabot[bot] <dependabot[bot]@users.noreply.github.com>
+Date:   Tue Apr 28 04:24:00 2026 +0000
+
+    chore(nix): fix hash for updated go dependencies
+
+[33mcommit 0944fc385bb60172540899f862cedc885f15502f[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Tue Apr 28 04:23:01 2026 +0000
+
+    Bump the dminor-updates group across 1 directory with 3 updates
+    
+    Bumps the dminor-updates group with 1 update in the / directory: [golang.org/x/crypto](https://github.com/golang/crypto).
+    
+    
+    Updates `golang.org/x/crypto` from 0.49.0 to 0.50.0
+    - [Commits](https://github.com/golang/crypto/compare/v0.49.0...v0.50.0)
+    
+    Updates `golang.org/x/sys` from 0.42.0 to 0.43.0
+    - [Commits](https://github.com/golang/sys/compare/v0.42.0...v0.43.0)
+    
+    Updates `golang.org/x/term` from 0.41.0 to 0.42.0
+    - [Commits](https://github.com/golang/term/compare/v0.41.0...v0.42.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: golang.org/x/crypto
+      dependency-version: 0.50.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: dminor-updates
+    - dependency-name: golang.org/x/sys
+      dependency-version: 0.43.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: dminor-updates
+    - dependency-name: golang.org/x/term
+      dependency-version: 0.42.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+      dependency-group: dminor-updates
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 5afbd94e2ddc1e707baa1a9c2425a8a53d197171[m[33m ([m[1;33mtag: [m[1;33m0.8.0[m[33m)[m
+Merge: e3914b7 7392569
+Author: Owen Schwartz <owen@txv.io>
+Date:   Mon Apr 27 21:21:42 2026 -0700
+
+    Merge pull request #67 from fosrl/dev
+    
+    1.8.0
+
+[33mcommit 7392569a58cb1a0c45f49602ee0e98f2f6410622[m
+Author: Owen <owen@txv.io>
+Date:   Mon Apr 27 20:16:43 2026 -0700
+
+    Update olm, newt
+
+[33mcommit 135260ea5f8b3f06aebd8bcb6e9ff11a11f6ad4c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:41:51 2026 -0700
+
+    dont run docs workflow on bot pr
+
+[33mcommit e3914b7ce615e4176a3e30f2ae447e63d631fdd6[m
+Merge: 5adc480 05368bc
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:39:51 2026 -0700
+
+    Merge pull request #66 from fosrl/chore/bot-regenerate-cli-docs
+    
+    chore: regenerate CLI documentation
+
+[33mcommit 05368bc45a7d4c30ff5f526a15dc1b5ed49537d6[m
+Author: miloschwartz <6850869+miloschwartz@users.noreply.github.com>
+Date:   Mon Apr 27 18:37:54 2026 +0000
+
+    chore: regenerate CLI documentation
+
+[33mcommit 5adc480762dbcb2f173d40b91679e10e325ae6ac[m
+Merge: 4f3e44d 449a6c9
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:37:38 2026 -0700
+
+    Merge pull request #65 from fosrl/dev
+    
+    remove cobra footer
+
+[33mcommit 449a6c90b4674b969320ded6bde2a66e1a6786e4[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:37:05 2026 -0700
+
+    remove cobra footer
+
+[33mcommit 4f3e44d6851841b455645c83019135a32419f01b[m
+Merge: b597565 9a1b012
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:31:17 2026 -0700
+
+    Merge pull request #64 from fosrl/chore/bot-regenerate-cli-docs
+    
+    chore: regenerate CLI documentation
+
+[33mcommit 9a1b012e7a2e5c1eea8250a1ecd0a216bf14c74a[m
+Author: miloschwartz <6850869+miloschwartz@users.noreply.github.com>
+Date:   Mon Apr 27 18:27:00 2026 +0000
+
+    chore: regenerate CLI documentation
+
+[33mcommit b59756577f29a80e6e4904e99fd611ce260db926[m
+Merge: 81c1df8 f675894
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:26:19 2026 -0700
+
+    Merge pull request #63 from fosrl/dev
+    
+    open pr instead of commit in update docs workflow
+
+[33mcommit f67589406359f6245d63fd6fd4903d8e86be9be5[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:25:38 2026 -0700
+
+    open pr instead of commit in update docs workflow
+
+[33mcommit 81c1df8ad2d273819420399e26b66f9e04fd3d2c[m
+Merge: f58533a 972d897
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:22:56 2026 -0700
+
+    Merge pull request #62 from fosrl/dev
+    
+    add auto gen docs action workflow
+
+[33mcommit 972d8975eab16fe408900f58436f2c15244424f9[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 27 11:22:21 2026 -0700
+
+    add auto gen docs action workflow
+
+[33mcommit f58533a090e7ad931cde9d53a9b5672422ffba62[m[33m ([m[1;33mtag: [m[1;33m0.7.0[m[33m)[m
+Merge: 8a2b53e 6dbf513
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Sun Apr 26 21:06:35 2026 -0700
+
+    Merge pull request #61 from fosrl/dev
+    
+    Dev
+
+[33mcommit 6dbf513cd73c69c47c0788fe53d3340f81cc42cf[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Apr 26 20:59:10 2026 -0700
+
+    add confirmation dialog pre update
+
+[33mcommit dc7bc4e7dd1f6c78a06bff28005a810784df9441[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Apr 26 18:11:51 2026 -0700
+
+    support update windows cli
+
+[33mcommit 158d1d2f95c233b5b8318c07376ca590fa459678[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Apr 26 17:44:14 2026 -0700
+
+    add wix installer and icon
+
+[33mcommit 8c5001efd503e120d3d017c1221529eb3c053cf8[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Apr 24 15:41:14 2026 -0700
+
+    support full openssh flag passthrough for ssh
+
+[33mcommit 8a2b53ed784601d2eb383ab7a51f6de22fc48f82[m[33m ([m[1;33mtag: [m[1;33m0.6.2[m[33m)[m
+Merge: fca7be8 073bb73
+Author: Owen Schwartz <owen@txv.io>
+Date:   Fri Apr 24 13:46:06 2026 -0700
+
+    Merge pull request #58 from fosrl/dev
+    
+    Update newt
+
+[33mcommit 073bb73e53fb254af85863b59470685e085ecae7[m
+Author: Owen <owen@txv.io>
+Date:   Fri Apr 24 13:45:32 2026 -0700
+
+    Update newt
+
+[33mcommit fca7be8492cf0f3dd115b3d53b490e877b69353b[m[33m ([m[1;33mtag: [m[1;33m0.6.1[m[33m)[m
+Merge: d9dad3b 8d363bf
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Apr 23 17:10:45 2026 -0700
+
+    Merge pull request #57 from fosrl/dev
+    
+    0.6.1
+
+[33mcommit 8d363bf32450cff10508b68462a3e0544b0e6e68[m
+Merge: 2155b57 d9dad3b
+Author: Owen <owen@txv.io>
+Date:   Thu Apr 23 17:09:52 2026 -0700
+
+    Merge branch 'main' into dev
+
+[33mcommit 2155b57ea386e0b7c62365b2bb161d2c31eba69e[m
+Merge: b21fa57 9dc88f7
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Apr 23 17:05:46 2026 -0700
+
+    Merge pull request #56 from LaurenceJJones/feat/blueprint-stdin
+    
+    enhance(blueprint): Accept input from stdin
+
+[33mcommit 9dc88f7be48be85bf451904937a3e7d105a272f7[m
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Thu Apr 23 12:29:09 2026 +0100
+
+    enhance(blueprint): Accept input from stdin
+    
+    Allow users to pipe output of commands to stdin for the blueprint file, this is useful when you want to send a blueprint file but dont want to leave any artifacts on disk
+
+[33mcommit b21fa573282149f6b0a694047df95a88e4c5e600[m
+Merge: 6f6206c 7de8d5b
+Author: Owen Schwartz <owen@txv.io>
+Date:   Tue Apr 21 13:48:20 2026 -0700
+
+    Merge pull request #54 from LaurenceJJones/feat/apply-blueprint-api-key
+    
+    enhance(blueprint): support integration api usage
+
+[33mcommit 7de8d5bf1fb801f50ac3794e7eae7dc423fea376[m
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Tue Apr 21 20:20:45 2026 +0100
+
+    revert generated docs
+
+[33mcommit adfc5518f78d755b2ee3f8a65f979e6fca20355c[m
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Tue Apr 21 20:17:09 2026 +0100
+
+    Enforce that if intent is to use the integration api all flags must be provided
+
+[33mcommit b9ef2f8c5cc8c0a1ac1ddf4430e08f187a6319f9[m
+Merge: 054906b 6f6206c
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Tue Apr 21 12:25:25 2026 +0100
+
+    Merge upstream/dev into feat/apply-blueprint-api-key
+    
+    Resolve blueprint.go: keep API key/session client flow and upstream
+    interpolateBlueprint ({{ env.VAR }}) before apply.
+    
+    Made-with: Cursor
+
+[33mcommit 054906b882461739a26190ca7c7dc61c47c630eb[m
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Tue Apr 21 12:21:44 2026 +0100
+
+    enhance(blueprint): support integration api usage
+
+[33mcommit 6f6206c400bcac8433f76377775bade729426778[m
+Author: Owen <owen@txv.io>
+Date:   Mon Apr 13 20:22:09 2026 -0700
+
+    Update script to look for old bins
+
+[33mcommit d9dad3b658a590b61fefdadbd95b8dabdce18b64[m[33m ([m[1;33mtag: [m[1;33m0.6.0[m[33m)[m
+Merge: c5f727d 068443d
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Apr 13 16:56:08 2026 -0700
+
+    Merge pull request #52 from fosrl/dev
+    
+    0.6.0
+
+[33mcommit 068443dade48a89c5fbcd925db9899915b2216de[m
+Author: Owen <owen@txv.io>
+Date:   Mon Apr 13 15:13:43 2026 -0700
+
+    Fix update by passing bin location
+
+[33mcommit f916dbf6d63f5a325867650fe5e28bd11f4df288[m
+Author: Owen <owen@txv.io>
+Date:   Sat Apr 11 21:13:15 2026 -0700
+
+    Bring {{env.ENV_VAR}} support to cli blueprints
+
+[33mcommit 3bceb31a8d8de905362d5948d9deb9fface8d063[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sat Apr 11 20:57:41 2026 -0700
+
+    add list aliases command
+
+[33mcommit 56136151cb0bc3526c0e08bbb9231315696ad34f[m
+Author: Owen <owen@txv.io>
+Date:   Tue Apr 7 11:34:59 2026 -0400
+
+    Add CODEOWNERS
+
+[33mcommit 5b86d71f36edbe9d807879fddee2bd540c5e329b[m
+Merge: 662577c f740576
+Author: Owen <owen@txv.io>
+Date:   Thu Apr 2 17:54:49 2026 -0400
+
+    Merge branch 'jit' into dev
+
+[33mcommit 662577c184a7efd37ea430d07a2d7d67981e1cdc[m
+Author: Owen <owen@txv.io>
+Date:   Thu Apr 2 17:53:41 2026 -0400
+
+    Add preshared key env var
+    
+    AUTH_DAEMON_PRE_SHARED_KEY
+
+[33mcommit c5f727df7e8429969e36a7e6fcfe6bc45fed9715[m
+Merge: 2a55679 88cf8ee
+Author: Owen Schwartz <owen@txv.io>
+Date:   Wed Mar 25 09:12:12 2026 -0700
+
+    Merge pull request #51 from LaurenceJJones/feat/installer-posix-compatibility
+    
+    enhance(install): prefer /usr/local/bin and posix compliance
+
+[33mcommit 88cf8eefec3aa07036ae7689ac833a69ec1f07e4[m
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Wed Mar 25 13:50:43 2026 +0000
+
+    enhance(install): prefer /usr/local/bin and posix compliance
+    
+    Always install to /usr/local/bin and improve posix compliance so other shells can be used
+
+[33mcommit f7405762c8c9ffaff6c4eaf6a12edc09da41e570[m
+Author: Owen <owen@txv.io>
+Date:   Sun Mar 22 13:59:31 2026 -0700
+
+    Support an array of message ids
+
+[33mcommit c2fea74b8a30e304c8f87e2e3d56ddb0fd14cfe4[m
+Author: Owen <owen@txv.io>
+Date:   Fri Mar 20 17:53:18 2026 -0700
+
+    Handle both types of siteds
+
+[33mcommit 2a556799d6d5fa31901c882e7b0ff439bdd60986[m[33m ([m[1;33mtag: [m[1;33m0.5.3[m[33m)[m
+Merge: d854ab6 566dbb4
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Mar 19 16:19:19 2026 -0700
+
+    Merge pull request #49 from fosrl/dev
+    
+    Bump olm
+
+[33mcommit 566dbb4c6c928eca0a0d9c46bf19cdfeee1d684f[m
+Author: Owen <owen@txv.io>
+Date:   Thu Mar 19 16:18:32 2026 -0700
+
+    Bump olm
+
+[33mcommit d854ab693fec023fa6257ff5de51f8f62b99122b[m[33m ([m[1;33mtag: [m[1;33m0.5.2[m[33m)[m
+Merge: 0fb37c0 5a42952
+Author: Owen Schwartz <owen@txv.io>
+Date:   Tue Mar 17 17:58:42 2026 -0700
+
+    Merge pull request #46 from fosrl/dev
+    
+    Update cicd flow
+
+[33mcommit 5a429527a861b31e39c04446c33799fa15fb4ade[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:58:12 2026 -0700
+
+    Remove local
+
+[33mcommit 064a04a102d5554300538754b194fac9a78394fe[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:56:40 2026 -0700
+
+    Update cicd flow
+
+[33mcommit 597d07008179720c0ec9c2be88984f991902a040[m
+Merge: a8e4b48 0fb37c0
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:13:22 2026 -0700
+
+    Merge branch 'main' into dev
+
+[33mcommit 0fb37c033de08009a36382be3a913263c9415522[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:10:40 2026 -0700
+
+    Update olm
+
+[33mcommit c7ddfc96a6dac7b1ba11d38f4982884159cab22c[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:00:25 2026 -0700
+
+    Bump newt
+
+[33mcommit 57159819d0ab36e750410ca89d364e8fc25a939c[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 16:58:20 2026 -0700
+
+    Clarify default
+
+[33mcommit a8e4b482d417804a86d8f8ed9160fa171d2e962a[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:10:40 2026 -0700
+
+    Update olm
+
+[33mcommit 351c51a16fe12455a3fd915b7e6b0cb4a35b1b39[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 17:00:25 2026 -0700
+
+    Bump newt
+
+[33mcommit dc5d90f387415cca279027fbab2e73d353d0fc92[m
+Author: Owen <owen@txv.io>
+Date:   Tue Mar 17 16:58:20 2026 -0700
+
+    Clarify default
+
+[33mcommit 8d166f745ea90b66582bbfb8404ec917e06edefa[m
+Author: Laurence <laurence.jones@live.co.uk>
+Date:   Mon Mar 9 15:58:45 2026 +0000
+
+    fix(windows): Use ACL instead of chmod
+    
+    Golang chmod function on windows does not alter ACL's to be 'user only read' it simply changes the read permissions, instead we must use specific windows callouts to set the permissions to be user only preventing ssh from complaining about weak permissions
+
+[33mcommit eb3f550f45def6b6b28988e163d9f7e7072f27f5[m
+Author: Owen <owen@txv.io>
+Date:   Fri Mar 6 15:14:22 2026 -0800
+
+    Jit message and wait working
+
+[33mcommit cefc55f4697cdffa6a2eb6816482dc2128135549[m
+Author: Owen <owen@txv.io>
+Date:   Fri Mar 6 15:01:10 2026 -0800
+
+    Call jit on ssh and watch for status
+
+[33mcommit ebf90465f587091e5509beb8abb5fdb4970ea43c[m[33m ([m[1;33mtag: [m[1;33m0.5.1[m[33m)[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 26 21:49:22 2026 -0800
+
+    Pull from ecr
+
+[33mcommit 6acedb73ce3bec8dba664335ef1d2c3c21e43c75[m
+Merge: b34f562 52bf022
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 26 20:57:07 2026 -0800
+
+    Merge branch 'main' of github.com:fosrl/cli
+
+[33mcommit 52bf022d72ad3a64cae028a226312cbbcdde710c[m
+Merge: b718931 f5f8a23
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Feb 26 20:57:00 2026 -0800
+
+    Merge pull request #40 from fosrl/dev
+    
+    generate random password for users
+
+[33mcommit f5f8a23e62949670aa0ab99f8cedfee01577e190[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 26 20:56:26 2026 -0800
+
+    Bump newt
+
+[33mcommit 08c724219e7dacb9f4224d9f9b88359e5c51d8b9[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Feb 26 10:30:50 2026 -0800
+
+    generate random password for use
+
+[33mcommit b718931d858bc8b67bd9ca1efbf3fc49d4a483fd[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 17:00:57 2026 -0800
+
+    make docs
+
+[33mcommit cd491cc541811fb036c7893e963250dafe57e9e6[m[33m ([m[1;33mtag: [m[1;33m0.5.0[m[33m)[m
+Merge: 80d39fb 34cc588
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:37:56 2026 -0800
+
+    Merge branch 'dev'
+
+[33mcommit 34cc588a0cdfb1bbea3974cfee9b2f42d39054e2[m
+Merge: 825acc8 a1569fa
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:37:51 2026 -0800
+
+    Merge branch 'main' into dev
+
+[33mcommit 825acc82cb247a98a166cfb6d7543f5265e18a1e[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:37:47 2026 -0800
+
+    bump olm
+
+[33mcommit 80d39fb55d373b384513eadcabb14449252252a9[m
+Merge: a1569fa ee114d0
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:35:53 2026 -0800
+
+    Merge pull request #39 from fosrl/dev
+    
+    0.5.0
+
+[33mcommit ee114d043592694798c227678cbc7a36c5aad0e6[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:31:02 2026 -0800
+
+    bump version
+
+[33mcommit e518b673ba201eccfedd78e51625ecc6d8c48a5b[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:30:43 2026 -0800
+
+    update readme
+
+[33mcommit 5e519960f5112a07c90572a081a8db6c6f1e96a7[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:23:04 2026 -0800
+
+    show example command
+
+[33mcommit d3bbf97dc7f9b0af65b3f5fc4ada6307cf8b43bd[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:20:11 2026 -0800
+
+    dont support auth daemon on darwin
+
+[33mcommit 2ec3be373013704f3ea1534170c52d7f1a179e2c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:16:31 2026 -0800
+
+    clean up help
+
+[33mcommit f321982c1b4ca414ade27aa04b9e8054b967cff2[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 16:11:01 2026 -0800
+
+    use system ssh on windows
+
+[33mcommit 30cd8047d374e51b904f29b90e42d1f0daf511ea[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Feb 25 15:53:27 2026 -0800
+
+    use raw in windwos
+
+[33mcommit 9e01e1e1ca401ae7bb548a1641b5d92dd8785002[m
+Author: Owen <owen@txv.io>
+Date:   Wed Feb 25 15:22:26 2026 -0800
+
+    Test if connected
+
+[33mcommit 5acd20355864d70491729b811b09a7205d3ffe75[m
+Author: Owen <owen@txv.io>
+Date:   Wed Feb 25 14:59:31 2026 -0800
+
+    Add iss file
+
+[33mcommit e8cf28e05e3e5f3afcc42c2f3d3763aabf1d657b[m
+Author: Owen <owen@txv.io>
+Date:   Wed Feb 25 14:56:46 2026 -0800
+
+    Add windows to make
+
+[33mcommit f644fab06a3d3fa160a543c105a05040d38ae771[m
+Author: Owen <owen@txv.io>
+Date:   Wed Feb 25 14:55:03 2026 -0800
+
+    Support windows
+
+[33mcommit a1569fa7b54a5569328ab0ee26b58eb2b12d12bd[m[33m ([m[1;33mtag: [m[1;33m0.4.0[m[33m)[m
+Merge: 91fbc32 4fd373e
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Sun Feb 22 16:40:26 2026 -0800
+
+    Merge pull request #36 from fosrl/dev
+    
+    0.4.0
+
+[33mcommit 4fd373ecb56f128ee419a92cb1825d5565949fd8[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Feb 22 16:37:46 2026 -0800
+
+    bump newt
+
+[33mcommit 490ea23cdaffb07b0c3e4b621eb1dec9d716307e[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Feb 22 16:20:27 2026 -0800
+
+    remove replace in go.mod
+
+[33mcommit a4428a5295c3a95aa8120a482c11faf491b3fb52[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Feb 22 16:18:38 2026 -0800
+
+    bump version, bump olm version, update docs
+
+[33mcommit bb62fa8d664387b37f8648c7f0de31b424aca23d[m
+Author: Owen <owen@txv.io>
+Date:   Wed Feb 18 15:39:09 2026 -0800
+
+    Use a context to allow switch org to work
+
+[33mcommit 58aee8fe5711cc762da6feae7ffa03e36de8aacf[m
+Author: Owen <owen@txv.io>
+Date:   Wed Feb 18 15:15:50 2026 -0800
+
+    Use correct org_id
+
+[33mcommit 90fd90423f43db88df8a4111a1bc498f27355356[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Feb 17 22:31:50 2026 -0800
+
+    clean errors
+
+[33mcommit a2767c8372892d33eb522f2cd8e6a2da5f8b294d[m[33m ([m[1;31morigin/ssh-agent[m[33m)[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Feb 17 14:41:18 2026 -0800
+
+    ensure client is running before ssh
+
+[33mcommit 560fa640b8d11091b2d6981e310562d0261460b6[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Feb 17 11:41:36 2026 -0800
+
+    check agent on select org and select account
+
+[33mcommit 8888f5e7582981626609d2354a182e53f51a882b[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 22:06:27 2026 -0800
+
+    add message polling
+
+[33mcommit 15438f25a367912332405d7aaa25d48b92a0d416[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 21:35:55 2026 -0800
+
+    add force=true and custom port option
+
+[33mcommit debe69387e999b1927eff61fc5211e62743c4770[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 20:55:52 2026 -0800
+
+    set force to true
+
+[33mcommit 54f88c499e214d295d084826a23bb6e718bc0184[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 20:51:06 2026 -0800
+
+    clean up
+
+[33mcommit 2f7b69bdb4349386099d90e0c51916a1b95fa759[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 20:36:58 2026 -0800
+
+    add auth-daemon
+
+[33mcommit 94dbb65c3c7507c969a77df43872381cfd0272db[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 16:40:14 2026 -0800
+
+    basic ssh working with org ca
+
+[33mcommit 6ad3d86b02423604d1a70eee19db9c4430314770[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 15:17:00 2026 -0800
+
+    get user and hostname from api
+
+[33mcommit b0e3151a49d7d4cdfbb7f0504341fc6d3658dc28[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 15:12:26 2026 -0800
+
+    support sign and output keys jit
+
+[33mcommit c5d1bc2dd983b6b7fbb48d0f640f1eb098f5931c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 14:55:01 2026 -0800
+
+    add just in time key generation and signing
+
+[33mcommit 305c03601ae8cfa792b04254033cf4eef088b7d5[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 14:47:24 2026 -0800
+
+    add priv/pub cert generation and signing endpoint
+
+[33mcommit 5a496397bc778c43266b757f5e719e0faa43545b[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 14:41:34 2026 -0800
+
+    add private key and certificate support
+
+[33mcommit 72a7110a627e74344d1ad2200a14ed3a27d77365[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 14:01:54 2026 -0800
+
+    use native go-based ssh client
+
+[33mcommit d70b3dfe572b182210da6cd534815ecab76ca74e[m
+Merge: edcb025 91fbc32
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 12:29:39 2026 -0800
+
+    Merge branch 'main' into ssh-agent
+
+[33mcommit edcb025b09cab3f68806370a0025155d62b3b81c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 16 12:29:30 2026 -0800
+
+    basic ssh client implementation
+
+[33mcommit b34f562358b5da6c12634d04bca9c6ede66f4c90[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 16:08:37 2026 -0800
+
+    Add install script
+
+[33mcommit 91fbc3235e6f5e74b4c12d395c70a2bf9c5de105[m[33m ([m[1;33mtag: [m[1;33m0.3.3[m[33m)[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 15:56:52 2026 -0800
+
+    Update the version
+
+[33mcommit f4e44f0be1615ee8bf8d1756e46366032983b255[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 15:50:47 2026 -0800
+
+    Update version
+
+[33mcommit 05c99d96c9b10c7c4825d7d3de778368fe8536f6[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 15:47:53 2026 -0800
+
+    Fix the repo name
+
+[33mcommit da6919ae840e962593f3af63bc6749128bd9e970[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 15:17:44 2026 -0800
+
+    Fix non-constant format string in call
+
+[33mcommit 97a5408802dbe5127969059528943979751ad2fb[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 14:58:40 2026 -0800
+
+    Update flake
+
+[33mcommit 0d95568e3c1c5a5d4543b89455ac6378151fd010[m
+Merge: a97201a c0d664f
+Author: Owen Schwartz <owen@txv.io>
+Date:   Thu Feb 12 14:53:12 2026 -0800
+
+    Merge pull request #26 from fosrl/dev
+    
+    CICD and Docker Build
+
+[33mcommit c0d664f71901d83ebade820b002d17e32fdce630[m
+Merge: 94f5fbc a97201a
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 14:52:58 2026 -0800
+
+    Merge branch 'main' into dev
+
+[33mcommit 94f5fbc92c658525aef09fc9fc2043f39551ab43[m
+Merge: a58863c 6d715a9
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 14:51:33 2026 -0800
+
+    Merge branch 'dev' of github.com:fosrl/cli into dev
+
+[33mcommit a58863c8b17149fb81ca81b7c376ceebcb391646[m
+Author: Owen <owen@txv.io>
+Date:   Thu Feb 12 14:48:09 2026 -0800
+
+    Add cicd and entrypoint and docker
+
+[33mcommit a97201acfaacfe7dfffa48a9dde04da8d862704a[m[33m ([m[1;33mtag: [m[1;33m0.3.2[m[33m)[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 9 14:52:00 2026 -0800
+
+    bump version
+
+[33mcommit 01698a9ba92da441c20e74b72e00c5d755ce2b22[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 9 14:51:36 2026 -0800
+
+    bump newt and olm
+
+[33mcommit b10170c457e0163c6caec85e12ae4c31c1e1b210[m
+Merge: 49543f6 6d715a9
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 9 14:50:58 2026 -0800
+
+    Merge pull request #22 from fosrl/dev
+    
+    0.3.2
+
+[33mcommit 6d715a97367268e29265a2ed4bc28f5e4ad0e73d[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Feb 9 14:41:23 2026 -0800
+
+    dont fingerprint machine clients
+
+[33mcommit 49543f6286ec69f2e8c7eb613d0fe8d5e102ea86[m[33m ([m[1;33mtag: [m[1;33m0.3.1[m[33m)[m
+Merge: 2cf33a7 c212d15
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Thu Jan 29 16:24:12 2026 -0800
+
+    Merge pull request #20 from fosrl/dev
+    
+    Dev
+
+[33mcommit c212d155ad5ba1c8a4497f8c22dc5323f6886641[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Jan 29 16:22:58 2026 -0800
+
+    remove log
+
+[33mcommit 9bb3f9cb1336bf3814d78ce4227acad4cf86b063[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Jan 29 15:57:43 2026 -0800
+
+    uncomment go.mod replace
+
+[33mcommit 2c4a36b0f12c9170c7e417788a2d7c1033678bc5[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Jan 29 15:57:15 2026 -0800
+
+    add script and bump version
+
+[33mcommit f9406c646907a9cd5f4573b1e1d1f70c67798ee4[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Jan 27 17:17:50 2026 -0800
+
+    validate dns inputs
+
+[33mcommit e77670635ea42e3f32940f8813d3fff75e7de7d1[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Jan 27 17:12:10 2026 -0800
+
+    make docs
+
+[33mcommit 5c544e1bea3b8da38ad9d8a7d935440a56522711[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Jan 27 16:50:35 2026 -0800
+
+    add improved description for settings
+
+[33mcommit 2cf33a784b1ddebf2959252cd7e28439e4aacd68[m[33m ([m[1;33mtag: [m[1;33m0.3.0[m[33m)[m
+Merge: 106b70c 66498c3
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 23 10:51:15 2026 -0800
+
+    Merge pull request #18 from fosrl/dev
+    
+    0.3.0
+
+[33mcommit 66498c3d95ed68f544b72d31df59473a18e1e051[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 23 10:50:34 2026 -0800
+
+    make docs
+
+[33mcommit da494773aa7b1ba2b07bf35b3bb42d2aaefe35f6[m
+Merge: 8913bae 106b70c
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 23 10:50:12 2026 -0800
+
+    Merge branch 'main' into dev
+
+[33mcommit 8913bae50f3b8b85f9ca366db91a7505f2661248[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 23 10:48:54 2026 -0800
+
+    bump version
+
+[33mcommit ccc7e90c9f4ac344503211504a24230b44f9b50e[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 23 10:48:21 2026 -0800
+
+    bump olm and newt
+
+[33mcommit 6a4911a2d5dfb7200a245146e2eab3e8422bb193[m
+Author: Owen <owen@txv.io>
+Date:   Thu Jan 22 15:16:15 2026 -0800
+
+    Handle blueprint response correctly
+
+[33mcommit e914f70c45c0d9e74710a90ce3fc2864806a77ac[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Jan 22 12:56:18 2026 -0800
+
+    move apply to apply blueprint, add file flag, and update docs
+
+[33mcommit ac247d4577cf65fc55379b5ccc4c6d4c6d661067[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jan 21 17:39:15 2026 -0800
+
+    Keep the olm id when logging out again
+
+[33mcommit 95e4ce90c91d3889be48eaa9a4ad71c43ae99ba0[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Jan 21 15:37:21 2026 -0800
+
+    fix auto update check and biometrics check
+
+[33mcommit dacdc3cebcdb471835ba9beb8930ec993c34f685[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jan 21 15:00:40 2026 -0800
+
+    Allow running up command as sudo
+
+[33mcommit 57a50e8476a4277635261e76b9e867f10d0b63bb[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jan 21 14:55:34 2026 -0800
+
+    Dont print the error
+
+[33mcommit c4cb7fa1eeb7a354a206e1b417a4ee6fadf77ae3[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jan 21 14:05:36 2026 -0800
+
+    Handle the fingerprint correctly
+
+[33mcommit 64182907db8cc1353363c34e5c472ed167cdc1e6[m
+Author: Owen <owen@txv.io>
+Date:   Wed Jan 21 11:53:21 2026 -0800
+
+    Implement apply blueprint
+
+[33mcommit ca728f979cc0d6fe34dde02235ab8b99d3ab6cc6[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Jan 21 14:57:14 2026 -0800
+
+    fix darwin posture checks and add test script
+
+[33mcommit 106b70c5e0d4e0a8ceb16009ae65c818e5f5f1b7[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jan 7 20:07:13 2026 +0000
+
+    Bump actions/checkout from 5.0.0 to 6.0.1
+    
+    Bumps [actions/checkout](https://github.com/actions/checkout) from 5.0.0 to 6.0.1.
+    - [Release notes](https://github.com/actions/checkout/releases)
+    - [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/actions/checkout/compare/08c6903cd8c0fde910a37f88322edcfb5dd907a8...8e8c483db84b4bee98b60c0593521ed34d9990e8)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/checkout
+      dependency-version: 6.0.1
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 405c42b3b2a07b37c5037a1cd6ec6a122707ea39[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jan 7 20:07:26 2026 +0000
+
+    Bump the patch-updates group with 2 updates
+    
+    Bumps the patch-updates group with 2 updates: [github.com/charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea) and [github.com/spf13/cobra](https://github.com/spf13/cobra).
+    
+    
+    Updates `github.com/charmbracelet/bubbletea` from 1.3.6 to 1.3.10
+    - [Release notes](https://github.com/charmbracelet/bubbletea/releases)
+    - [Commits](https://github.com/charmbracelet/bubbletea/compare/v1.3.6...v1.3.10)
+    
+    Updates `github.com/spf13/cobra` from 1.10.1 to 1.10.2
+    - [Release notes](https://github.com/spf13/cobra/releases)
+    - [Commits](https://github.com/spf13/cobra/compare/v1.10.1...v1.10.2)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: github.com/charmbracelet/bubbletea
+      dependency-version: 1.3.10
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: patch-updates
+    - dependency-name: github.com/spf13/cobra
+      dependency-version: 1.10.2
+      dependency-type: direct:production
+      update-type: version-update:semver-patch
+      dependency-group: patch-updates
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit 09d7e181a69fa6f339db2f3d8bc1f07fed819940[m
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jan 14 20:37:26 2026 +0000
+
+    Bump actions/setup-go from 6.1.0 to 6.2.0
+    
+    Bumps [actions/setup-go](https://github.com/actions/setup-go) from 6.1.0 to 6.2.0.
+    - [Release notes](https://github.com/actions/setup-go/releases)
+    - [Commits](https://github.com/actions/setup-go/compare/4dc6199c7b1a012772edbd06daecab0f50c9053c...7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/setup-go
+      dependency-version: 6.2.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+[33mcommit f7132bb92538d09ca7e909801ec30454654e14cd[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 21 09:37:04 2026 -0800
+
+    feat(blueprint): add apply blueprint cmd
+
+[33mcommit f4de2d171247d5dd05eec46a65a3c7f352b3cf35[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 19 18:22:00 2026 -0800
+
+    add bubble up error, server health check, server info check, and better account handling
+
+[33mcommit a4f30269e9801d8db69c32f54082b493723c60fe[m
+Merge: 0f1d4ab 69df31a
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 19 18:19:01 2026 -0800
+
+    Merge branch 'add-fingerprint-and-posture-check-info' into dev
+
+[33mcommit 0f1d4abf73e61b68e8b93bdbce2062e6ffc047a6[m
+Merge: 882ea7a 9c11413
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 19 15:33:16 2026 -0800
+
+    Merge pull request #15 from water-sucks/add-fingerprint-and-posture-check-info
+    
+    feat: add fingerprint and posture check info polling
+
+[33mcommit 9c11413102e3c5db3477fc5e9bd0948f56b29033[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Jan 16 00:50:19 2026 -0800
+
+    fix(fingerprint): cache platform fingerprint hash when running as root
+
+[33mcommit 5aaae682223b52e050b4f1f9f324d91a3444ba06[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Jan 16 00:41:56 2026 -0800
+
+    fix(fingerprint): resolve import cycles, standardize output
+
+[33mcommit e3f0d0565db7bd66de86f32c09c8af0b5e085b75[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 13:15:00 2026 -0800
+
+    feat(login): recover olm device when possible
+
+[33mcommit cddb7065a06b4edb75498e16f22d9361c355eeff[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 12:28:59 2026 -0800
+
+    revert: use previous account save/delete mechanism with login/logout
+    
+    Reverts commits:
+    
+    - b6060a72bdcdc16e532d60013e12ee74c5c5a3a0
+    - 1c35fdb54bf5dc7a8d475236e11210abad7b278c
+
+[33mcommit 8ea474d2d36e4cb24287e53be74bcccaba9dc3dd[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Thu Jan 15 23:29:37 2026 -0800
+
+    feat: add prettier device names for linux and macos devices
+
+[33mcommit 53014efb8f34630735a2e9aa708ccd36ff94c8cf[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Thu Jan 15 12:42:33 2026 -0800
+
+    chore(deps): pin olm version to remote
+
+[33mcommit 44eb27001b1eecf34cba776f5352da7b2669e01a[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 16:34:33 2026 -0800
+
+    feat(fingerprint): add macos platform fingerprint hash
+
+[33mcommit a03e901ed55d0b536e7fb0e52f929b2809d537eb[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 16:17:39 2026 -0800
+
+    feat(fingerprint): add windows platform fingerprint hash
+
+[33mcommit 394dc3eb591e47f4a0dc53ccfdd13af2eaeb4942[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 15:43:35 2026 -0800
+
+    feat(fingerprint): add linux platform fingerprint hash
+
+[33mcommit 753c2400c14e971da1ba1d1add4a868c44c8f1a7[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 15:24:13 2026 -0800
+
+    fix(fingerprint): use sudo user when possible on linux
+
+[33mcommit 858e1f6a07200a7cb211a415dc1c6f4720da3624[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Jan 13 11:27:14 2026 -0800
+
+    feat(fingerprint): start fingerprinting routine when client comes up
+
+[33mcommit 3853fd2225f3e0772bcb483fc6b50a1200509344[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Jan 13 09:40:43 2026 -0800
+
+    chore(deps): use new olm version, update package references
+
+[33mcommit b95dec5af0423aee644461f4c327cbe054b39e25[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Jan 13 09:26:40 2026 -0800
+
+    feat(fingerprint): add windows-specific fingerprint/posture query impls
+
+[33mcommit 3a804da9d463de784c0eb5eb2634a1879fa58edf[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 12 02:49:05 2026 -0800
+
+    feat(fingerprint): add linux-specific fingerprint/posture query impls
+
+[33mcommit ac14da7cf74c17e5d331fda39f56cc16f881cde7[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 12 02:07:56 2026 -0800
+
+    feat(fingerprint): add macos-specific fingerprint/posture query impls
+
+[33mcommit 7fa77375f67d1ee5b4325e0c791dedad82eeedd8[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 12 01:05:09 2026 -0800
+
+    feat(fingerprint): init internal/fingerprint package structure
+
+[33mcommit 69df31aee264888b84847c434f6a2df11a8916cf[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 16 16:20:00 2026 -0800
+
+    add bubble up error from olm
+
+[33mcommit 7ec8e1fc04c5950e901c5df7f220fd447f12fb39[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Jan 16 00:50:19 2026 -0800
+
+    fix(fingerprint): cache platform fingerprint hash when running as root
+
+[33mcommit 4e5f7088bc292753564fc9f0f95b41e1e01317b3[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Jan 16 00:41:56 2026 -0800
+
+    fix(fingerprint): resolve import cycles, standardize output
+
+[33mcommit 0d5ce5af2a8aa027644b198345ee99e6b0d87f5b[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 13:15:00 2026 -0800
+
+    feat(login): recover olm device when possible
+
+[33mcommit a2f3ac0988de199634a0453d638c0c294a4a5650[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 12:28:59 2026 -0800
+
+    revert: use previous account save/delete mechanism with login/logout
+    
+    Reverts commits:
+    
+    - b6060a72bdcdc16e532d60013e12ee74c5c5a3a0
+    - 1c35fdb54bf5dc7a8d475236e11210abad7b278c
+
+[33mcommit a50674e317addf60e7f476bae7846ef77c4fb146[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Thu Jan 15 23:29:37 2026 -0800
+
+    feat: add prettier device names for linux and macos devices
+
+[33mcommit 88f476e8706f2dd16f2ddfa19b0bc5f65af85acb[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Thu Jan 15 12:42:33 2026 -0800
+
+    chore(deps): pin olm version to remote
+
+[33mcommit 25714cf3e3e22035d03c1af82441c80c441d9171[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 16:34:33 2026 -0800
+
+    feat(fingerprint): add macos platform fingerprint hash
+
+[33mcommit 3d806f579318459f1a56213e641307148a4faae5[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 16:17:39 2026 -0800
+
+    feat(fingerprint): add windows platform fingerprint hash
+
+[33mcommit fc58b8ef930102732ff37dfb5b40939c0b366c68[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 15:43:35 2026 -0800
+
+    feat(fingerprint): add linux platform fingerprint hash
+
+[33mcommit 8afeb9ab084b5f8c76b83d08794be6c7b3541d5d[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Jan 14 15:24:13 2026 -0800
+
+    fix(fingerprint): use sudo user when possible on linux
+
+[33mcommit 6001139113f652d9b46a472e9e06a259fb316cb2[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Jan 13 11:27:14 2026 -0800
+
+    feat(fingerprint): start fingerprinting routine when client comes up
+
+[33mcommit f536e6d0e064cbbfbee57d0dea17cb5c5c89f4a6[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Jan 13 09:40:43 2026 -0800
+
+    chore(deps): use new olm version, update package references
+
+[33mcommit 43082648643d103bbd41e653a71405c395f0f22c[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Jan 13 09:26:40 2026 -0800
+
+    feat(fingerprint): add windows-specific fingerprint/posture query impls
+
+[33mcommit d565650878f257cb90c31ea118b245069fe940ca[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 12 02:49:05 2026 -0800
+
+    feat(fingerprint): add linux-specific fingerprint/posture query impls
+
+[33mcommit ffa354ee3634fa3b58474164459a870c0eb71eb5[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 12 02:07:56 2026 -0800
+
+    feat(fingerprint): add macos-specific fingerprint/posture query impls
+
+[33mcommit 9847022cab07b21da769e61f3f9e1c74a9b90465[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 12 01:05:09 2026 -0800
+
+    feat(fingerprint): init internal/fingerprint package structure
+
+[33mcommit 882ea7a8b5b91bfb454bd456d248e00bcb4cfbe9[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Jan 13 15:08:01 2026 -0800
+
+    add check if device is blocked
+
+[33mcommit 822b17ad08c239338a030f7af191c30010d6352c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 12 21:27:20 2026 -0800
+
+    set user agent
+
+[33mcommit d6f8870faac0a74748f3cc143014b1f1acb1a549[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 9 15:09:36 2026 -0800
+
+    fix perist org switch
+
+[33mcommit 1b8f2a93ed52372bd1346e7defe63823f6cc9f6f[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Jan 9 14:48:17 2026 -0800
+
+    switch to other account on logout
+
+[33mcommit de7976254eef7a1f719ae5f73f94b8b84f48e198[m
+Author: Lokowitz <marvinlokowitz@gmail.com>
+Date:   Tue Jan 6 08:30:13 2026 +0000
+
+    cleanup dependa config
+
+[33mcommit 7e85c71e4f55bc914ba300c2d41d7012669784e5[m
+Author: Lokowitz <marvinlokowitz@gmail.com>
+Date:   Tue Jan 6 08:27:19 2026 +0000
+
+    add empty line at the end
+
+[33mcommit 11be2d66b98be6e10c8626a81c07e47103301d50[m
+Author: Lokowitz <marvinlokowitz@gmail.com>
+Date:   Tue Jan 6 08:09:32 2026 +0000
+
+    add dependabot config
+
+[33mcommit 0bae2078cfe12f1c656dece96ab730ce9a5f47d4[m
+Author: Lokowitz <marvinlokowitz@gmail.com>
+Date:   Tue Jan 6 08:21:57 2026 +0000
+
+    fix make files
+
+[33mcommit 176e6d8d38fcefc2b5444c93e4a8f297844dada6[m
+Author: Lokowitz <marvinlokowitz@gmail.com>
+Date:   Tue Jan 6 08:19:47 2026 +0000
+
+    add test
+
+[33mcommit 064f4940025cebcb149e9f0090f2b22526b15081[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 5 21:33:59 2026 -0500
+
+    increase newt version
+
+[33mcommit 5d905333f7124bbbbceea35e30d73a8dfca5265b[m[33m ([m[1;33mtag: [m[1;33m0.2.1[m[33m)[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 5 21:29:16 2026 -0500
+
+    bump version
+
+[33mcommit 6f017b3c8bc41e3105979981baed893eec1fd61f[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 5 21:27:46 2026 -0500
+
+    hide log statement if olm exists
+
+[33mcommit f543b1f18207b46064571198d11c14f03ed72459[m
+Merge: 60c60bc b6060a7
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Jan 5 18:27:07 2026 -0800
+
+    Merge pull request #9 from water-sucks/preserve-olm-creds-on-logout
+    
+    fix(olm): preserve olm credentials on logout
+
+[33mcommit b6060a72bdcdc16e532d60013e12ee74c5c5a3a0[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 5 15:24:38 2026 -0800
+
+    fix(select): only use available (logged-in) accounts for selection
+
+[33mcommit 1c35fdb54bf5dc7a8d475236e11210abad7b278c[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Jan 5 15:16:09 2026 -0800
+
+    feat(accounts): mark account as deactivated upon logout, reuse in login
+
+[33mcommit f251229d0eed13b7863bac74c1a88dd45d94d3c5[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 23 15:00:11 2025 -0800
+
+    chore(deps): pin olm and newt to upstream tags
+
+[33mcommit 60c60bc862f320ef8149130690bf7de97fa189d5[m[33m ([m[1;33mtag: [m[1;33m0.2.0[m[33m)[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Dec 22 17:06:14 2025 -0500
+
+    bump version
+
+[33mcommit f37462aeae30d1ea8375ffea86accc4336b14319[m
+Merge: 0346b6b 91716d5
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Dec 22 11:13:34 2025 -0800
+
+    Merge pull request #6 from fosrl/dev
+    
+    0.2.0
+
+[33mcommit 91716d5356b9a65022511d69c1aa4e71083f1be2[m
+Merge: 7fe8687 e835b59
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Mon Dec 22 11:12:12 2025 -0800
+
+    Merge pull request #4 from water-sucks/add-basic-completion
+    
+    feat(select): add basic completion flags
+
+[33mcommit 7fe8687c75d697a68f3cdeca668d5c15221441d8[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Dec 22 14:06:42 2025 -0500
+
+    update docs
+
+[33mcommit e835b594ac5fea622d7b3ddd6c2d7ac7539c2cc3[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Dec 19 12:31:25 2025 -0800
+
+    feat(select): add completion funcs for account email/host flags
+
+[33mcommit 825a87c80b827bb99198b4c53da636fcbfecbaf0[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Dec 19 12:19:55 2025 -0800
+
+    feat(select): add completion func for org flag
+
+[33mcommit aec8830e871c162563db217be03653a8d03619ee[m
+Merge: 129b782 470cdc2
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 19 19:25:09 2025 -0800
+
+    Merge pull request #3 from water-sucks/refactor-cobra-struture
+    
+    refactor: use functions to init cobra commands, flatten cmd structures
+
+[33mcommit 470cdc2dc8c122f5bc7b4d116683605f2af4b593[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Dec 19 12:10:33 2025 -0800
+
+    docs: re-generate cobra markdown docs
+
+[33mcommit 431fff10ce3efaafde87020535291401954a966c[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Dec 19 01:45:34 2025 -0800
+
+    feat: normalize exit success/error codes, only call os.Exit() in Run()
+    
+    This normalizes error handling to always propagate up until the Run()
+    function, where this will exit with the 1 status code if an error
+    is detected.
+    
+    Before this commit, some unsuccessful attempts and error states resulted
+    in an exit code of 0, which can throw off shell scripts.
+
+[33mcommit e66cb374b64fafbace8857144f7f0f0230a32a2b[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Fri Dec 19 01:14:17 2025 -0800
+
+    refactor(client-up): avoid globals, completely redo cobra flag logic
+    
+    Instead of using global variables for Cobra flag values, and separate
+    defaults and clunky getter functions everywhere, set the defaults inside
+    Cobra's flag set itself.
+    
+    This makes handling of values radically simpler.
+    
+    Additionally, this also adds more stringent flag validation before even
+    running the program, and errors are handled more gracefully at the end
+    with a single os.Exit() invocation.
+
+[33mcommit 58640ec01dde1bbd06868ad78218841507f9f12e[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Thu Dec 18 22:35:54 2025 -0800
+
+    refactor: move client subcommands into separate packages for consistency
+
+[33mcommit 89c8d027b45e2c04e7f9149cd283bab75df7a930[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Thu Dec 18 22:30:37 2025 -0800
+
+    refactor: use functions to init cobra functions, flatten structures
+
+[33mcommit 129b7823ae58202979857ee9014256d241784af4[m
+Author: Owen <owen@txv.io>
+Date:   Fri Dec 19 10:12:03 2025 -0500
+
+    Add tunnel dns flag option
+
+[33mcommit ddfcb6588436d20f27dc1e4191ce489db871eab8[m
+Merge: 0346b6b 9225bba
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Thu Dec 18 19:16:37 2025 -0800
+
+    Merge pull request #1 from water-sucks/multi-account-login
+    
+    feat(auth): support multiple accounts
+
+[33mcommit 9225bba39d7c29619ebe9c88c1d30722f223b33d[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Dec 18 22:15:57 2025 -0500
+
+    remove olm from log message
+
+[33mcommit b4c2468a911f2d296be75a5b42f7e93484e991ce[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 23:55:32 2025 -0800
+
+    feat(config): add config.json and validate settings once before startup
+
+[33mcommit 2e50c76d5e72a14f4e86d331f61da97a2c17ec32[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 21:47:04 2025 -0800
+
+    refactor: move logger into separate package
+
+[33mcommit fbcee826786c73041ad5c5aa2ad87a9ce710cc86[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 10:29:12 2025 -0800
+
+    fix(up/down): pass context explicitly to prevent panics
+
+[33mcommit 544db88db62a4bf7c1a3867a55381adf85ae152d[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 10:15:11 2025 -0800
+
+    docs: re-generate CLI docs
+
+[33mcommit 5332b142c49a1d5d28141f33d4250546f9a53adf[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 10:13:16 2025 -0800
+
+    fix(config): exit early if failed to parse config
+
+[33mcommit 99ec424e245de3a1f9a37d0c3c4c1350f78ca4ac[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 10:09:57 2025 -0800
+
+    feat(select): select between multiple accounts
+
+[33mcommit 9ff622d021c18d375aa4374bbefc41320893d7d9[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Wed Dec 17 09:49:31 2025 -0800
+
+    refactor(select): move org subcommand into separate package
+
+[33mcommit 7f42cc0da011fdf1e543fdaa4b1410f0064f4459[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 20:24:42 2025 -0800
+
+    chore: remove unused internal/secrets package
+
+[33mcommit 35bf24b6c722d793519ed1d0613795bc379faacf[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 20:13:10 2025 -0800
+
+    feat(client-up): use active account mechanism
+
+[33mcommit e3a8f95a50f9507a9a72a2664d174b11cc0e9541[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 20:11:37 2025 -0800
+
+    refactor(select): use active account for selecting org
+
+[33mcommit cdb0c34c44a0c58aa30219cd6fc00708ff1bf500[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 20:09:15 2025 -0800
+
+    refactor: rename internal/accounts -> internal/config
+
+[33mcommit b9d502a6b844adf07de5bad8d7407fc3fe29290b[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 16:33:17 2025 -0800
+
+    refactor: use context to pass account store and API client
+
+[33mcommit 94cb1b3c0ed9e5c6f9a258409691e284c328dd0f[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 15:28:02 2025 -0800
+
+    feat(logout): implement multiple account support
+
+[33mcommit 5d9d7705f7984dc5799607a299a4ba52502ed84f[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 14:09:38 2025 -0800
+
+    feat(login): use new account store for storing credentials
+
+[33mcommit bce5dfa0d4048f89032e46f999fa2ac6f17011c0[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Tue Dec 16 11:41:57 2025 -0800
+
+    feat(accounts): init account store, change config location
+
+[33mcommit 2e4aed15d713dbe554b75e4e87bdf1f8882338e0[m
+Author: Varun Narravula <varun@snare.dev>
+Date:   Mon Dec 15 20:30:59 2025 -0800
+
+    feat(nix): add simple flake devshell
+
+[33mcommit 0346b6b8875e4b117b2864dc8c7b80a32c5cb154[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 16 22:44:53 2025 -0500
+
+    update docs
+
+[33mcommit cd143c34499a5accc62665d10bcc83ceff349143[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 16 22:38:52 2025 -0500
+
+    bump version
+
+[33mcommit d02bc1445c43718b00024bc620af78d2df9625d0[m[33m ([m[1;33mtag: [m[1;33m0.1.2[m[33m)[m
+Merge: 520926d e347884
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 16 19:33:25 2025 -0800
+
+    Merge pull request #2 from fosrl/dev
+    
+    0.1.2
+
+[33mcommit e34788412dbff11d5fa81ba084886aaf2cb754d1[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 16 22:32:09 2025 -0500
+
+    rename netstack dns flag
+
+[33mcommit 226400379596492fcb9ce4c83c6af968fe7362c7[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 16 21:29:01 2025 -0500
+
+    fix max session length data type and override dns parsing
+
+[33mcommit 520926d5de12bc5ca04153b81d958f6585428209[m[33m ([m[1;33mtag: [m[1;33m0.1.1[m[33m)[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Dec 11 17:19:37 2025 -0500
+
+    bump version
+
+[33mcommit e6366c29c014b80c3280a79376fd1794021c119d[m
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 10 17:46:45 2025 -0500
+
+    Update README.md
+
+[33mcommit 568c7e26701b98f4f405b36a0e533e371a97599e[m[33m ([m[1;33mtag: [m[1;33m0.1.0[m[33m)[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Dec 8 12:19:07 2025 -0500
+
+    set version and add builds
+
+[33mcommit 144dffd191697fa69eab690acbd307a247e27cdc[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Dec 8 10:24:29 2025 -0500
+
+    use static.pangolin.net
+
+[33mcommit e0c9262282a89865cce132a0ff656f8062006681[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Dec 7 23:24:15 2025 -0500
+
+    dont pull org from config if machine client
+
+[33mcommit b500f7a7a72a90e8996cbc36650343f2f3d8b551[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Dec 7 23:09:29 2025 -0500
+
+    update docs
+
+[33mcommit b44d34704ae722de697591bcda8e61535feee223[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Dec 7 21:38:41 2025 -0500
+
+    add site name to status
+
+[33mcommit 77b3260f17fe694f764d70afad681c62601a25d6[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Dec 7 16:29:40 2025 -0500
+
+    use official repo
+
+[33mcommit 36d8f00a43e4695e5aa99af8856f001895b8402c[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sun Dec 7 14:25:49 2025 -0500
+
+    dont allow org flag if machine client
+
+[33mcommit 8122190fe015a296b7740b43473692634265739d[m
+Author: Owen <owen@txv.io>
+Date:   Sun Dec 7 12:06:29 2025 -0500
+
+    Update go
+
+[33mcommit 2c8d763c6d8542833e2fd0bea411158bca7c182b[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 15:16:05 2025 -0500
+
+    shorten org flag
+
+[33mcommit 426de470c6d0b3c5525bbf5b320e9d2fb38b7cbe[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 14:41:11 2025 -0500
+
+    update docs
+
+[33mcommit 7c11f5012e8c53cd73080ef8ddaba73ad7194771[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 14:40:45 2025 -0500
+
+    remove global org id flag and add to commands
+
+[33mcommit b68c6a4633b4e7311823f5ba7df5c1904e7b243d[m
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 12:25:51 2025 -0500
+
+    Update README.md
+
+[33mcommit b7495a138c69b48ff91aa19f25a735a56e796e88[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 12:12:23 2025 -0500
+
+    make interface lowercase
+
+[33mcommit dc93187b70eafd7113cae731b99759fe1c57a039[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 11:26:45 2025 -0500
+
+    remove keyring
+
+[33mcommit c18a3b856d445e6ae8630510b92115db14bc2fc0[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Dec 5 10:36:44 2025 -0500
+
+    change command desc
+
+[33mcommit 1fff7bbc26e5cc71b3ee342f9a16b11afed71627[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Dec 4 22:57:27 2025 -0500
+
+    change to status output, agent
+
+[33mcommit 76bbbf6699c94ba64188a86bd97a277fd330e10a[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 13:54:41 2025 -0500
+
+    compare agent
+
+[33mcommit 6d1a55ce5c707d011ca8d9162a498584e42b5b4a[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 13:49:59 2025 -0500
+
+    remove some required flags
+
+[33mcommit 7b51822a92911348c342ab21eb45ea5787c0aee6[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 12:13:15 2025 -0500
+
+    pass version and agent to olm
+
+[33mcommit 9efe68595b1869b619c0b25665d054ff60d8e9df[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 11:53:20 2025 -0500
+
+    support enable-api=false
+
+[33mcommit c59dc1289631a3ea564192b53bc57438b208d22d[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 11:44:34 2025 -0500
+
+    update docs
+
+[33mcommit 9f513eb34f27ba2a3f9e7cb16e7ed172ef35f0d9[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 11:43:51 2025 -0500
+
+    ensure background check completes, and add disable option
+
+[33mcommit 3918cb60eadb09a6514fd40c87acc2eaf8007be7[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 11:25:20 2025 -0500
+
+    add update check
+
+[33mcommit 755fc6652518d48c737d2b2ce3e67a4284710f28[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 10:53:09 2025 -0500
+
+    remove site from desc
+
+[33mcommit be0a5c6655f517a32bbcb0a4c451a94c7271d1c5[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 10:52:37 2025 -0500
+
+    add version
+
+[33mcommit 1c94045a92bb6c5f55d2aa7fe26c2f99abe78c47[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 10:49:41 2025 -0500
+
+    add auth status
+
+[33mcommit bc6ff7fe90f7f6ab33642a5d036c3e473cc0423c[m
+Author: Milo Schwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 10:20:08 2025 -0500
+
+    Update README.md
+
+[33mcommit 0d2d31290ca785e8ba858559d317c6f2931c1fab[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 10:15:54 2025 -0500
+
+    add github files
+
+[33mcommit d24a9238f80aa42782bb262bf1485b50e3bf1a86[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Wed Dec 3 10:12:22 2025 -0500
+
+    clean up
+
+[33mcommit 1ea0ee7bb9dbf29d10613233dd5344690341efe9[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 2 23:09:44 2025 -0500
+
+    add auth checks, refactor, make exit work, and more
+
+[33mcommit e7a19bd7cea3ee78f96e9a2dcf308475820fd150[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 2 20:00:17 2025 -0500
+
+    allow boolean flags to be false
+
+[33mcommit 6331bcc8dc9ce5a622ab2bd59bb3ea09fd9ba180[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 2 17:46:28 2025 -0500
+
+    self terminate olm
+
+[33mcommit b2b431e17ce989b674fcfef8326017250c4a3be9[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 2 17:33:41 2025 -0500
+
+    fetch secrets using user
+
+[33mcommit b2bbc52b506ad597aee782ea17874d5b24e8e612[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Dec 2 14:43:43 2025 -0500
+
+    fix login to use new method
+
+[33mcommit 0d679f2e7131e457f74e6ffa115c8b0505eda552[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Nov 10 20:39:10 2025 -0500
+
+    support --orgId in select org
+
+[33mcommit 7468c6394ceb9a253a5e3f4e3b5ad3f2f81048d1[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Nov 10 16:44:24 2025 -0500
+
+    support passing hostname and login method to login cmd
+
+[33mcommit 0b1d88b70786cc4df9d8abb0ab56ad20d80999ff[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sat Nov 8 20:14:44 2025 -0800
+
+    fetch user token in parent process
+
+[33mcommit 00f570cd5e8660c3779586a21f8d05b31594b6cd[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sat Nov 8 17:51:35 2025 -0800
+
+    support idp and create device on login
+
+[33mcommit a849052a60d7c95dd800fc96799f5af156445523[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Nov 7 16:51:28 2025 -0800
+
+    pass user session in olm config
+
+[33mcommit faac0b9f58f097ded595b03df2d9aa3c46846163[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Nov 6 20:23:25 2025 -0800
+
+    remove random number
+
+[33mcommit 4e57f089b399d42ae6173304577124cf450dce6e[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Thu Nov 6 20:12:19 2025 -0800
+
+    update create olm route
+
+[33mcommit bef7ad0c84fbf30d5849149d1ac3ac8df1599f0d[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Nov 4 13:52:31 2025 -0800
+
+    clean up logs and fix sudo
+
+[33mcommit 5227523bb8402ca2d22743bff752f380a864df92[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Tue Nov 4 12:35:34 2025 -0800
+
+    subprocess with sudo
+
+[33mcommit 1cefcef9f25303d745d712d63866261f6b952efd[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Nov 3 21:22:31 2025 -0800
+
+    org switch working
+
+[33mcommit c9e8bc4d7283ca7899dec8d37079d777b9e60973[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Nov 3 16:34:45 2025 -0800
+
+    add docs
+
+[33mcommit db1e6187d644313102e7dfd53ae083975c83547a[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Nov 3 16:22:51 2025 -0800
+
+    add up, down, logs, status
+
+[33mcommit 28051a0db6b175aef5b0331063d84287a6a3d9f0[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Mon Nov 3 11:00:02 2025 -0800
+
+    add device web auth flow
+
+[33mcommit 77be745473dd2af25b17d7e8811f515dc2683867[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sat Nov 1 19:01:41 2025 -0700
+
+    add login flow with credentials, select org, logout
+
+[33mcommit b78558cc1f7a9e93346f6a7cbf3299e56f1593e5[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Sat Nov 1 11:41:20 2025 -0700
+
+    add basic scafolding
+
+[33mcommit 5e19c030226739a7c9676bd32a1359790cf18e1f[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Oct 31 17:37:09 2025 -0700
+
+    add gitignore
+
+[33mcommit 033166af3c8dee50bd9b6d45ff40260fae2968c2[m
+Author: miloschwartz <mschwartz10612@gmail.com>
+Date:   Fri Oct 31 17:35:39 2025 -0700
+
+    first commit

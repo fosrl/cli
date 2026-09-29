@@ -16,5 +16,6 @@ Select account information to use
 
 * [pangolin](pangolin.md)	 - Pangolin CLI
 * [pangolin select account](pangolin_select_account.md)	 - Select an account
+* [pangolin select exit-node](pangolin_select_exit-node.md)	 - Route all traffic through an exit node
 * [pangolin select org](pangolin_select_org.md)	 - Select an organization
 

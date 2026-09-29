@@ -37,6 +37,10 @@ type StatusResponse struct {
 	NetworkSettings map[string]interface{} `json:"networkSettings,omitempty"`
 	Error           *StatusError           `json:"error,omitempty"`
 	ExitNode        *OLMExitNodeStatus     `json:"exitNode,omitempty"`
+	GatewayActive   bool                   `json:"gatewayActive,omitempty"`
+	GatewaySiteIDs  []int                  `json:"gatewaySiteIds,omitempty"`
+
+	GatewaySiteResourceID int `json:"gatewaySiteResourceId,omitempty"` // the gateway resource the selection belongs to
 }
 
 // OLMExitNodeStatus represents the connectivity status of the client's own exit
@@ -85,6 +89,17 @@ type JITConnectionRequest struct {
 
 // JITConnectionResponse represents the response from a JIT connection request
 type JITConnectionResponse struct {
+	Status string `json:"status"`
+}
+
+// GatewayRequest represents a select-gateway request
+type GatewayRequest struct {
+	SiteResourceID int   `json:"siteResourceId"`
+	SiteIDs        []int `json:"siteIds"`
+}
+
+// GatewayResponse represents the response from a gateway select/disable request
+type GatewayResponse struct {
 	Status string `json:"status"`
 }
 
@@ -230,6 +245,55 @@ func (c *Client) JITConnectByResourceID(resourceID string) (*JITConnectionRespon
 		return nil, fmt.Errorf("resourceID must not be empty")
 	}
 	return c.jitConnect(JITConnectionRequest{Resource: resourceID})
+}
+
+// SelectGateway routes all tunnel traffic through the given sites (full tunnel).
+// siteResourceID is the numeric ID of the gateway resource the sites belong to;
+// olm uses it to apply later server-pushed changes to that resource only.
+// Every site must already be a connected peer of the running client.
+func (c *Client) SelectGateway(siteResourceID int, siteIDs []int) (*GatewayResponse, error) {
+	if siteResourceID <= 0 {
+		return nil, fmt.Errorf("an exit node resource ID is required")
+	}
+	if len(siteIDs) == 0 {
+		return nil, fmt.Errorf("at least one site ID is required")
+	}
+
+	jsonData, err := json.Marshal(GatewayRequest{SiteResourceID: siteResourceID, SiteIDs: siteIDs})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	resp, err := c.doRequestExpecting("POST", "/gateway/select", bytes.NewBuffer(jsonData), map[string]string{
+		"Content-Type": "application/json",
+	}, http.StatusAccepted)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var gwResp GatewayResponse
+	if err := json.NewDecoder(resp.Body).Decode(&gwResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &gwResp, nil
+}
+
+// DisableGateway stops routing all tunnel traffic through a gateway
+func (c *Client) DisableGateway() (*GatewayResponse, error) {
+	resp, err := c.doRequest("POST", "/gateway/disable", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var gwResp GatewayResponse
+	if err := json.NewDecoder(resp.Body).Decode(&gwResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &gwResp, nil
 }
 
 // IsRunning checks if the OLM process is running by checking if the socket exists

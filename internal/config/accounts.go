@@ -29,6 +29,24 @@ type Account struct {
 	OrgID          string          `mapstructure:"orgId" json:"orgId,omitempty"`
 	OlmCredentials *OlmCredentials `mapstructure:"olmCredentials" json:"olmCredentials,omitempty"`
 	ServerInfo     *ServerInfo     `mapstructure:"serverInfo" json:"serverInfo,omitempty"`
+
+	// The exit node (a gateway-mode site resource) selected with `pangolin
+	// select exit-node`, re-applied by `pangolin up`. It can differ per
+	// account, so it's stored here rather than on the root config, and it
+	// belongs to the account's currently selected org (OrgID above). Only the
+	// resource ID is stored (not the niceId, which can be renamed); its sites
+	// are looked up from the server on every start so they can't go stale.
+	ExitNodeResourceID int `mapstructure:"exitNodeResourceId" json:"exitNodeResourceId,omitempty"`
+}
+
+// SetExitNode records the account's selected exit node (a gateway resource).
+func (a *Account) SetExitNode(resourceID int) {
+	a.ExitNodeResourceID = resourceID
+}
+
+// ClearExitNode forgets the account's selected exit node.
+func (a *Account) ClearExitNode() {
+	a.SetExitNode(0)
 }
 
 type OlmCredentials struct {

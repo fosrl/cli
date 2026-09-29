@@ -2,6 +2,7 @@ package selectcmd
 
 import (
 	"github.com/fosrl/cli/cmd/select/account"
+	"github.com/fosrl/cli/cmd/select/exitnode"
 	"github.com/fosrl/cli/cmd/select/org"
 	"github.com/spf13/cobra"
 )
@@ -15,6 +16,7 @@ func SelectCmd() *cobra.Command {
 
 	cmd.AddCommand(account.AccountCmd())
 	cmd.AddCommand(org.OrgCmd())
+	cmd.AddCommand(exitnode.ExitNodeCmd())
 
 	return cmd
 }

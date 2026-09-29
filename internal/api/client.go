@@ -436,6 +436,40 @@ func (c *Client) ListLauncherResources(orgID string, opts ListLauncherResourcesO
 	return &data, nil
 }
 
+// ListGatewayResources returns every gateway-mode site resource in the org
+// (with the IDs of the sites backing each one), fetching all pages.
+func (c *Client) ListGatewayResources(orgID string) ([]SiteResource, error) {
+	const pageSize = 100
+	path := fmt.Sprintf("/org/%s/site-resources", url.PathEscape(orgID))
+
+	var gateways []SiteResource
+	for page := 1; ; page++ {
+		var data ListSiteResourcesData
+		err := c.Get(path, &data, RequestOptions{Query: map[string]string{
+			"mode":     "gateway",
+			"page":     strconv.Itoa(page),
+			"pageSize": strconv.Itoa(pageSize),
+		}})
+		if err != nil {
+			return nil, err
+		}
+
+		// Servers that predate gateway mode ignore the unknown filter value and
+		// return every resource, so filter again here.
+		for _, r := range data.SiteResources {
+			if r.Mode == "gateway" {
+				gateways = append(gateways, r)
+			}
+		}
+
+		if len(data.SiteResources) < pageSize {
+			break
+		}
+	}
+
+	return gateways, nil
+}
+
 // GetResourceByNiceID fetches a resource's full details (including resourceGuid,
 // not present on LauncherResource) by org + niceId.
 func (c *Client) GetResourceByNiceID(orgID, niceID string) (*GetResourceData, error) {

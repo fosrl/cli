@@ -141,6 +141,9 @@ func dumpConfig(cfg *config.Config) error {
 	if cfg.IsSet("up.prefer_local_routes") {
 		up["prefer_local_routes"] = cfg.GetBool("up.prefer_local_routes")
 	}
+	if cfg.IsSet("up.exit_node_takes_precedence") {
+		up["exit_node_takes_precedence"] = cfg.GetBool("up.exit_node_takes_precedence")
+	}
 	if len(up) > 0 {
 		out["up"] = up
 	}

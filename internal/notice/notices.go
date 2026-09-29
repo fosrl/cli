@@ -26,7 +26,7 @@ func companionModeIntroLines(cfg *config.Config) []string {
 
 	lines := []string{
 		"Pangolin CLI now uses companion mode with " + clientName + ".",
-		"Login, logout, and account or organization changes are managed in " + clientName + ".",
+		"Login, logout, and account, organization, or exit node changes are managed in " + clientName + ".",
 	}
 	if companion.RequiredDesktopAppVersion() != "" {
 		lines = append(lines, "Requires "+clientName+" version "+companion.RequiredDesktopAppVersion()+" or later.")

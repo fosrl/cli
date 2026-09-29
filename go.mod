@@ -10,8 +10,8 @@ require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/creack/pty v1.1.24
-	github.com/fosrl/newt v1.17.0
-	github.com/fosrl/olm v1.9.1
+	github.com/fosrl/newt v1.18.0
+	github.com/fosrl/olm v1.10.0
 	github.com/mattn/go-isatty v0.0.24
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
@@ -131,6 +131,6 @@ require (
 // If changes to Olm or Newt are required, use these
 // replace directives during development.
 //
-replace github.com/fosrl/olm => ../olm
+// replace github.com/fosrl/olm => ../olm
 
-replace github.com/fosrl/newt => ../newt
+// replace github.com/fosrl/newt => ../newt

@@ -814,11 +814,11 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		DisableRelay:                      opts.DisableRelay,
 		GatewaySiteIds:                    opts.GatewaySiteIDs,
 		GatewaySiteResourceId:             opts.GatewaySiteResourceID,
-		// SubnetRouter:         opts.SubnetRouter,
-		UserToken:          userToken,
-		InitialFingerprint: initialFingerprint,
-		InitialPostures:    initialPostures,
-		EnableUAPI:         false, // ONLY FOR DEBUG: TODO MAKE FALSE
+		SubnetRouter:                      opts.SubnetRouter,
+		UserToken:                         userToken,
+		InitialFingerprint:                initialFingerprint,
+		InitialPostures:                   initialPostures,
+		EnableUAPI:                        false, // ONLY FOR DEBUG: TODO MAKE FALSE
 	}
 
 	// Check if running with elevated permissions (required for network interface creation)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
@@ -47,6 +48,11 @@ choice is saved and applied the next time you run 'pangolin up'.`,
 }
 
 func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
+	if err := companion.GuardMutatingAuth(cmd.Context()); err != nil {
+		logger.Error("%v", err)
+		return err
+	}
+
 	// The client doesn't have to be running: the choice is saved to the config
 	// and applied by the next `pangolin up`. When it is running it is also
 	// applied live.

@@ -90,7 +90,7 @@ func notReadySuggestion(provider Provider, dataDir string, session *Session) str
 func MutatingAuthError(providerName string) error {
 	return fmt.Errorf(
 		"Authentication is managed by %s.\n"+
-			"Login, logout, and account or organization changes must be done in %s.\n"+
+			"Login, logout, and account, organization, or exit node changes must be done in %s.\n"+
 			"To use standalone CLI auth, run 'pangolin companion disable'.",
 		providerName,
 		providerName,

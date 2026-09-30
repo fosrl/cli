@@ -23,6 +23,7 @@ pangolin up client [flags]
       --attach                       Run in attached (foreground) mode, (default: detached (background) mode)
       --disable-relay                Disable relay connections (default false)
       --endpoint string              Client endpoint (required if not logged in)
+      --exit-node NICE-ID            Exit node NICE-ID to route all traffic through for this connection, overriding the exit node saved by 'pangolin select exit-node'. Requires being logged in
       --exit-node-resource-id int    ID of the exit node resource the --exit-node-site-ids belong to, so changes to that resource are applied while connected
       --exit-node-site-ids ints      Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any). Requires --exit-node-resource-id
       --exit-node-takes-precedence   Do not add routes or resolve aliases for individual resources, so all traffic is sent through the exit node instead of directly to resources (default false)

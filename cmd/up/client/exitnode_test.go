@@ -8,6 +8,43 @@ import (
 	"github.com/fosrl/cli/internal/api"
 )
 
+func TestResolveExitNodeByNiceID(t *testing.T) {
+	lister := func(gws ...api.SiteResource) func(string) ([]api.SiteResource, error) {
+		return func(string) ([]api.SiteResource, error) { return gws, nil }
+	}
+
+	tests := []struct {
+		name    string
+		niceID  string
+		org     string
+		list    func(string) ([]api.SiteResource, error)
+		want    []int
+		wantID  int
+		wantErr bool
+	}{
+		{"matches by niceId", "gw-a", "org1",
+			lister(api.SiteResource{SiteResourceID: 11, NiceID: "gw-b", Enabled: true, SiteIDs: []int{1, 2}}, api.SiteResource{SiteResourceID: 12, NiceID: "gw-a", Enabled: true, SiteIDs: []int{2, 3}}), []int{2, 3}, 12, false},
+		{"not found", "gw-a", "org1", lister(api.SiteResource{SiteResourceID: 11, NiceID: "gw-b", Enabled: true, SiteIDs: []int{1, 2}}), nil, 0, true},
+		{"numeric id is not a niceId", "12", "org1", lister(api.SiteResource{SiteResourceID: 12, NiceID: "gw-a", Enabled: true, SiteIDs: []int{1, 2}}), nil, 0, true},
+		{"resource disabled", "gw-a", "org1", lister(api.SiteResource{SiteResourceID: 12, NiceID: "gw-a", Enabled: false, SiteIDs: []int{1, 2}}), nil, 0, true},
+		{"resource has no sites", "gw-a", "org1", lister(api.SiteResource{SiteResourceID: 12, NiceID: "gw-a", Enabled: true}), nil, 0, true},
+		{"lookup fails", "gw-a", "org1", func(string) ([]api.SiteResource, error) { return nil, errors.New("boom") }, nil, 0, true},
+		{"no session to look it up with", "gw-a", "org1", nil, nil, 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotID, got, err := resolveExitNodeByNiceID(tt.niceID, tt.org, tt.list)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("got err %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) || gotID != tt.wantID {
+				t.Fatalf("got %d %v, want %d %v", gotID, got, tt.wantID, tt.want)
+			}
+		})
+	}
+}
+
 func TestResolveSavedExitNode(t *testing.T) {
 	const savedResourceID = 12
 	lister := func(gws ...api.SiteResource) func(string) ([]api.SiteResource, error) {

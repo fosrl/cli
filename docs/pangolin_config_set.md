@@ -15,6 +15,7 @@ Supported keys:
   up.override_dns
   up.match_domains_dns
   up.prefer_local_routes
+  up.exit_node_takes_precedence
   session_cookie_name
 
 Examples:

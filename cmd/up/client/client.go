@@ -58,6 +58,7 @@ type ClientUpCmdOpts struct {
 	ExitNodeTakesPrecedence bool
 	DisableRelay            bool
 	SubnetRouter            bool
+	ExitNode                string
 	GatewaySiteIDs          []int
 
 	GatewaySiteResourceID int
@@ -197,8 +198,11 @@ logs, and removes the service again when you press Ctrl+C.`,
 	cmd.Flags().BoolVar(&opts.ExitNodeTakesPrecedence, "exit-node-takes-precedence", false, "Do not add routes or resolve aliases for individual resources, so all traffic is sent through the exit node instead of directly to resources (default false)")
 	cmd.Flags().BoolVar(&opts.DisableRelay, "disable-relay", false, "Disable relay connections (default false)")
 	cmd.Flags().BoolVar(&opts.SubnetRouter, "subnet-router", false, "Enable this client to act as a subnet router: traffic forwarded from the local network is NATed to this client's own tunnel IP before going out over the tunnel. Linux only, requires CAP_NET_ADMIN. (default false)")
+	cmd.Flags().StringVar(&opts.ExitNode, "exit-node", "", "Exit node `NICE-ID` to route all traffic through for this connection, overriding the exit node saved by 'pangolin select exit-node'. Requires being logged in")
 	cmd.Flags().IntSliceVar(&opts.GatewaySiteIDs, "exit-node-site-ids", nil, "Site IDs to route all traffic through as an exit node (default: the exit node saved by 'pangolin select exit-node', if any). Requires --exit-node-resource-id")
 	cmd.Flags().IntVar(&opts.GatewaySiteResourceID, "exit-node-resource-id", 0, "ID of the exit node resource the --exit-node-site-ids belong to, so changes to that resource are applied while connected")
+	cmd.MarkFlagsMutuallyExclusive("exit-node", "exit-node-site-ids")
+	cmd.MarkFlagsMutuallyExclusive("exit-node", "exit-node-resource-id")
 	cmd.Flags().BoolVar(&opts.Attached, "attach", false, "Run in attached (foreground) mode, (default: detached (background) mode)")
 	cmd.Flags().BoolVar(&opts.Silent, "silent", false, "Disable TUI and run silently when detached")
 
@@ -443,7 +447,18 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				savedResourceID = activeAccount.ExitNodeResourceID
 			}
 		}
-		opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(savedResourceID, orgID, list)
+		if opts.ExitNode != "" {
+			// Overrides the saved exit node for this run only; the saved one
+			// is left as is.
+			var err error
+			opts.GatewaySiteResourceID, opts.GatewaySiteIDs, err = resolveExitNodeByNiceID(opts.ExitNode, orgID, list)
+			if err != nil {
+				logger.Error("Error: %v", err)
+				return err
+			}
+		} else {
+			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(savedResourceID, orgID, list)
+		}
 	} else if len(opts.GatewaySiteIDs) > 0 && opts.GatewaySiteResourceID <= 0 {
 		err := fmt.Errorf("--exit-node-site-ids requires --exit-node-resource-id")
 		logger.Error("%v", err)

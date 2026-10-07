@@ -71,7 +71,14 @@ detect_platform() {
     case "$(uname -m)" in
         x86_64|amd64) arch="amd64" ;;
         arm64|aarch64) arch="arm64" ;;
-        armv7l|armv6l)
+        armv6l)
+            if [ "$os" = "linux" ]; then
+                arch="arm32v6"
+            else
+                arch="arm64"
+            fi
+            ;;
+        armv7l)
             if [ "$os" = "linux" ]; then
                 arch="arm32"
             else

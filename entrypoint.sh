@@ -2,6 +2,10 @@
 
 set -e
 
+# Call this as the fist thing so that if the user has added custom certificates
+# to /usr/local/share/ca-certificates/ they will be used by pangolin-cli.
+update-ca-certificates
+
 # Check if Pangolin environment variables are set
 if [ -n "$PANGOLIN_ENDPOINT" ] && [ -n "$CLIENT_ID" ] && [ -n "$CLIENT_SECRET" ]; then
     # Run pangolin-cli up --attach with the provided credentials

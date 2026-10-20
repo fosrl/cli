@@ -2,7 +2,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="Pangolin CLI"
            Language="1033"
-           Version="0.18.0"
+           Version="0.19.0"
            Manufacturer="Fossorial"
            UpgradeCode="35A1E3C4-C273-4334-9DF3-57408E83012E"
            Compressed="yes">
@@ -23,6 +23,12 @@
                        Part="last"
                        Action="set"
                        System="yes" />
+        </Component>
+        <Component Id="WintunDll" Guid="E3F4A5B6-C7D8-4901-1234-56789ABCDEF0">
+          <File Id="WintunDll"
+                Source="third_party/wintun/amd64/wintun.dll"
+                Name="wintun.dll"
+                KeyPath="yes" />
         </Component>
       </Directory>
     </StandardDirectory>
@@ -48,6 +54,7 @@
 
     <Feature Id="ProductFeature" Title="pangolin-cli" Level="1">
       <ComponentRef Id="PangolinCli" />
+      <ComponentRef Id="WintunDll" />
       <ComponentRef Id="StartMenuShortcut" />
     </Feature>
 

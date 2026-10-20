@@ -20,6 +20,12 @@ func GetDefaultSocketPath() string {
 	return getDefaultSocketPath()
 }
 
+// resolveClientSocketPath picks which socket a client should talk to when none
+// was given explicitly.
+func resolveClientSocketPath() string {
+	return defaultSocketPath
+}
+
 func newHTTPTransport(socketPath string) *http.Transport {
 	return &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {

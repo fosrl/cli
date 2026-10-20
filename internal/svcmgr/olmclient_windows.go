@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fosrl/cli/internal/olm"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	newtLogger "github.com/fosrl/newt/logger"
 	olmpkg "github.com/fosrl/olm/olm"
@@ -132,7 +133,9 @@ func runOlmClient(ctx context.Context, serviceName string, creds ClientCreds) er
 		// Named pipe on Windows. A name distinct from olm's own "olm"
 		// default, so this machine-client service can't collide with a
 		// separate interactive olm/desktop-app instance on the same box.
-		SocketPath: "pangolin-client",
+		// internal/olm.NewClient("") falls back to this pipe, so `status`,
+		// `down`, etc. still find the service.
+		SocketPath: olm.ServiceSocketPath,
 		Version:    versionpkg.Version,
 		Agent:      "Pangolin Service",
 		// No WatchdogSubcommand: `pangolin up client` sets one (see

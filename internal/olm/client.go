@@ -106,7 +106,7 @@ type GatewayResponse struct {
 // NewClient creates a new OLM socket client
 func NewClient(socketPath string) *Client {
 	if socketPath == "" {
-		socketPath = getDefaultSocketPath()
+		socketPath = resolveClientSocketPath()
 	}
 
 	return &Client{

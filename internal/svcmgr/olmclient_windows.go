@@ -138,6 +138,7 @@ func runOlmClient(ctx context.Context, serviceName string, creds ClientCreds) er
 		SocketPath: olm.ServiceSocketPath,
 		Version:    versionpkg.Version,
 		Agent:      "Pangolin Service",
+		OlmVersion: versionpkg.OlmVersionOverride,
 		// No WatchdogSubcommand: `pangolin up client` sets one (see
 		// cmd/watchdog) as a DNS-cleanup safety net for its own process,
 		// but the CLI's watchdog subcommand isn't implemented on Windows

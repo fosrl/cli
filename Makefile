@@ -5,7 +5,8 @@ OUTPUT_DIR=bin
 
 VERSION ?= 0.19.0
 NEWT_VERSION := $(shell go list -m -f '{{.Version}}' github.com/fosrl/newt | sed 's/^v//')
-LDFLAGS = -s -w -X github.com/fosrl/cli/internal/version.Version=$(VERSION) -X github.com/fosrl/cli/internal/version.NewtVersionOverride=$(NEWT_VERSION)
+OLM_VERSION := $(shell go list -m -f '{{.Version}}' github.com/fosrl/olm | sed 's/^v//')
+LDFLAGS = -s -w -X github.com/fosrl/cli/internal/version.Version=$(VERSION) -X github.com/fosrl/cli/internal/version.NewtVersionOverride=$(NEWT_VERSION) -X github.com/fosrl/cli/internal/version.OlmVersionOverride=$(OLM_VERSION)
 
 all: clean build
 

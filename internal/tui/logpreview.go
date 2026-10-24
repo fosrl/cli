@@ -1,9 +1,10 @@
 package tui
 
 import (
-	"bufio"
+	"bytes"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -212,8 +213,17 @@ func tickStatusUpdate() tea.Cmd {
 	})
 }
 
-// getLastLogLines reads the last N lines from a log file starting from a position
+// Bound both initial reads and large bursts of new logs so the TUI does not
+// scan or retain the entire log file. Lines cut by this window are omitted.
+const maxLogPreviewBytes = 64 * 1024
+
+// getLastLogLines returns up to n of the newest lines since lastPos, reading
+// at most maxLogPreviewBytes plus one byte to check the first line boundary.
 func getLastLogLines(logPath string, n int, lastPos int64) ([]string, int64) {
+	if n <= 0 {
+		return []string{}, lastPos
+	}
+
 	file, err := os.Open(logPath)
 	if err != nil {
 		return []string{}, lastPos
@@ -228,24 +238,56 @@ func getLastLogLines(logPath string, n int, lastPos int64) ([]string, int64) {
 
 	fileSize := info.Size()
 
-	// If file hasn't grown, return empty
-	if fileSize <= lastPos {
+	// Recover if the log was truncated or replaced with a smaller file.
+	if lastPos < 0 || lastPos > fileSize {
+		lastPos = 0
+	}
+	if fileSize == lastPos {
 		return []string{}, lastPos
 	}
 
-	// Read from lastPos to end
-	file.Seek(lastPos, io.SeekStart)
-	scanner := bufio.NewScanner(file)
+	start := lastPos
+	if fileSize-start > maxLogPreviewBytes {
+		start = fileSize - maxLogPreviewBytes
+	}
+	clipped := start > lastPos
+	if clipped {
+		start-- // Include the preceding byte to detect a line boundary.
+	}
 
+	// Read only up to the size observed above, even if the writer keeps appending.
+	data := make([]byte, fileSize-start)
+	read, err := file.ReadAt(data, start)
+	if err != nil && err != io.EOF {
+		return []string{}, lastPos
+	}
+	data = data[:read]
+	newPos := start + int64(read)
+	if clipped {
+		// Drop the preceding byte and any partial line at the window boundary.
+		if newline := bytes.IndexByte(data, '\n'); newline >= 0 {
+			data = data[newline+1:]
+		} else {
+			data = nil
+		}
+	}
+	if len(data) == 0 {
+		return []string{}, newPos
+	}
+
+	// Work backwards and allocate strings only for the lines being displayed.
+	data = bytes.TrimSuffix(data, []byte{'\n'})
 	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	for len(lines) < n {
+		newline := bytes.LastIndexByte(data, '\n')
+		line := bytes.TrimSuffix(data[newline+1:], []byte{'\r'})
+		lines = append(lines, string(line))
+		if newline < 0 {
+			break
+		}
+		data = data[:newline]
 	}
+	slices.Reverse(lines)
 
-	// Return last N lines
-	if len(lines) > n {
-		lines = lines[len(lines)-n:]
-	}
-
-	return lines, fileSize
+	return lines, newPos
 }

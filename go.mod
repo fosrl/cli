@@ -6,7 +6,7 @@ toolchain go1.26.10
 
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/Microsoft/go-winio v0.6.3
+	github.com/Microsoft/go-winio v0.6.4
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/huh v1.0.0

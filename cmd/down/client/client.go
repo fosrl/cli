@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
 	"github.com/fosrl/cli/internal/tui"
@@ -27,8 +26,6 @@ func ClientDownCmd() *cobra.Command {
 }
 
 func clientDownMain(cmd *cobra.Command) error {
-	cfg := config.ConfigFromContext(cmd.Context())
-
 	// Get socket path from config or use default
 	client := olm.NewClient("")
 
@@ -59,10 +56,8 @@ func clientDownMain(cmd *cobra.Command) error {
 		return err
 	}
 
-	// Show log preview until process stops
-	completed, _, err := tui.NewLogPreview(tui.LogPreviewConfig{
-		LogFile: cfg.LogFile,
-		Header:  "Shutting down client...",
+	completed, _, err := tui.NewLoading(tui.LoadingConfig{
+		Header: "Shutting down client...",
 		ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {
 			// Exit when process is no longer running (socket doesn't exist)
 			if !client.IsRunning() {

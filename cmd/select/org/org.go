@@ -47,7 +47,6 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
-	cfg := config.ConfigFromContext(cmd.Context())
 
 	activeAccount, err := accountStore.ActiveAccount()
 	if err != nil {
@@ -111,7 +110,7 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 	// Switch active client if running (and started by this CLI)
 	switched := utils.SwitchActiveClientOrg(selectedOrgID)
 	if switched {
-		monitorOrgSwitch(cfg.LogFile, selectedOrgID)
+		monitorOrgSwitch(selectedOrgID)
 		// Restore this org's saved exit node in the running client.
 		utils.ApplySavedExitNodeToActiveClient(account.ExitNode(selectedOrgID), selectedOrgID, apiClient.ListGatewayResources)
 	} else {
@@ -121,12 +120,10 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 	return nil
 }
 
-// monitorOrgSwitch monitors the organization switch process with log preview
-func monitorOrgSwitch(logFile string, orgID string) {
-	// Show live log preview and status during switch
-	completed, _, err := tui.NewLogPreview(tui.LogPreviewConfig{
-		LogFile: logFile,
-		Header:  "Switching organization...",
+// monitorOrgSwitch monitors the organization switch process with a loading indicator
+func monitorOrgSwitch(orgID string) {
+	completed, _, err := tui.NewLoading(tui.LoadingConfig{
+		Header: "Switching organization...",
 		ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {
 			// Exit when orgId matches new org AND interface is registered again
 			if status != nil && status.OrgID == orgID && status.Registered {
@@ -150,7 +147,6 @@ func monitorOrgSwitch(logFile string, orgID string) {
 		},
 	})
 
-	// Clear the TUI lines after completion
 	if completed {
 		logger.Success("Successfully switched organization to: %s", orgID)
 	} else if err != nil {

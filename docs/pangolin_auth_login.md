@@ -13,7 +13,8 @@ pangolin auth login [hostname] [flags]
 ### Options
 
 ```
-  -h, --help   help for login
+  -h, --help            help for login
+      --org-id string   Select an organization by ID without prompting
 ```
 
 ### SEE ALSO

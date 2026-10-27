@@ -26,8 +26,13 @@ install: build
 	@go install -ldflags "$(LDFLAGS)" .
 
 docs:
-	@echo "Generating markdown documentation..."
+	@echo "Generating markdown documentation (linux)..."
+ifeq ($(shell go env GOOS),linux)
 	@go run tools/gendocs/main.go -dir docs
+else
+	@docker run --rm -v "$(CURDIR):/src" -w /src golang:1.26-bookworm \
+		go run tools/gendocs/main.go -dir docs
+endif
 	@echo "Documentation generated in docs/"
 
 docker-build:

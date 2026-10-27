@@ -74,8 +74,8 @@ github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=
 github.com/felixge/httpsnoop v1.1.0/go.mod h1:Zqxgdd+1Rkcz8euOqdr7lqgCRJztwr5hp9vDSi5UZCE=
-github.com/fosrl/newt v1.19.0 h1:7ELF+fIqYBbCNsIAIQVkklYFIweaA9I8Va91+OaIe2M=
-github.com/fosrl/newt v1.19.0/go.mod h1:T1LpzfkNZkMw4NpdgG66NbL5YTvP1T2Om4XPg8KbBy8=
+github.com/fosrl/newt v1.19.1 h1:Pz5EoUOYmTgZaxldtj7YUoZ9OlpBbtD6K7UKFNZoIxU=
+github.com/fosrl/newt v1.19.1/go.mod h1:2chBJ4TyLOmRqligDe3M5HXxpIWh1MWP3JS1fHSIMSM=
 github.com/fosrl/olm v1.10.2 h1:pj72Fu+b+fzydOv4QZRi+CpeM/iLKL+5jyrk1+oqlVY=
 github.com/fosrl/olm v1.10.2/go.mod h1:EBZ9lHq5cbHxIP3J9WyL3w8jlkso8qWKI9vIalOMdWE=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=

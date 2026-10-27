@@ -12,7 +12,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/creack/pty v1.1.24
-	github.com/fosrl/newt v1.19.0
+	github.com/fosrl/newt v1.19.1
 	github.com/fosrl/olm v1.10.2
 	github.com/mattn/go-isatty v0.0.24
 	github.com/pelletier/go-toml/v2 v2.4.3

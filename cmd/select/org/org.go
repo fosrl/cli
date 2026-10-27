@@ -115,6 +115,7 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 		utils.ApplySavedExitNodeToActiveClient(account.ExitNode(selectedOrgID), selectedOrgID, apiClient.ListGatewayResources)
 	} else {
 		logger.Success("Successfully selected organization: %s", selectedOrgID)
+		utils.WarnUnmanagedClient(selectedOrgID)
 	}
 
 	return nil

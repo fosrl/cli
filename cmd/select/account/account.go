@@ -118,6 +118,11 @@ func accountMain(cmd *cobra.Command, opts *AccountCmdOpts) error {
 		return err
 	}
 
+	// Every path below reports success; afterwards, flag a running client
+	// this CLI doesn't control (e.g. the desktop app's), which keeps its
+	// own account.
+	defer utils.WarnUnmanagedClient("")
+
 	// Shut down running client only if it was started by this CLI
 	olmClient := olm.NewClient("")
 	if olmClient.IsRunning() {

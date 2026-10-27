@@ -30,23 +30,63 @@ type Account struct {
 	OlmCredentials *OlmCredentials `mapstructure:"olmCredentials" json:"olmCredentials,omitempty"`
 	ServerInfo     *ServerInfo     `mapstructure:"serverInfo" json:"serverInfo,omitempty"`
 
+	OrgSettings map[string]OrgSettings `mapstructure:"orgSettings" json:"orgSettings,omitempty"`
+}
+
+type OrgSettings struct {
 	// The exit node (a gateway-mode site resource) selected with `pangolin
-	// select exit-node`, re-applied by `pangolin up`. It can differ per
-	// account, so it's stored here rather than on the root config, and it
-	// belongs to the account's currently selected org (OrgID above). Only the
+	// select exit-node`, re-applied by `pangolin up` for this org. Only the
 	// resource ID is stored (not the niceId, which can be renamed); its sites
 	// are looked up from the server on every start so they can't go stale.
 	ExitNodeResourceID int `mapstructure:"exitNodeResourceId" json:"exitNodeResourceId,omitempty"`
 }
 
-// SetExitNode records the account's selected exit node (a gateway resource).
-func (a *Account) SetExitNode(resourceID int) {
-	a.ExitNodeResourceID = resourceID
+func (s OrgSettings) IsEmpty() bool {
+	return s.ExitNodeResourceID == 0
 }
 
-// ClearExitNode forgets the account's selected exit node.
-func (a *Account) ClearExitNode() {
-	a.SetExitNode(0)
+// GetOrgSettings returns the account's settings for orgID, or empty defaults
+// if none are stored.
+func (a *Account) GetOrgSettings(orgID string) OrgSettings {
+	return a.OrgSettings[orgID]
+}
+
+// UpdateOrgSettings updates the account's settings for orgID. Empty settings
+// remove that org's entry.
+func (a *Account) UpdateOrgSettings(orgID string, update func(*OrgSettings)) {
+	settings := make(map[string]OrgSettings, len(a.OrgSettings)+1)
+	for id, s := range a.OrgSettings {
+		settings[id] = s
+	}
+	org := settings[orgID]
+	update(&org)
+	if org.IsEmpty() {
+		delete(settings, orgID)
+	} else {
+		settings[orgID] = org
+	}
+	if len(settings) == 0 {
+		settings = nil
+	}
+	a.OrgSettings = settings
+}
+
+// ExitNode returns the resource ID of the exit node selected for orgID, or 0
+// for none.
+func (a *Account) ExitNode(orgID string) int {
+	return a.GetOrgSettings(orgID).ExitNodeResourceID
+}
+
+// SetExitNode records the exit node (a gateway resource) selected for orgID.
+func (a *Account) SetExitNode(orgID string, resourceID int) {
+	a.UpdateOrgSettings(orgID, func(s *OrgSettings) {
+		s.ExitNodeResourceID = resourceID
+	})
+}
+
+// ClearExitNode forgets the exit node selected for orgID.
+func (a *Account) ClearExitNode(orgID string) {
+	a.SetExitNode(orgID, 0)
 }
 
 type OlmCredentials struct {

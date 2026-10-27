@@ -444,7 +444,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if credentialsFromKeyring {
 			list = apiClient.ListGatewayResources
 			if activeAccount, err := accountStore.ActiveAccount(); err == nil {
-				savedResourceID = activeAccount.ExitNodeResourceID
+				savedResourceID = activeAccount.ExitNode(orgID)
 			}
 		}
 		if opts.ExitNode != "" {
@@ -457,7 +457,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				return err
 			}
 		} else {
-			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(savedResourceID, orgID, list)
+			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = utils.ResolveSavedExitNode(savedResourceID, orgID, list)
 		}
 	} else if len(opts.GatewaySiteIDs) > 0 && opts.GatewaySiteResourceID <= 0 {
 		err := fmt.Errorf("--exit-node-site-ids requires --exit-node-resource-id")

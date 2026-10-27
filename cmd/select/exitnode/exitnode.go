@@ -96,7 +96,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 		}
 	}
 	// The saved exit node, scoped to the account's current org.
-	savedResourceID := activeAccount.ExitNodeResourceID
+	savedResourceID := activeAccount.ExitNode(orgID)
 	// With a running client, the active exit node is the one it reports;
 	// otherwise it is the saved one, which the next start will apply.
 	isActive := func(g api.SiteResource) bool {
@@ -143,7 +143,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 				return err
 			}
 		}
-		activeAccount.ClearExitNode()
+		activeAccount.ClearExitNode(orgID)
 		if !saveExitNode(accountStore, activeAccount, running) {
 			return fmt.Errorf("failed to save exit node")
 		}
@@ -158,7 +158,7 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			return err
 		}
 	}
-	activeAccount.SetExitNode(selected.SiteResourceID)
+	activeAccount.SetExitNode(orgID, selected.SiteResourceID)
 	if !saveExitNode(accountStore, activeAccount, running) {
 		return fmt.Errorf("failed to save exit node")
 	}

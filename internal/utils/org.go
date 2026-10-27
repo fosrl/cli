@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/olm"
@@ -116,4 +117,41 @@ func SwitchActiveClientOrg(orgID string) bool {
 
 	// Switch was sent successfully
 	return true
+}
+
+// WarnUnmanagedClient tells the user when the running client was started by
+// another app (e.g. the desktop app on Windows) rather than this CLI, since
+// selections made here are saved for the CLI but don't change that client.
+// orgID is the newly selected org, or empty when the account changed.
+//
+// In companion mode the select commands are blocked before reaching this, so
+// it only fires with standalone CLI auth.
+func WarnUnmanagedClient(orgID string) {
+	client := olm.NewClient("")
+	if !client.IsRunning() {
+		return
+	}
+
+	status, err := client.GetStatus()
+	if err != nil || status == nil || status.Agent == olm.AgentName {
+		return
+	}
+	if orgID != "" && status.OrgID == orgID {
+		return
+	}
+
+	agent := status.Agent
+	if agent == "" {
+		agent = "another application"
+	}
+
+	if orgID != "" && status.OrgID != "" {
+		logger.Warning("The running client was started by %s, not this CLI, so it is still connected to organization %s.", agent, status.OrgID)
+	} else {
+		logger.Warning("The running client was started by %s, not this CLI, so it was not changed.", agent)
+	}
+
+	if providerName := companion.PlatformProviderName(); providerName != "" && status.Agent == providerName {
+		logger.Info("Switch accounts or organizations in %s to change its connection, or run 'pangolin companion enable' to have the CLI use %s's account and organization.", providerName, providerName)
+	}
 }

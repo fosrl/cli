@@ -150,7 +150,7 @@ logs, and removes the service again when you press Ctrl+C.`,
 			}
 
 			if opts.Attached && opts.Silent {
-				return errors.New("--silent and --attached options conflict")
+				return errors.New("--silent and --attach options conflict")
 			}
 
 			cfg := config.ConfigFromContext(cmd.Context())
@@ -444,7 +444,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if credentialsFromKeyring {
 			list = apiClient.ListGatewayResources
 			if activeAccount, err := accountStore.ActiveAccount(); err == nil {
-				savedResourceID = activeAccount.ExitNodeResourceID
+				savedResourceID = activeAccount.ExitNode(orgID)
 			}
 		}
 		if opts.ExitNode != "" {
@@ -457,7 +457,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				return err
 			}
 		} else {
-			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resolveSavedExitNode(savedResourceID, orgID, list)
+			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = utils.ResolveSavedExitNode(savedResourceID, orgID, list)
 		}
 	} else if len(opts.GatewaySiteIDs) > 0 && opts.GatewaySiteResourceID <= 0 {
 		err := fmt.Errorf("--exit-node-site-ids requires --exit-node-resource-id")
@@ -644,10 +644,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return nil
 		}
 
-		// Show live log preview and status
-		completed, statusError, err := tui.NewLogPreview(tui.LogPreviewConfig{
-			LogFile: logFile,
-			Header:  "Starting up client...",
+		// Show loading indicator until the client is connected and registered
+		completed, statusError, err := tui.NewLoading(tui.LoadingConfig{
+			Header: "Starting up client...",
 			ExitCondition: func(client *olm.Client, status *olm.StatusResponse) (bool, bool) {
 				// Exit when both connected and registered
 				if status != nil && status.Connected && status.Registered {

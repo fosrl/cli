@@ -5,6 +5,7 @@ package svcmgr
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -334,9 +335,14 @@ func (h *hostedService) Execute(_ []string, r <-chan svc.ChangeRequest, changes 
 		defer logFile.Close()
 	}
 
+	var warn func(string)
+	if elogErr == nil {
+		warn = func(msg string) { _ = elog.Warning(1, msg) }
+	}
+
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
-	go h.supervise(logFile, stopCh, doneCh)
+	go h.supervise(logFile, warn, stopCh, doneCh)
 
 	changes <- svc.Status{State: svc.Running, Accepts: accepted}
 
@@ -364,12 +370,22 @@ func (h *hostedService) Execute(_ []string, r <-chan svc.ChangeRequest, changes 
 	}
 }
 
+// crashExitTimeout is how long a child that has started printing a Go crash
+// gets to exit on its own before supervise kills it. A healthy crash exits
+// as soon as the traceback is written, which takes well under a second even
+// for thousands of goroutines.
+const crashExitTimeout = 30 * time.Second
+
 // supervise runs the actual `pangolin up ...` child process, restarting it
 // (after a short backoff) if it exits unexpectedly, until stopCh is closed.
 // This is the Windows equivalent of systemd's Restart=always / launchd's
-// KeepAlive.
-func (h *hostedService) supervise(logFile *os.File, stopCh <-chan struct{}, doneCh chan<- struct{}) {
+// KeepAlive. warn, if non-nil, reports to the Windows Event Log.
+func (h *hostedService) supervise(logFile *os.File, warn func(string), stopCh <-chan struct{}, doneCh chan<- struct{}) {
 	defer close(doneCh)
+
+	if warn == nil {
+		warn = func(string) {}
+	}
 
 	exePath, err := os.Executable()
 	if err != nil {
@@ -378,15 +394,23 @@ func (h *hostedService) supervise(logFile *os.File, stopCh <-chan struct{}, done
 
 	for {
 		cmd := exec.Command(exePath, h.upArgs...)
+		var out io.Writer
 		if logFile != nil {
-			cmd.Stdout = logFile
-			cmd.Stderr = logFile
+			out = logFile
 		}
+		watcher := newCrashWatcher(out)
+		cmd.Stdout = watcher
+		cmd.Stderr = watcher
+		// Output now goes through a pipe; don't let a handle inherited by
+		// a grandchild keep Wait from returning after the child is gone.
+		cmd.WaitDelay = 5 * time.Second
 		// Its own process group so a CTRL_BREAK_EVENT sent below targets
 		// only this child, not the service host itself.
 		cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_PROCESS_GROUP}
 
-		if err := cmd.Start(); err == nil {
+		if err := cmd.Start(); err != nil {
+			warn(fmt.Sprintf("%s: failed to start worker: %v", h.name, err))
+		} else {
 			exitCh := make(chan struct{})
 			go func() {
 				_ = cmd.Wait()
@@ -395,18 +419,24 @@ func (h *hostedService) supervise(logFile *os.File, stopCh <-chan struct{}, done
 
 			select {
 			case <-stopCh:
-				// Ask nicely first (equivalent of SIGTERM), then force-kill
-				// if it doesn't exit in time.
-				_ = windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid))
+				stopChild(cmd, exitCh)
+				return
+			case <-exitCh:
+			case <-watcher.Crashed():
+				// The Go runtime can wedge in its crash handler instead of
+				// exiting (see crashWatcher), so don't wait on it forever.
 				select {
 				case <-exitCh:
-				case <-time.After(10 * time.Second):
+				case <-stopCh:
+					stopChild(cmd, exitCh)
+					return
+				case <-time.After(crashExitTimeout):
+					warn(fmt.Sprintf("%s: worker (pid %d) crashed but did not exit within %s; killing it", h.name, cmd.Process.Pid, crashExitTimeout))
 					_ = cmd.Process.Kill()
 					<-exitCh
 				}
-				return
-			case <-exitCh:
 			}
+			warn(fmt.Sprintf("%s: worker (pid %d) exited unexpectedly (%v); restarting", h.name, cmd.Process.Pid, cmd.ProcessState))
 		}
 
 		select {
@@ -414,5 +444,17 @@ func (h *hostedService) supervise(logFile *os.File, stopCh <-chan struct{}, done
 			return
 		case <-time.After(2 * time.Second):
 		}
+	}
+}
+
+// stopChild asks the child to exit (the equivalent of SIGTERM), then
+// force-kills it if it doesn't exit in time.
+func stopChild(cmd *exec.Cmd, exitCh <-chan struct{}) {
+	_ = windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid))
+	select {
+	case <-exitCh:
+	case <-time.After(10 * time.Second):
+		_ = cmd.Process.Kill()
+		<-exitCh
 	}
 }

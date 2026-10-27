@@ -19,6 +19,11 @@ if not exist "%BUILDDIR%\pangolin-cli_windows_amd64.exe" (
   exit /b 1
 )
 
+if not exist "third_party\wintun\amd64\wintun.dll" (
+  echo ERROR: third_party\wintun\amd64\wintun.dll not found. Download Wintun from https://www.wintun.net/ 1>&2
+  exit /b 1
+)
+
 wix build -arch x64 -define "BuildDir=%BUILDDIR%" -o "%BUILDDIR%\pangolin-cli_windows_installer.msi" "pangolin-cli.wxs"
 if errorlevel 1 exit /b %errorlevel%
 echo Created "%BUILDDIR%\pangolin-cli_windows_installer.msi"

@@ -14,6 +14,16 @@ const (
 	ClientServiceName = "pangolin-client"
 )
 
+// SupervisedEnvVar is set in the environment of the `pangolin up ...` child
+// process run by the Windows service host. A supervised child must restart
+// by exiting with RestartExitCode and letting the host relaunch it, rather
+// than spawning its own replacement that the host would not know about.
+const SupervisedEnvVar = "PANGOLIN_SERVICE_SUPERVISED"
+
+// RestartExitCode is the exit code a supervised child uses to ask the
+// service host to relaunch it (e.g. after a self-update or blueprint reload).
+const RestartExitCode = 75
+
 // Spec describes a service to install.
 type Spec struct {
 	// Name is a unique, filesystem/registry-safe identifier for the

@@ -292,6 +292,81 @@ func applyUpDefaults(cmd *cobra.Command, opts *ClientUpCmdOpts, cfg *config.Conf
 	if !cmd.Flags().Changed("exit-node-takes-precedence") && cfg.IsSet("up.exit_node_takes_precedence") {
 		opts.ExitNodeTakesPrecedence = cfg.GetBool("up.exit_node_takes_precedence")
 	}
+	if !cmd.Flags().Changed("mtu") && cfg.Up.MTU != nil {
+		opts.MTU = *cfg.Up.MTU
+	}
+}
+
+// applyOrgConfig layers the org's entry in the config file over the global
+// defaults applyUpDefaults applied. Explicit flags still win.
+func applyOrgConfig(cmd *cobra.Command, opts *ClientUpCmdOpts, org config.OrgConfig) {
+	if !cmd.Flags().Changed("tunnel-dns") && org.TunnelDNS != nil {
+		opts.TunnelDNS = *org.TunnelDNS
+	}
+	if !cmd.Flags().Changed("override-dns") && org.OverrideDNS != nil {
+		opts.OverrideDNS = *org.OverrideDNS
+	}
+	if !cmd.Flags().Changed("upstream-dns") && org.UpstreamDNS != nil {
+		opts.UpstreamDNS = org.UpstreamDNS
+	}
+	if !cmd.Flags().Changed("match-domains") && org.MatchDomains != nil {
+		opts.MatchDomains = org.MatchDomains
+	}
+	if !cmd.Flags().Changed("prefer-local-routes") && org.PreferLocalRoutes != nil {
+		opts.PreferLocalRoutes = *org.PreferLocalRoutes
+	}
+	if !cmd.Flags().Changed("exit-node-takes-precedence") && org.ExitNodeTakesPrecedence != nil {
+		opts.ExitNodeTakesPrecedence = *org.ExitNodeTakesPrecedence
+	}
+	if !cmd.Flags().Changed("mtu") && org.MTU != nil {
+		opts.MTU = *org.MTU
+	}
+}
+
+// applyServerSettings applies what the org's server manages, which beats
+// everything else, flags included.
+func applyServerSettings(cmd *cobra.Command, opts *ClientUpCmdOpts, settings *config.ClientSettings) {
+	if settings == nil {
+		return
+	}
+
+	warnIfIgnored := func(flag string) {
+		if cmd.Flags().Changed(flag) {
+			logger.Warning("Ignoring --%s: this setting is managed by your organization", flag)
+		}
+	}
+
+	if settings.TunnelDNS != nil {
+		warnIfIgnored("tunnel-dns")
+		opts.TunnelDNS = *settings.TunnelDNS
+	}
+	if settings.OverrideDNS != nil {
+		warnIfIgnored("override-dns")
+		opts.OverrideDNS = *settings.OverrideDNS
+	}
+	if servers := settings.UpstreamDNS(); len(servers) > 0 {
+		warnIfIgnored("upstream-dns")
+		opts.UpstreamDNS = make([]string, len(servers))
+		for i, server := range servers {
+			opts.UpstreamDNS[i] = net.JoinHostPort(server, "53")
+		}
+	}
+	if len(settings.MatchDomains) > 0 {
+		warnIfIgnored("match-domains")
+		opts.MatchDomains = settings.MatchDomains
+	}
+	if settings.PreferLocalRoutes != nil {
+		warnIfIgnored("prefer-local-routes")
+		opts.PreferLocalRoutes = *settings.PreferLocalRoutes
+	}
+	if settings.ExitNodeTakesPrecedence != nil {
+		warnIfIgnored("exit-node-takes-precedence")
+		opts.ExitNodeTakesPrecedence = *settings.ExitNodeTakesPrecedence
+	}
+	if settings.MTU != nil {
+		warnIfIgnored("mtu")
+		opts.MTU = *settings.MTU
+	}
 }
 
 func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string) error {
@@ -434,20 +509,38 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		orgID = activeAccount.OrgID
 	}
 
+	// Settings are resolved here, in the process that has the user's session
+	// and config, and forwarded to the subprocess as flags. Machine clients and
+	// the subprocess itself have no user session, so no server settings.
+	orgConfig := cfg.Orgs[orgID]
+	applyOrgConfig(cmd, opts, orgConfig)
+
+	var serverSettings *config.ClientSettings
+	if credentialsFromKeyring {
+		if activeAccount, err := accountStore.ActiveAccount(); err == nil {
+			serverSettings = utils.RefreshClientSettings(apiClient.GetMyClientSettings, accountStore, activeAccount, orgID)
+		}
+	}
+	applyServerSettings(cmd, opts, serverSettings)
+
 	// Same as match-domains: resolved here so it can be forwarded to the
 	// subprocess, which may not have access to the user's config. Verified
 	// against the server when we have a user session, so a deleted exit node
-	// isn't applied.
-	if !cmd.Flags().Changed("exit-node-site-ids") {
+	// isn't applied. An exit node the server locks beats the exit node flags.
+	exitNodeLocked := serverSettings.LockedExitNode() != 0
+	if exitNodeLocked && (opts.ExitNode != "" || cmd.Flags().Changed("exit-node-site-ids")) {
+		logger.Warning("Ignoring the exit node flags: the exit node is locked by your organization")
+	}
+	if !cmd.Flags().Changed("exit-node-site-ids") || exitNodeLocked {
 		var list func(string) ([]api.SiteResource, error)
 		savedResourceID := 0
 		if credentialsFromKeyring {
 			list = apiClient.ListGatewayResources
 			if activeAccount, err := accountStore.ActiveAccount(); err == nil {
-				savedResourceID = activeAccount.ExitNode(orgID)
+				savedResourceID = config.EffectiveExitNode(serverSettings, activeAccount.ExitNode(orgID), orgConfig)
 			}
 		}
-		if opts.ExitNode != "" {
+		if opts.ExitNode != "" && !exitNodeLocked {
 			// Overrides the saved exit node for this run only; the saved one
 			// is left as is.
 			var err error
@@ -502,9 +595,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		cmdArgs = append(cmdArgs, "--endpoint", endpoint)
 
 		// Optional flags - only include if they were explicitly set
-		if cmd.Flags().Changed("mtu") {
-			cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", opts.MTU))
-		}
+		// Always forwarded, as are the other settings below that org config or
+		// the server can set: the subprocess must not fall back to its own
+		// config for a value already resolved here.
+		cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", opts.MTU))
 		if cmd.Flags().Changed("netstack-dns") {
 			cmdArgs = append(cmdArgs, "--netstack-dns", opts.DNS)
 		}
@@ -533,21 +627,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		if cmd.Flags().Changed("tls-client-cert") {
 			cmdArgs = append(cmdArgs, "--tls-client-cert", opts.TlsClientCert)
 		}
-		if cmd.Flags().Changed("override-dns") {
-			if opts.OverrideDNS {
-				cmdArgs = append(cmdArgs, "--override-dns")
-			} else {
-				cmdArgs = append(cmdArgs, "--override-dns=false")
-			}
-		}
-		if cmd.Flags().Changed("tunnel-dns") {
-			if opts.TunnelDNS {
-				cmdArgs = append(cmdArgs, "--tunnel-dns")
-			} else {
-				cmdArgs = append(cmdArgs, "--tunnel-dns=false")
-			}
-		}
-		if cmd.Flags().Changed("upstream-dns") {
+		cmdArgs = append(cmdArgs, fmt.Sprintf("--override-dns=%t", opts.OverrideDNS))
+		cmdArgs = append(cmdArgs, fmt.Sprintf("--tunnel-dns=%t", opts.TunnelDNS))
+		if len(opts.UpstreamDNS) > 0 {
 			// Comma sep
 			cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(opts.UpstreamDNS, ","))
 		}
@@ -557,16 +639,8 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			// subprocess (running as root) may not have access to that config.
 			cmdArgs = append(cmdArgs, "--match-domains", strings.Join(opts.MatchDomains, ","))
 		}
-		if opts.PreferLocalRoutes {
-			// Always forwarded when true (rather than gated on Changed) for the
-			// same reason as MatchDomains above - it may have come from config.
-			cmdArgs = append(cmdArgs, "--prefer-local-routes")
-		}
-		if opts.ExitNodeTakesPrecedence {
-			// Always forwarded when true (rather than gated on Changed) for the
-			// same reason as MatchDomains above - it may have come from config.
-			cmdArgs = append(cmdArgs, "--exit-node-takes-precedence")
-		}
+		cmdArgs = append(cmdArgs, fmt.Sprintf("--prefer-local-routes=%t", opts.PreferLocalRoutes))
+		cmdArgs = append(cmdArgs, fmt.Sprintf("--exit-node-takes-precedence=%t", opts.ExitNodeTakesPrecedence))
 		if opts.DisableRelay {
 			cmdArgs = append(cmdArgs, "--disable-relay")
 		}

@@ -9,7 +9,8 @@ pangolin config get <key> [flags]
 ### Options
 
 ```
-  -h, --help   help for get
+  -h, --help         help for get
+      --org string   Get the value set for this organization only
 ```
 
 ### SEE ALSO

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/version"
 	yaml "go.yaml.in/yaml/v3"
 )
@@ -551,6 +553,22 @@ func (c *Client) GetMyDevice(olmID string) (*MyDeviceResponse, error) {
 		return nil, err
 	}
 	return &response, nil
+}
+
+// GetMyClientSettings returns the settings the org manages for the current
+// user, or nil if it manages none. Servers that predate client settings answer
+// 404, which means the same thing.
+func (c *Client) GetMyClientSettings(orgID string) (*config.ClientSettings, error) {
+	path := fmt.Sprintf("/org/%s/my-client-settings", url.PathEscape(orgID))
+	var response MyClientSettingsResponse
+	if err := c.Get(path, &response); err != nil {
+		var errResp *ErrorResponse
+		if errors.As(err, &errResp) && errResp.Status == http.StatusNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return response.Settings, nil
 }
 
 // TestConnection tests the connection to the API server

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fosrl/cli/internal/config"
 	"strconv"
 	"time"
 )
@@ -236,6 +237,12 @@ type Olm struct {
 	Name    *string `json:"name,omitempty"`
 	Secret  *string `json:"secret,omitempty"`
 	Blocked *bool   `json:"blocked,omitempty"` // Indicates if the OLM is blocked
+}
+
+// MyClientSettingsResponse represents the response for getting the settings an
+// org manages for the current user
+type MyClientSettingsResponse struct {
+	Settings *config.ClientSettings `json:"settings"`
 }
 
 // MyDeviceResponse represents the response for getting my device

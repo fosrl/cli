@@ -95,6 +95,12 @@ func exitNodeMain(cmd *cobra.Command, opts *ExitNodeCmdOpts) error {
 			usable = append(usable, g)
 		}
 	}
+	if utils.RefreshClientSettings(apiClient.GetMyClientSettings, accountStore, activeAccount, orgID).LockedExitNode() != 0 {
+		err := fmt.Errorf("the exit node is locked by your organization")
+		logger.Error("%v", err)
+		return err
+	}
+
 	// The saved exit node, scoped to the account's current org.
 	savedResourceID := activeAccount.ExitNode(orgID)
 	// With a running client, the active exit node is the one it reports;

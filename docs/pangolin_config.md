@@ -18,6 +18,7 @@ View and edit persistent CLI configuration without manually editing the config f
 * [pangolin config get](pangolin_config_get.md)	 - Get a config value
 * [pangolin config list](pangolin_config_list.md)	 - List settable config keys
 * [pangolin config path](pangolin_config_path.md)	 - Print the config file path
+* [pangolin config reset](pangolin_config_reset.md)	 - Make an organization use the global config again
 * [pangolin config set](pangolin_config_set.md)	 - Set a config value
 * [pangolin config show](pangolin_config_show.md)	 - Print the current config contents
 

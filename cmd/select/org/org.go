@@ -111,8 +111,10 @@ func orgMain(cmd *cobra.Command, opts *OrgCmdOpts) error {
 	switched := utils.SwitchActiveClientOrg(selectedOrgID)
 	if switched {
 		monitorOrgSwitch(selectedOrgID)
-		// Restore this org's saved exit node in the running client.
-		utils.ApplySavedExitNodeToActiveClient(account.ExitNode(selectedOrgID), selectedOrgID, apiClient.ListGatewayResources)
+		// Restore this org's exit node in the running client.
+		settings := utils.RefreshClientSettings(apiClient.GetMyClientSettings, accountStore, &account, selectedOrgID)
+		exitNode := config.EffectiveExitNode(settings, account.ExitNode(selectedOrgID), config.ConfigFromContext(cmd.Context()).Orgs[selectedOrgID])
+		utils.ApplySavedExitNodeToActiveClient(exitNode, selectedOrgID, apiClient.ListGatewayResources)
 	} else {
 		logger.Success("Successfully selected organization: %s", selectedOrgID)
 		utils.WarnUnmanagedClient(selectedOrgID)

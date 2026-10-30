@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/fosrl/cli/internal/logger"
@@ -28,6 +30,31 @@ type Config struct {
 	// SessionCookieName overrides the cookie name used for the CLI's session
 	// token. Empty means the API client's built-in default is used.
 	SessionCookieName string `mapstructure:"session_cookie_name" json:"session_cookie_name,omitempty"`
+
+	// Orgs holds per-org overrides of Up, keyed by org ID. Precedence when
+	// connecting to an org: server settings > its entry here > Up.
+	Orgs map[string]OrgConfig `mapstructure:"orgs" json:"orgs,omitempty"`
+}
+
+// OrgConfig is the per-org version of UpConfig, plus ExitNodeResourceID: an
+// exit node only means something within one org, so it has no global
+// equivalent.
+type OrgConfig struct {
+	TunnelDNS               *bool    `mapstructure:"tunnel_dns" json:"tunnel_dns,omitempty"`
+	UpstreamDNS             []string `mapstructure:"upstream_dns" json:"upstream_dns,omitempty"`
+	OverrideDNS             *bool    `mapstructure:"override_dns" json:"override_dns,omitempty"`
+	MatchDomains            []string `mapstructure:"match_domains_dns" json:"match_domains_dns,omitempty"`
+	PreferLocalRoutes       *bool    `mapstructure:"prefer_local_routes" json:"prefer_local_routes,omitempty"`
+	ExitNodeTakesPrecedence *bool    `mapstructure:"exit_node_takes_precedence" json:"exit_node_takes_precedence,omitempty"`
+	MTU                     *int     `mapstructure:"mtu" json:"mtu,omitempty"`
+	ExitNodeResourceID      *int     `mapstructure:"exit_node_resource_id" json:"exit_node_resource_id,omitempty"`
+}
+
+// IsEmpty reports whether the org overrides nothing.
+func (o OrgConfig) IsEmpty() bool {
+	return o.TunnelDNS == nil && o.UpstreamDNS == nil && o.OverrideDNS == nil &&
+		o.MatchDomains == nil && o.PreferLocalRoutes == nil &&
+		o.ExitNodeTakesPrecedence == nil && o.MTU == nil && o.ExitNodeResourceID == nil
 }
 
 // UpConfig holds persistent defaults for pangolin up DNS-related flags.
@@ -59,6 +86,10 @@ type UpConfig struct {
 	// --exit-node-takes-precedence flag when the flag isn't passed
 	// explicitly. Defaults to false.
 	ExitNodeTakesPrecedence *bool `mapstructure:"exit_node_takes_precedence" json:"exit_node_takes_precedence,omitempty"`
+
+	// MTU is the tunnel MTU. Used as the default for `pangolin up`'s --mtu flag
+	// when the flag isn't passed explicitly.
+	MTU *int `mapstructure:"mtu" json:"mtu,omitempty"`
 }
 
 // CompanionAppDataDirs holds per-platform overrides for the desktop app data directory.
@@ -78,7 +109,26 @@ var ConfigOptions = []string{
 	"up.match_domains_dns",
 	"up.prefer_local_routes",
 	"up.exit_node_takes_precedence",
+	"up.mtu",
 	"session_cookie_name",
+}
+
+// OrgConfigOptions is the registry of keys that can be set per org with
+// pangolin config set --org. up.exit_node_resource_id is only valid per org.
+var OrgConfigOptions = []string{
+	"up.tunnel_dns",
+	"up.upstream_dns",
+	"up.override_dns",
+	"up.match_domains_dns",
+	"up.prefer_local_routes",
+	"up.exit_node_takes_precedence",
+	"up.mtu",
+	"up.exit_node_resource_id",
+}
+
+// IsOrgConfigKey reports whether key can be set per org.
+func IsOrgConfigKey(key string) bool {
+	return slices.Contains(OrgConfigOptions, key)
 }
 
 // SupportedConfigKeys returns the settable config keys.
@@ -272,6 +322,15 @@ func (c *Config) SetKey(key, value string) error {
 		}
 		c.Up.ExitNodeTakesPrecedence = &b
 		c.v.Set(key, b)
+	case "up.mtu":
+		mtu, err := parseMTU(value)
+		if err != nil {
+			return err
+		}
+		c.Up.MTU = &mtu
+		c.v.Set(key, mtu)
+	case "up.exit_node_resource_id":
+		return fmt.Errorf("%s can only be set per organization: pass --org", key)
 	case "session_cookie_name":
 		c.SessionCookieName = value
 		c.v.Set(key, value)
@@ -279,6 +338,104 @@ func (c *Config) SetKey(key, value string) error {
 		return fmt.Errorf("unknown config key %q; supported keys: %s", key, strings.Join(SupportedConfigKeys(), ", "))
 	}
 	return nil
+}
+
+// SetOrgKey sets a config key for a single org, overriding its global value.
+func (c *Config) SetOrgKey(orgID, key, value string) error {
+	org := c.Orgs[orgID]
+
+	switch key {
+	case "up.tunnel_dns", "up.override_dns", "up.prefer_local_routes", "up.exit_node_takes_precedence":
+		b, err := parseBool(value)
+		if err != nil {
+			return err
+		}
+		switch key {
+		case "up.tunnel_dns":
+			org.TunnelDNS = &b
+		case "up.override_dns":
+			org.OverrideDNS = &b
+		case "up.prefer_local_routes":
+			org.PreferLocalRoutes = &b
+		case "up.exit_node_takes_precedence":
+			org.ExitNodeTakesPrecedence = &b
+		}
+	case "up.upstream_dns":
+		org.UpstreamDNS = splitCommaList(value)
+	case "up.match_domains_dns":
+		org.MatchDomains = splitCommaList(value)
+	case "up.mtu":
+		mtu, err := parseMTU(value)
+		if err != nil {
+			return err
+		}
+		org.MTU = &mtu
+	case "up.exit_node_resource_id":
+		id, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil || id <= 0 {
+			return fmt.Errorf("invalid exit node resource ID %q", value)
+		}
+		org.ExitNodeResourceID = &id
+	default:
+		return fmt.Errorf("%q can't be set per organization; supported keys: %s", key, strings.Join(OrgConfigOptions, ", "))
+	}
+
+	if c.Orgs == nil {
+		c.Orgs = map[string]OrgConfig{}
+	}
+	c.Orgs[orgID] = org
+	return nil
+}
+
+// GetOrgKey returns a string representation of the org's own value for key.
+func (c *Config) GetOrgKey(orgID, key string) (string, error) {
+	org := c.Orgs[orgID]
+
+	formatBool := func(b *bool) (string, error) {
+		if b == nil {
+			return "", errOrgConfigKeyUnset(orgID, key)
+		}
+		return fmt.Sprintf("%t", *b), nil
+	}
+	formatInt := func(i *int) (string, error) {
+		if i == nil {
+			return "", errOrgConfigKeyUnset(orgID, key)
+		}
+		return strconv.Itoa(*i), nil
+	}
+	formatList := func(list []string) (string, error) {
+		if list == nil {
+			return "", errOrgConfigKeyUnset(orgID, key)
+		}
+		return strings.Join(list, ","), nil
+	}
+
+	switch key {
+	case "up.tunnel_dns":
+		return formatBool(org.TunnelDNS)
+	case "up.override_dns":
+		return formatBool(org.OverrideDNS)
+	case "up.prefer_local_routes":
+		return formatBool(org.PreferLocalRoutes)
+	case "up.exit_node_takes_precedence":
+		return formatBool(org.ExitNodeTakesPrecedence)
+	case "up.upstream_dns":
+		return formatList(org.UpstreamDNS)
+	case "up.match_domains_dns":
+		return formatList(org.MatchDomains)
+	case "up.mtu":
+		return formatInt(org.MTU)
+	case "up.exit_node_resource_id":
+		return formatInt(org.ExitNodeResourceID)
+	default:
+		return "", fmt.Errorf("%q can't be set per organization; supported keys: %s", key, strings.Join(OrgConfigOptions, ", "))
+	}
+}
+
+// ResetOrg removes every override for orgID, so it follows the global config
+// again.
+func (c *Config) ResetOrg(orgID string) {
+	delete(c.Orgs, orgID)
 }
 
 // GetKey returns a string representation of a supported configuration key.
@@ -322,6 +479,11 @@ func (c *Config) GetKey(key string) (string, error) {
 			return "", errConfigKeyUnset(key)
 		}
 		return fmt.Sprintf("%t", c.GetBool(key)), nil
+	case "up.mtu":
+		if !c.IsSet(key) {
+			return "", errConfigKeyUnset(key)
+		}
+		return strconv.Itoa(c.v.GetInt(key)), nil
 	case "session_cookie_name":
 		return c.SessionCookieName, nil
 	default:
@@ -331,6 +493,18 @@ func (c *Config) GetKey(key string) (string, error) {
 
 func errConfigKeyUnset(key string) error {
 	return fmt.Errorf("config key %q is not set", key)
+}
+
+func errOrgConfigKeyUnset(orgID, key string) error {
+	return fmt.Errorf("config key %q is not set for organization %q", key, orgID)
+}
+
+func parseMTU(value string) (int, error) {
+	mtu, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || mtu < 576 || mtu > 65535 {
+		return 0, fmt.Errorf("invalid MTU %q: must be between 576 and 65535", value)
+	}
+	return mtu, nil
 }
 
 func parseBool(value string) (bool, error) {
@@ -385,6 +559,12 @@ func (c *Config) Save() error {
 	}
 	if c.Up.ExitNodeTakesPrecedence != nil {
 		c.v.Set("up.exit_node_takes_precedence", *c.Up.ExitNodeTakesPrecedence)
+	}
+	if c.Up.MTU != nil {
+		c.v.Set("up.mtu", *c.Up.MTU)
+	}
+	if c.Orgs != nil {
+		c.v.Set("orgs", c.Orgs)
 	}
 
 	dir, err := GetPangolinConfigDir()

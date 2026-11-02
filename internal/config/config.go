@@ -96,6 +96,7 @@ type UpConfig struct {
 type CompanionAppDataDirs struct {
 	Windows string `mapstructure:"windows" json:"windows,omitempty"`
 	Darwin  string `mapstructure:"darwin" json:"darwin,omitempty"`
+	Linux   string `mapstructure:"linux" json:"linux,omitempty"`
 }
 
 // ConfigOptions is the registry of keys supported by pangolin config get/set/list.
@@ -149,6 +150,8 @@ func companionAppDataDirForGOOS(c *Config, goos string) string {
 		return c.CompanionAppDataDirs.Windows
 	case "darwin":
 		return c.CompanionAppDataDirs.Darwin
+	case "linux":
+		return c.CompanionAppDataDirs.Linux
 	default:
 		return ""
 	}

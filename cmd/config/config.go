@@ -28,14 +28,15 @@ func ConfigCmd() *cobra.Command {
 	cmd.AddCommand(configGetCmd())
 	cmd.AddCommand(configSetCmd())
 	cmd.AddCommand(configResetCmd())
+	cmd.AddCommand(configEffectiveCmd())
 
 	return cmd
 }
 
 // activeOrg returns the active account and its selected org, if any.
 func activeOrg(cmd *cobra.Command) (*config.Account, string) {
-	accountStore := config.AccountStoreFromContext(cmd.Context())
-	if accountStore == nil {
+	accountStore, ok := config.LookupAccountStore(cmd.Context())
+	if !ok || accountStore == nil {
 		return nil, ""
 	}
 	account, err := accountStore.ActiveAccount()
@@ -50,8 +51,14 @@ func fetchServerSettings(cmd *cobra.Command, account *config.Account, orgID stri
 	if account == nil || orgID == "" {
 		return nil
 	}
-	accountStore := config.AccountStoreFromContext(cmd.Context())
-	apiClient := api.FromContext(cmd.Context())
+	accountStore, ok := config.LookupAccountStore(cmd.Context())
+	if !ok {
+		return nil
+	}
+	apiClient, ok := api.ClientFromContext(cmd.Context())
+	if !ok {
+		return nil
+	}
 	return utils.RefreshClientSettings(apiClient.GetMyClientSettings, accountStore, account, orgID)
 }
 
@@ -122,7 +129,7 @@ func settingsModeMessage(cfg *config.Config, orgID string, settings *config.Clie
 		mode = "has its own config"
 	}
 	if settings != nil {
-		return fmt.Sprintf("Organization %s %s; some settings are managed by its server", orgID, mode)
+		return fmt.Sprintf("Organization %s %s; some settings are managed by its server (see `pangolin config effective`)", orgID, mode)
 	}
 	return fmt.Sprintf("Organization %s %s", orgID, mode)
 }

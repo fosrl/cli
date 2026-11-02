@@ -14,6 +14,13 @@ func WithAccountStore(ctx context.Context, store *AccountStore) context.Context 
 	return context.WithValue(ctx, accountStoreCtxKey, store)
 }
 
+// LookupAccountStore returns the account store if one was set up, for
+// commands that work without an account.
+func LookupAccountStore(ctx context.Context) (*AccountStore, bool) {
+	store, ok := ctx.Value(accountStoreCtxKey).(*AccountStore)
+	return store, ok
+}
+
 func AccountStoreFromContext(ctx context.Context) *AccountStore {
 	logger, ok := ctx.Value(accountStoreCtxKey).(*AccountStore)
 	if !ok {

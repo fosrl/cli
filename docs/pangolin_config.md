@@ -15,6 +15,7 @@ View and edit persistent CLI configuration without manually editing the config f
 ### SEE ALSO
 
 * [pangolin](pangolin.md)	 - Pangolin CLI
+* [pangolin config effective](pangolin_config_effective.md)	 - Show the settings that apply to an organization and where each comes from
 * [pangolin config get](pangolin_config_get.md)	 - Get a config value
 * [pangolin config list](pangolin_config_list.md)	 - List settable config keys
 * [pangolin config path](pangolin_config_path.md)	 - Print the config file path

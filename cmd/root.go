@@ -205,7 +205,15 @@ func mainCommandPreRun(cmd *cobra.Command, args []string) error {
 		logger.Debug("Failed to show pending notices: %v", err)
 	}
 
-	if commandNeedsAuthInit(cmd) {
+	if commandHasAncestor(cmd, "config") {
+		// Config commands must work without an account (or with the desktop
+		// app not running), but use the active org when there is one.
+		if ctx, err := initAuthContext(cmd.Context(), cfg); err == nil {
+			cmd.SetContext(ctx)
+		} else {
+			logger.Debug("Continuing without account for %q: %v", cmd.Name(), err)
+		}
+	} else if commandNeedsAuthInit(cmd) {
 		ctx, err := initAuthContext(cmd.Context(), cfg)
 		if err != nil {
 			return err

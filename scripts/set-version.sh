@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Set version in internal/version/consts.go and installer pangolin-cli.wxs
+# Set version in internal/version/consts.go and Makefile
+# (the MSI version is passed to `wix build -d Version=...`, see scripts/build-msi.bat)
 # Usage: ./set-version.sh <version>
 #   version: Version string (e.g., 1.0.3)
 
@@ -18,7 +19,6 @@ VERSION="$1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERSION_FILE="${REPO_ROOT}/internal/version/consts.go"
-INSTALLER_WXS="${REPO_ROOT}/pangolin-cli.wxs"
 MAKEFILE_PATH="${REPO_ROOT}/Makefile"
 
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?$ ]]; then
@@ -36,11 +36,6 @@ cd "$REPO_ROOT"
 
 if [ ! -f "$VERSION_FILE" ]; then
   echo "Error: $VERSION_FILE not found"
-  exit 1
-fi
-
-if [ ! -f "$INSTALLER_WXS" ]; then
-  echo "Error: $INSTALLER_WXS not found"
   exit 1
 fi
 
@@ -64,18 +59,6 @@ else
   exit 1
 fi
 
-echo "Updating pangolin-cli.wxs..."
-case $(uname) in
-  Darwin) sed -i '' "s/Version=\"[^\"]*\"/Version=\"$VERSION\"/" "$INSTALLER_WXS" ;;
-  *)      sed -i    "s/Version=\"[^\"]*\"/Version=\"$VERSION\"/" "$INSTALLER_WXS" ;;
-esac
-if grep -q "Version=\"$VERSION\"" "$INSTALLER_WXS"; then
-  echo "  OK"
-else
-  echo "Error: failed to update Version in $INSTALLER_WXS"
-  exit 1
-fi
-
 echo "Updating $MAKEFILE_PATH..."
 case $(uname) in
   Darwin) sed -i '' "s/^VERSION[[:space:]]*?=[[:space:]]*.*/VERSION ?= $VERSION/" "$MAKEFILE_PATH" ;;
@@ -89,6 +72,6 @@ else
 fi
 
 echo ""
-echo "Version updated to $VERSION in internal/version/consts.go, pangolin-cli.wxs, and Makefile"
+echo "Version updated to $VERSION in internal/version/consts.go and Makefile"
 echo ""
-echo "Next: build the Windows binary, then: scripts\\build-msi.bat"
+echo "Next: build the Windows binary, then: scripts\\build-msi.bat $VERSION"

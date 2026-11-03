@@ -141,6 +141,7 @@ func startSelfUpdateChecks(ctx context.Context, resolvedCfg newtpkg.Config) {
 			CurrentVersion: versionpkg.NewtVersion(),
 			TLSConfig:      selfUpdateTLS,
 			Agent:          "cli",
+			Restart:        updateRestart(),
 		}); err != nil {
 			if errors.Is(err, updates.ErrAutoUpdateUnsupportedInOfficialContainer) {
 				newtLogger.Debug("checkAndSelfUpdate: auto-update skipped: %v", err)

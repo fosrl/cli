@@ -29,16 +29,14 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 			return false, nil
 		}
 
-		// If getting OLM fails, the OLM might not exist.
-		// This requires regeneration; in case of any errors
-		// that are not API-related, these are likely not
-		// related to the credentials and should be bubbled up.
-		if _, ok := err.(*api.ErrorResponse); !ok {
+		// Only discard stored credentials when the server definitively says
+		// the OLM is gone. Other failures (network, 5xx, auth) must keep them
+		// so a transient blip cannot create a duplicate device on reconnect.
+		if isNotFoundError(err) {
+			account.OlmCredentials = nil
+		} else {
 			return false, fmt.Errorf("failed to get OLM: %w", err)
 		}
-
-		// Clear invalid credentials so we can try to create new ones
-		account.OlmCredentials = nil
 	}
 
 	// First, attempt to recover any credentials on any other machines
@@ -60,13 +58,16 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 	}
 
 	if cachedFingerprint, err := os.ReadFile(cachedPlatfromFingerprintFilename); err == nil {
-		if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, string(cachedFingerprint)); err == nil {
+		recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, string(cachedFingerprint))
+		switch {
+		case err == nil:
 			account.OlmCredentials = &config.OlmCredentials{
 				ID:     recoveredOlm.OlmID,
 				Secret: recoveredOlm.Secret,
 			}
-
 			return true, nil
+		case !isNotFoundError(err):
+			return false, fmt.Errorf("failed to recover OLM: %w", err)
 		}
 	}
 
@@ -80,13 +81,16 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 		_ = os.WriteFile(fingerprintFilePath, []byte(fp.PlatformFingerprint), 0o644)
 	}
 
-	if recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint); err == nil {
+	recoveredOlm, err := client.RecoverOlmFromFingerprint(userID, fp.PlatformFingerprint)
+	switch {
+	case err == nil:
 		account.OlmCredentials = &config.OlmCredentials{
 			ID:     recoveredOlm.OlmID,
 			Secret: recoveredOlm.Secret,
 		}
-
 		return true, nil
+	case !isNotFoundError(err):
+		return false, fmt.Errorf("failed to recover OLM: %w", err)
 	}
 
 	newOlm, err := client.CreateOlm(userID, fingerprint.GetDeviceName())
@@ -100,6 +104,11 @@ func EnsureOlmCredentials(client *api.Client, account *config.Account) (bool, er
 	}
 
 	return true, nil
+}
+
+func isNotFoundError(err error) bool {
+	var apiErr *api.ErrorResponse
+	return errors.As(err, &apiErr) && apiErr.Status == 404
 }
 
 // EnsureOrgAccess ensures that the user has access to the organization

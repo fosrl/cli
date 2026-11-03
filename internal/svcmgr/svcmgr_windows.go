@@ -394,6 +394,7 @@ func (h *hostedService) supervise(logFile *os.File, warn func(string), stopCh <-
 
 	for {
 		cmd := exec.Command(exePath, h.upArgs...)
+		cmd.Env = append(os.Environ(), SupervisedEnvVar+"=1")
 		var out io.Writer
 		if logFile != nil {
 			out = logFile
@@ -436,7 +437,11 @@ func (h *hostedService) supervise(logFile *os.File, warn func(string), stopCh <-
 					<-exitCh
 				}
 			}
-			warn(fmt.Sprintf("%s: worker (pid %d) exited unexpectedly (%v); restarting", h.name, cmd.Process.Pid, cmd.ProcessState))
+			if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == RestartExitCode {
+				warn(fmt.Sprintf("%s: worker (pid %d) requested a restart; restarting", h.name, cmd.Process.Pid))
+			} else {
+				warn(fmt.Sprintf("%s: worker (pid %d) exited unexpectedly (%v); restarting", h.name, cmd.Process.Pid, cmd.ProcessState))
+			}
 		}
 
 		select {

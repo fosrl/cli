@@ -29,6 +29,7 @@
           ldflags = [
             "-s"
             "-w"
+            "-X github.com/fosrl/cli/internal/version.Version=${version}"
           ];
 
           meta = with pkgs.lib; {

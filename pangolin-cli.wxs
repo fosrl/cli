@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MSI installer for the Pangolin CLI (WiX v4+ schema).
+  Build with scripts\build-msi.bat, or directly:
+    wix build -arch x64 -d Version=X.Y.Z -d BuildDir=bin -o bin/pangolin-cli_windows_installer.msi pangolin-cli.wxs
+  Version must be numeric (X.Y.Z); drop any -rc.N suffix.
+  Requires bin/pangolin-cli_windows_amd64.exe and third_party/wintun/amd64/wintun.dll.
+-->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="Pangolin CLI"
            Language="1033"
-           Version="0.19.1"
+           Version="$(var.Version)"
            Manufacturer="Fossorial"
            UpgradeCode="35A1E3C4-C273-4334-9DF3-57408E83012E"
            Compressed="yes">

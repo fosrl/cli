@@ -39,10 +39,100 @@ type OrgSettings struct {
 	// resource ID is stored (not the niceId, which can be renamed); its sites
 	// are looked up from the server on every start so they can't go stale.
 	ExitNodeResourceID int `mapstructure:"exitNodeResourceId" json:"exitNodeResourceId,omitempty"`
+
+	// The settings the org's server manages for this user, as last fetched
+	// from it. Refreshed by the server on every connect; only kept here so they
+	// still apply if the server can't be reached.
+	ServerSettings *ClientSettings `mapstructure:"serverSettings" json:"serverSettings,omitempty"`
 }
 
 func (s OrgSettings) IsEmpty() bool {
-	return s.ExitNodeResourceID == 0
+	return s.ExitNodeResourceID == 0 && s.ServerSettings == nil
+}
+
+// ClientSettings is the server's GET /org/:orgId/my-client-settings response.
+// A nil/empty field isn't managed by the server.
+type ClientSettings struct {
+	OverrideDNS             *bool    `mapstructure:"overrideDns" json:"overrideDns,omitempty"`
+	MTU                     *int     `mapstructure:"mtu" json:"mtu,omitempty"`
+	TunnelDNS               *bool    `mapstructure:"tunnelDns" json:"tunnelDns,omitempty"`
+	PrimaryDNS              string   `mapstructure:"primaryDns" json:"primaryDns,omitempty"`
+	SecondaryDNS            string   `mapstructure:"secondaryDns" json:"secondaryDns,omitempty"`
+	ExitNodeTakesPrecedence *bool    `mapstructure:"exitNodeTakesPrecedence" json:"exitNodeTakesPrecedence,omitempty"`
+	ExitNodeSiteResourceID  int      `mapstructure:"exitNodeSiteResourceId" json:"exitNodeSiteResourceId,omitempty"`
+	ExitNodeLocked          bool     `mapstructure:"exitNodeLocked" json:"exitNodeLocked,omitempty"`
+	MatchDomains            []string `mapstructure:"matchDomains" json:"matchDomains,omitempty"`
+	PreferLocalRoutes       *bool    `mapstructure:"preferLocalRoutes" json:"preferLocalRoutes,omitempty"`
+}
+
+// LockedExitNode returns the exit node the server forces, or 0 if it forces
+// none.
+func (s *ClientSettings) LockedExitNode() int {
+	if s == nil || !s.ExitNodeLocked {
+		return 0
+	}
+	return s.ExitNodeSiteResourceID
+}
+
+// UpstreamDNS returns the managed primary and secondary DNS servers, if any.
+func (s *ClientSettings) UpstreamDNS() []string {
+	if s == nil {
+		return nil
+	}
+	var servers []string
+	for _, server := range []string{s.PrimaryDNS, s.SecondaryDNS} {
+		if server != "" {
+			servers = append(servers, server)
+		}
+	}
+	return servers
+}
+
+// ManagesKey reports whether the server manages the given config key (as named
+// by ConfigOptions).
+func (s *ClientSettings) ManagesKey(key string) bool {
+	if s == nil {
+		return false
+	}
+	switch key {
+	case "up.tunnel_dns":
+		return s.TunnelDNS != nil
+	case "up.override_dns":
+		return s.OverrideDNS != nil
+	case "up.upstream_dns":
+		return len(s.UpstreamDNS()) > 0
+	case "up.match_domains_dns":
+		return len(s.MatchDomains) > 0
+	case "up.prefer_local_routes":
+		return s.PreferLocalRoutes != nil
+	case "up.exit_node_takes_precedence":
+		return s.ExitNodeTakesPrecedence != nil
+	case "up.mtu":
+		return s.MTU != nil
+	case "up.exit_node_resource_id":
+		return s.LockedExitNode() != 0
+	default:
+		return false
+	}
+}
+
+// EffectiveExitNode picks the exit node to use for an org: one the server locks
+// always wins; next the user's own selection (savedResourceID), then the org's
+// entry in the config file, and last the server's default.
+func EffectiveExitNode(server *ClientSettings, savedResourceID int, org OrgConfig) int {
+	if locked := server.LockedExitNode(); locked != 0 {
+		return locked
+	}
+	if savedResourceID != 0 {
+		return savedResourceID
+	}
+	if org.ExitNodeResourceID != nil {
+		return *org.ExitNodeResourceID
+	}
+	if server != nil {
+		return server.ExitNodeSiteResourceID
+	}
+	return 0
 }
 
 // GetOrgSettings returns the account's settings for orgID, or empty defaults
@@ -69,6 +159,19 @@ func (a *Account) UpdateOrgSettings(orgID string, update func(*OrgSettings)) {
 		settings = nil
 	}
 	a.OrgSettings = settings
+}
+
+// ServerSettings returns the settings last fetched from the server for orgID,
+// or nil if it manages none.
+func (a *Account) ServerSettings(orgID string) *ClientSettings {
+	return a.GetOrgSettings(orgID).ServerSettings
+}
+
+// SetServerSettings records the settings fetched from the server for orgID.
+func (a *Account) SetServerSettings(orgID string, settings *ClientSettings) {
+	a.UpdateOrgSettings(orgID, func(s *OrgSettings) {
+		s.ServerSettings = settings
+	})
 }
 
 // ExitNode returns the resource ID of the exit node selected for orgID, or 0

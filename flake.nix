@@ -19,7 +19,7 @@
       system: let
         pkgs = pkgsFor system;
       in rec {
-        pangolin-cli = pkgs.buildGoModule {
+        pangolin-cli = pkgs.buildGoModule (finalAttrs: {
           pname = "pangolin-cli";
           version = "0.20.0";
           src = ./.;
@@ -29,6 +29,7 @@
           ldflags = [
             "-s"
             "-w"
+            "-X github.com/fosrl/cli/internal/version.Version=${finalAttrs.version}"
           ];
 
           meta = with pkgs.lib; {
@@ -38,7 +39,7 @@
             maintainers = [];
             mainProgram = "pangolin-cli";
           };
-        };
+        });
 
         default = pangolin-cli;
       }

@@ -1,11 +1,9 @@
 @echo off
-REM Build MSI for Pangolin CLI (WiX v4+). CI does this automatically (sign-windows job in
-REM .github/workflows/cicd.yml); this script is for local/manual builds.
-REM Requires the `wix` CLI on PATH (dotnet tool install --global wix --version 5.0.2).
-REM 1) Build:  make go-build-release-windows-amd64 VERSION=...
-REM 2) Run from repo root:  scripts\build-msi.bat <version>
-REM    Or:  scripts\build-msi.bat <version> C:\path\to\folder-with-exe
-REM    <version> must be numeric X.Y.Z (MSI versions cannot carry an -rc suffix).
+REM Build MSI for Pangolin CLI (WiX v4). Requires the `wix` CLI on PATH.
+REM 1) Build:  make go-build-release-windows-amd64 VERSION=X.Y.Z
+REM 2) Run from repo root:  scripts\build-msi.bat X.Y.Z
+REM    Or:  scripts\build-msi.bat X.Y.Z C:\path\to\folder-with-exe
+REM The MSI ProductVersion must be numeric, so any -suffix (e.g. -rc.1) is dropped.
 
 setlocal
 cd /d "%~dp0.."
@@ -14,7 +12,8 @@ if "%~1"=="" (
   echo Usage: %~nx0 ^<version^> [builddir] 1>&2
   exit /b 1
 )
-set "MSIVERSION=%~1"
+
+for /f "tokens=1 delims=-" %%v in ("%~1") do set "MSIVERSION=%%v"
 
 if "%~2"=="" (
   set "BUILDDIR=bin"
@@ -34,4 +33,4 @@ if not exist "third_party\wintun\amd64\wintun.dll" (
 
 wix build -arch x64 -define "Version=%MSIVERSION%" -define "BuildDir=%BUILDDIR%" -o "%BUILDDIR%\pangolin-cli_windows_installer.msi" "pangolin-cli.wxs"
 if errorlevel 1 exit /b %errorlevel%
-echo Created "%BUILDDIR%\pangolin-cli_windows_installer.msi"
+echo Created "%BUILDDIR%\pangolin-cli_windows_installer.msi" (version %MSIVERSION%)

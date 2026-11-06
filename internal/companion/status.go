@@ -2,6 +2,7 @@ package companion
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/fosrl/cli/internal/config"
 )
@@ -30,7 +31,7 @@ func EvaluateStatus(cfg *config.Config) StatusReport {
 	if provider == nil {
 		return StatusReport{
 			ConfigState: statusUnavailable,
-			ClientName:  "not supported on this platform",
+			ClientName:  unavailableClientName(),
 		}
 	}
 
@@ -53,4 +54,11 @@ func EvaluateStatus(cfg *config.Config) StatusReport {
 
 	report.Suggestion = notReadySuggestion(provider, dataDir, session)
 	return report
+}
+
+func unavailableClientName() string {
+	if runtime.GOOS == "linux" {
+		return "Pangolin Linux client is not installed"
+	}
+	return "not supported on this platform"
 }

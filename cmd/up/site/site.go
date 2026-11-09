@@ -91,6 +91,12 @@ func run(ctx context.Context, args []string) error {
 
 	resolvedCfg := n.GetConfig()
 
+	// Prometheus/OTLP exporters and the admin server (/metrics, /healthz,
+	// pprof) - honors --metrics, --metrics-admin-addr, --otlp, --pprof,
+	// --region and their NEWT_*/SITE_* env equivalents, same as newt.
+	stopTelemetry := n.StartTelemetry(sigCtx)
+	defer stopTelemetry()
+
 	startSelfUpdateChecks(sigCtx, resolvedCfg)
 
 	n.Start(sigCtx)

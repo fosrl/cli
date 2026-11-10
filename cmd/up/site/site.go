@@ -140,11 +140,13 @@ func startSelfUpdateChecks(ctx context.Context, resolvedCfg newtpkg.Config) {
 
 	doUpdate := func() {
 		newtLogger.Debug("checkAndSelfUpdate: running periodic update check")
+		// The server compares the CLI against CLI releases, so report the
+		// CLI's own version (not the embedded newt version) as current.
 		if err := updates.CheckAndSelfUpdate(updates.SelfUpdateConfig{
 			Endpoint:       resolvedCfg.Endpoint,
 			NewtID:         resolvedCfg.ID,
 			Secret:         resolvedCfg.Secret,
-			CurrentVersion: versionpkg.NewtVersion(),
+			CurrentVersion: versionpkg.Version,
 			TLSConfig:      selfUpdateTLS,
 			Agent:          "cli",
 			Restart:        updateRestart(),

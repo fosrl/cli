@@ -31,13 +31,12 @@ var ErrElevationRequired = errors.New("this command must be run from an elevated
 // including at boot, unlike arguments passed via the SCM's separate
 // StartService parameters.
 //
-// hostMarker supervises a plain `pangolin up ...` child process (used for
-// the site service, whose "up site" is fully supported as a standalone
-// Windows console command already). olmHostMarker is used only for the
-// client service: `pangolin up client` has no standalone Windows console
-// mode (see runOlmClient below for why), so that service instead runs the
-// olm tunnel directly in-process, the same way olm's own Windows service
-// (github.com/fosrl/olm's service_windows.go) does.
+// hostMarker supervises a plain `pangolin up ...` child process; the site
+// service uses it. olmHostMarker runs the command inside the service process
+// instead; the client service uses it, because olm only creates its TUN
+// interface in a process that is itself a Windows service (see
+// clientservice_windows.go). Client services installed by older versions
+// have the same marker, so they keep working after an upgrade.
 const (
 	hostMarker    = "__pangolin-service-host"
 	olmHostMarker = "__pangolin-service-host-olm"
@@ -60,11 +59,10 @@ func CheckSupported() error {
 }
 
 // Install registers a Windows Service that, on start, re-launches this
-// same pangolin executable to host the service - see MaybeRunHostedService.
-// For most services that means supervising `spec.Args` (e.g. "up site") as
-// a child process; the client service is a special case that instead runs
-// the olm tunnel directly in-process (see olmclient_windows.go). Either
-// way, credentials are stored in the service's registry Environment value
+// same pangolin executable to host the service - see MaybeRunHostedService -
+// which runs `spec.Args` (e.g. "up site" or "up client --attach"): as a
+// supervised child process for site, inside the service process for the
+// client. Credentials are stored in the service's registry Environment value
 // rather than on the command line, so they don't show up in Task Manager
 // for other users.
 func Install(spec Spec) error {
@@ -96,9 +94,6 @@ func Install(spec Spec) error {
 		Description:  spec.Description,
 	}
 
-	// The client service hosts the olm tunnel in-process (see
-	// MaybeRunHostedService / runOlmClient) and takes its credentials from
-	// the environment only, so no upArgs need embedding for it.
 	marker := hostMarker
 	if spec.Name == ClientServiceName {
 		marker = olmHostMarker
@@ -154,8 +149,8 @@ func configureRecoveryActions(s *mgr.Service) error {
 		return fmt.Errorf("failed to set recovery actions: %w", err)
 	}
 	// By default the SCM only runs recovery actions when a service crashes.
-	// Our hosts report a non-crash failure exit code intentionally (see
-	// runOlmClient's Execute), so this must be enabled for that to count.
+	// Enabled for non-crash failures too, so a host that stops with a
+	// failure exit code is relaunched as well.
 	if err := s.SetRecoveryActionsOnNonCrashFailures(true); err != nil {
 		return fmt.Errorf("failed to enable recovery actions on non-crash failures: %w", err)
 	}
@@ -294,18 +289,21 @@ func MaybeRunHostedService() bool {
 
 	name := os.Args[2]
 
+	upArgs := append([]string{}, os.Args[3:]...)
+
 	switch os.Args[1] {
 	case hostMarker:
 		// Supervises a plain child process running `pangolin up site` -
 		// exactly the same command Linux/macOS run under systemd/launchd.
-		// This keeps site exercising the same well-tested CLI code path on
-		// every platform.
-		upArgs := append([]string{}, os.Args[3:]...)
 		_ = svc.Run(name, &hostedService{name: name, upArgs: upArgs})
 		return true
 	case olmHostMarker:
-		// Runs the olm tunnel directly in-process - see runOlmClient.
-		_ = svc.Run(name, &olmHostedService{name: name})
+		// Runs `pangolin up client --attach` through the normal CLI, the
+		// same command as on Linux/macOS, inside this service process.
+		if len(upArgs) == 0 {
+			upArgs = []string{"up", "client", "--attach"}
+		}
+		_ = svc.Run(name, &inProcessService{name: name, upArgs: upArgs})
 		return true
 	default:
 		return false

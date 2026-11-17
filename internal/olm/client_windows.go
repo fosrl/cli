@@ -13,8 +13,9 @@ import (
 
 const defaultSocketPath = `\\.\pipe\pangolin-olm`
 
-// ServiceSocketPath is the named pipe the CLI's own Windows client service
-// (`pangolin service install client` / `pangolin up client`) listens on. It is
+// ServiceSocketPath is the named pipe the CLI's own Windows client
+// (`pangolin up client`, including under `pangolin service install client`)
+// listens on. It is
 // distinct from defaultSocketPath so the service can't collide with the
 // desktop app's olm instance on the same machine.
 const ServiceSocketPath = `\\.\pipe\pangolin-client`
@@ -30,6 +31,13 @@ func getDefaultSocketPath() string {
 // GetDefaultSocketPath returns the default socket path (exported for use in other packages)
 func GetDefaultSocketPath() string {
 	return getDefaultSocketPath()
+}
+
+// CLISocketPath is the pipe a tunnel started by `pangolin up client`
+// listens on: always the service pipe, whether it runs under the client
+// service or from a console, so it never collides with the desktop app.
+func CLISocketPath() string {
+	return ServiceSocketPath
 }
 
 // resolveClientSocketPath picks which pipe a client should talk to when none

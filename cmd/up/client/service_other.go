@@ -4,10 +4,14 @@ package client
 
 import "errors"
 
-// runWindowsMachineClient is never actually called on non-Windows
-// platforms - clientUpMain only invokes it behind a runtime.GOOS ==
-// "windows" check - but the symbol must still exist here since client.go
-// references it unconditionally (it has no build tag of its own).
-func runWindowsMachineClient(opts *ClientUpCmdOpts) error {
+// runWindowsMachineClient is only called on Windows (behind a runtime.GOOS
+// check); client.go references it unconditionally, so the symbol must exist.
+func runWindowsMachineClient(id, secret string, upArgs []string) error {
 	return errors.New("runWindowsMachineClient is only supported on Windows")
+}
+
+// requireWindowsService is only called on Windows; elsewhere the attached
+// path checks for root itself.
+func requireWindowsService() error {
+	return nil
 }

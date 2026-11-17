@@ -34,10 +34,9 @@ func clientInstallCmd() *cobra.Command {
 immediately.
 
 Intended for machine clients (--id/--secret), which don't have an
-interactively logged-in user to restart them. On Windows this only supports
-the service itself - 'pangolin up client' has no standalone Windows console
-mode (that's handled by the Pangolin desktop app); the service runs the
-tunnel directly in-process instead.`,
+interactively logged-in user to restart them. The service runs
+'pangolin up client --attach' on every platform (on Windows inside the
+service process itself).`,
 		Run: func(cmd *cobra.Command, args []string) {
 			envVars := map[string]string{
 				"PANGOLIN_CLIENT_ID":     opts.ID,
@@ -52,13 +51,10 @@ tunnel directly in-process instead.`,
 				Name:        clientServiceName,
 				DisplayName: "Pangolin Client",
 				Description: "Runs 'pangolin up client' persistently in the background",
-				// On Linux/macOS, Args is the subprocess command line
-				// (--attach runs in the foreground under the service
-				// supervisor's control, no self-detaching subprocess/TUI).
-				// Windows ignores Args for the client service and instead
-				// runs the tunnel in-process (see svcmgr_windows.go) - it's
-				// kept here for documentation/parity. Credentials always
-				// come from the environment rather than the command line so
+				// Args is the command the service supervisor runs
+				// (--attach runs in the foreground under its control, no
+				// self-detaching subprocess/TUI). Credentials always come
+				// from the environment rather than the command line so
 				// they don't leak into `ps`/Task Manager.
 				Args:    []string{"up", "client", "--attach"},
 				EnvVars: envVars,

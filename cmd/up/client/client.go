@@ -95,10 +95,12 @@ func ClientUpCmd() *cobra.Command {
 
 On Windows, only machine clients are supported: --id, --secret, and
 --endpoint must all be passed explicitly. Interactive login isn't
-supported - use the desktop app for that. The tunnel also can't run
-directly from a console process there, so this installs the same
-background service 'pangolin service install client' would, tails its
-logs, and removes the service again when you press Ctrl+C.`,
+supported - use the desktop app for that. Without --attach, instead of a
+background process this installs the same service 'pangolin service
+install client' would, with the settings resolved for this run, tails its
+logs, and removes the service again when you press Ctrl+C. --attach only
+works under that service: olm creates its tunnel interface only inside a
+Windows service.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Fall back to environment variables when the corresponding flag
 			// wasn't explicitly set, so a systemd EnvironmentFile (see the
@@ -141,8 +143,7 @@ logs, and removes the service again when you press Ctrl+C.`,
 			}
 
 			// Windows only supports machine clients (explicit
-			// --id/--secret/--endpoint, run under a service - see
-			// `pangolin service install client`). Interactively logging in
+			// --id/--secret/--endpoint). Interactively logging in
 			// and letting this command manage keyring/account credentials
 			// itself isn't implemented on Windows.
 			if runtime.GOOS == "windows" && (opts.ID == "" || opts.Secret == "" || opts.Endpoint == "") {
@@ -369,24 +370,91 @@ func applyServerSettings(cmd *cobra.Command, opts *ClientUpCmdOpts, settings *co
 	}
 }
 
+// forwardedUpArgs returns the flags that pass the settings resolved for this
+// run to the process that runs the tunnel: the detached subprocess, or on
+// Windows the client service. Credentials are not included.
+func forwardedUpArgs(cmd *cobra.Command, opts *ClientUpCmdOpts, orgID, endpoint string) []string {
+	var cmdArgs []string
+
+	// Add org flag if needed (required for subprocess, which runs as
+	// root and won't have user's config)
+	if orgID != "" {
+		cmdArgs = append(cmdArgs, "--org", orgID)
+	}
+
+	// Always pass endpoint to subprocess (required, subprocess won't have user's config)
+	// Get endpoint from flag or hostname config (same logic as attached mode)
+	cmdArgs = append(cmdArgs, "--endpoint", endpoint)
+
+	// Optional flags - only include if they were explicitly set
+	// Always forwarded, as are the other settings below that org config or
+	// the server can set: the subprocess must not fall back to its own
+	// config for a value already resolved here.
+	cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", opts.MTU))
+	if cmd.Flags().Changed("netstack-dns") {
+		cmdArgs = append(cmdArgs, "--netstack-dns", opts.DNS)
+	}
+	if cmd.Flags().Changed("interface-name") {
+		cmdArgs = append(cmdArgs, "--interface-name", opts.InterfaceName)
+	}
+	if cmd.Flags().Changed("log-level") {
+		cmdArgs = append(cmdArgs, "--log-level", opts.LogLevel)
+	}
+	if cmd.Flags().Changed("http-addr") {
+		cmdArgs = append(cmdArgs, "--http-addr", opts.HTTPAddr)
+	}
+	if cmd.Flags().Changed("ping-interval") {
+		cmdArgs = append(cmdArgs, "--ping-interval", opts.PingInterval.String())
+	}
+	if cmd.Flags().Changed("ping-timeout") {
+		cmdArgs = append(cmdArgs, "--ping-timeout", opts.PingTimeout.String())
+	}
+	if cmd.Flags().Changed("holepunch") {
+		if opts.Holepunch {
+			cmdArgs = append(cmdArgs, "--holepunch")
+		} else {
+			cmdArgs = append(cmdArgs, "--holepunch=false")
+		}
+	}
+	if cmd.Flags().Changed("tls-client-cert") {
+		cmdArgs = append(cmdArgs, "--tls-client-cert", opts.TlsClientCert)
+	}
+	cmdArgs = append(cmdArgs, fmt.Sprintf("--override-dns=%t", opts.OverrideDNS))
+	cmdArgs = append(cmdArgs, fmt.Sprintf("--tunnel-dns=%t", opts.TunnelDNS))
+	if len(opts.UpstreamDNS) > 0 {
+		// Comma sep
+		cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(opts.UpstreamDNS, ","))
+	}
+	if len(opts.MatchDomains) > 0 {
+		// Always forwarded (rather than gated on Changed) since it may have
+		// come from the persisted config rather than the flag, and the
+		// subprocess (running as root) may not have access to that config.
+		cmdArgs = append(cmdArgs, "--match-domains", strings.Join(opts.MatchDomains, ","))
+	}
+	cmdArgs = append(cmdArgs, fmt.Sprintf("--prefer-local-routes=%t", opts.PreferLocalRoutes))
+	cmdArgs = append(cmdArgs, fmt.Sprintf("--exit-node-takes-precedence=%t", opts.ExitNodeTakesPrecedence))
+	if opts.DisableRelay {
+		cmdArgs = append(cmdArgs, "--disable-relay")
+	}
+	if opts.SubnetRouter {
+		cmdArgs = append(cmdArgs, "--subnet-router")
+	}
+	if len(opts.GatewaySiteIDs) > 0 {
+		ids := make([]string, len(opts.GatewaySiteIDs))
+		for i, id := range opts.GatewaySiteIDs {
+			ids[i] = strconv.Itoa(id)
+		}
+		cmdArgs = append(cmdArgs, "--exit-node-site-ids", strings.Join(ids, ","))
+		cmdArgs = append(cmdArgs, "--exit-node-resource-id", strconv.Itoa(opts.GatewaySiteResourceID))
+	}
+
+	return cmdArgs
+}
+
 func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string) error {
 	apiClient := api.FromContext(cmd.Context())
 	accountStore := config.AccountStoreFromContext(cmd.Context())
 	cfg := config.ConfigFromContext(cmd.Context())
-
-	if runtime.GOOS == "windows" {
-		// Windows can't run the olm tunnel directly from a console process
-		// the way Linux/macOS can (see runWindowsMachineClient for why) -
-		// it always has to go through a Windows Service. PreRunE already
-		// required machine-client credentials for this platform, so just
-		// install/tail/uninstall the same service
-		// `pangolin service install client` manages.
-		if err := runWindowsMachineClient(opts); err != nil {
-			logger.Error("Error: %v", err)
-			return err
-		}
-		return nil
-	}
 
 	// Fall back to the persisted config value when --match-domains wasn't
 	// explicitly passed. Resolved here (rather than left to the subprocess,
@@ -397,7 +465,7 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 
 	// Check if a client is already running
-	olmClient := olm.NewClient("")
+	olmClient := olm.NewClient(olm.CLISocketPath())
 	if olmClient.IsRunning() {
 		err := errors.New("a client is already running")
 		logger.Error("Error: %v", err)
@@ -599,88 +667,24 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			return err
 		}
 
-		// Build command arguments, excluding --attach flag
-		cmdArgs := []string{"up", "client"}
+		// Settings resolved above (flags, env, config file, org config,
+		// server) are forwarded as flags: the process that runs the tunnel
+		// runs elevated and may not see this user's config.
+		forwardArgs := append(forwardedUpArgs(cmd, opts, orgID, endpoint), extraArgs...)
 
-		// Add org flag if needed (required for subprocess, which runs as
-		// root and won't have user's config)
-		if orgID != "" {
-			cmdArgs = append(cmdArgs, "--org", orgID)
+		if runtime.GOOS == "windows" {
+			// Windows runs the tunnel under the client service, which
+			// starts `pangolin up client --attach` with these args. The
+			// credentials go in the service environment, not the args.
+			if err := runWindowsMachineClient(olmID, olmSecret, forwardArgs); err != nil {
+				logger.Error("Error: %v", err)
+				return err
+			}
+			return nil
 		}
 
-		// Add all flags that were set (except --attach)
 		// OLM credentials are always included (from flags, config, or newly created)
-		cmdArgs = append(cmdArgs, "--id", olmID)
-		cmdArgs = append(cmdArgs, "--secret", olmSecret)
-
-		// Always pass endpoint to subprocess (required, subprocess won't have user's config)
-		// Get endpoint from flag or hostname config (same logic as attached mode)
-		cmdArgs = append(cmdArgs, "--endpoint", endpoint)
-
-		// Optional flags - only include if they were explicitly set
-		// Always forwarded, as are the other settings below that org config or
-		// the server can set: the subprocess must not fall back to its own
-		// config for a value already resolved here.
-		cmdArgs = append(cmdArgs, "--mtu", fmt.Sprintf("%d", opts.MTU))
-		if cmd.Flags().Changed("netstack-dns") {
-			cmdArgs = append(cmdArgs, "--netstack-dns", opts.DNS)
-		}
-		if cmd.Flags().Changed("interface-name") {
-			cmdArgs = append(cmdArgs, "--interface-name", opts.InterfaceName)
-		}
-		if cmd.Flags().Changed("log-level") {
-			cmdArgs = append(cmdArgs, "--log-level", opts.LogLevel)
-		}
-		if cmd.Flags().Changed("http-addr") {
-			cmdArgs = append(cmdArgs, "--http-addr", opts.HTTPAddr)
-		}
-		if cmd.Flags().Changed("ping-interval") {
-			cmdArgs = append(cmdArgs, "--ping-interval", opts.PingInterval.String())
-		}
-		if cmd.Flags().Changed("ping-timeout") {
-			cmdArgs = append(cmdArgs, "--ping-timeout", opts.PingTimeout.String())
-		}
-		if cmd.Flags().Changed("holepunch") {
-			if opts.Holepunch {
-				cmdArgs = append(cmdArgs, "--holepunch")
-			} else {
-				cmdArgs = append(cmdArgs, "--holepunch=false")
-			}
-		}
-		if cmd.Flags().Changed("tls-client-cert") {
-			cmdArgs = append(cmdArgs, "--tls-client-cert", opts.TlsClientCert)
-		}
-		cmdArgs = append(cmdArgs, fmt.Sprintf("--override-dns=%t", opts.OverrideDNS))
-		cmdArgs = append(cmdArgs, fmt.Sprintf("--tunnel-dns=%t", opts.TunnelDNS))
-		if len(opts.UpstreamDNS) > 0 {
-			// Comma sep
-			cmdArgs = append(cmdArgs, "--upstream-dns", strings.Join(opts.UpstreamDNS, ","))
-		}
-		if len(opts.MatchDomains) > 0 {
-			// Always forwarded (rather than gated on Changed) since it may have
-			// come from the persisted config rather than the flag, and the
-			// subprocess (running as root) may not have access to that config.
-			cmdArgs = append(cmdArgs, "--match-domains", strings.Join(opts.MatchDomains, ","))
-		}
-		cmdArgs = append(cmdArgs, fmt.Sprintf("--prefer-local-routes=%t", opts.PreferLocalRoutes))
-		cmdArgs = append(cmdArgs, fmt.Sprintf("--exit-node-takes-precedence=%t", opts.ExitNodeTakesPrecedence))
-		if opts.DisableRelay {
-			cmdArgs = append(cmdArgs, "--disable-relay")
-		}
-		if opts.SubnetRouter {
-			cmdArgs = append(cmdArgs, "--subnet-router")
-		}
-		if len(opts.GatewaySiteIDs) > 0 {
-			ids := make([]string, len(opts.GatewaySiteIDs))
-			for i, id := range opts.GatewaySiteIDs {
-				ids[i] = strconv.Itoa(id)
-			}
-			cmdArgs = append(cmdArgs, "--exit-node-site-ids", strings.Join(ids, ","))
-			cmdArgs = append(cmdArgs, "--exit-node-resource-id", strconv.Itoa(opts.GatewaySiteResourceID))
-		}
-
-		// Add positional args if any
-		cmdArgs = append(cmdArgs, extraArgs...)
+		cmdArgs := append([]string{"up", "client", "--id", olmID, "--secret", olmSecret}, forwardArgs...)
 
 		// Create command - subprocess should run with elevated permissions
 		var procCmd *exec.Cmd
@@ -717,10 +721,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				procCmd.Stderr = os.Stderr
 			}
 			procCmd.Stdout = nil
-		} else {
-			err := errors.New("detached mode is not supported on Windows")
-			logger.Error("Error: %v", err)
-			return err
 		}
 
 		// Start the process
@@ -810,10 +810,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		enableAPI = true
 	}
 
-	// Per-OS default (a Unix socket path, or a named pipe on Windows) -
-	// matches what internal/olm.NewClient("") resolves to, so `status`/
-	// `down`/`logs` can find this instance.
-	socketPath := olm.GetDefaultSocketPath()
+	// A Unix socket, or on Windows the CLI's own named pipe (distinct from
+	// the desktop app's). internal/olm.NewClient("") falls back to it, so
+	// `status`/`down`/`logs` can find this instance.
+	socketPath := olm.CLISocketPath()
 
 	upstreamDNS := make([]string, 0, len(opts.UpstreamDNS))
 	for _, server := range opts.UpstreamDNS {
@@ -856,7 +856,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	}
 
 	// Create context for signal handling and cleanup
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// Derived from the command's context so that the Windows client
+	// service, which runs this command in-process, can stop it.
+	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	// Create OLM GlobalConfig with hardcoded values from Swift
@@ -942,6 +944,9 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 			logger.Info("Please run with sudo or use detached mode (default) to run the subprocess elevated.")
 			return err
 		}
+	} else if err := requireWindowsService(); err != nil {
+		logger.Error("Error: %v", err)
+		return err
 	}
 
 	olm, err := olmpkg.Init(ctx, olmInitConfig)

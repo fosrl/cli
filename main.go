@@ -10,6 +10,7 @@ func main() {
 	// a service installed via `pangolin service install` never reaches
 	// normal CLI dispatch - it runs the service directly and blocks until
 	// stopped. No-op on other platforms (see svcmgr_notwindows.go).
+	svcmgr.RunCLI = cmd.ExecuteArgs
 	if svcmgr.MaybeRunHostedService() {
 		return
 	}

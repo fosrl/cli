@@ -21,6 +21,12 @@ func GetDefaultSocketPath() string {
 	return getDefaultSocketPath()
 }
 
+// CLISocketPath is the socket a tunnel started by `pangolin up client`
+// listens on.
+func CLISocketPath() string {
+	return defaultSocketPath
+}
+
 // resolveClientSocketPath picks which socket a client should talk to when none
 // was given explicitly: the CLI's own if something is listening on it, else
 // the desktop app's if that is up, otherwise the default (so error messages

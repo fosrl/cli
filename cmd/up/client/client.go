@@ -412,6 +412,10 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 
 	credentialsFromKeyring := olmID == "" && olmSecret == ""
 
+	// Set when we were spawned by a parent `pangolin up` that has already
+	// resolved settings and forwarded them as flags.
+	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
+
 	// Determine endpoint early
 	var endpoint string
 	if opts.Endpoint != "" {
@@ -509,16 +513,28 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 		orgID = activeAccount.OrgID
 	}
 
-	// Settings are resolved here, in the process that has the user's session
-	// and config, and forwarded to the subprocess as flags. Machine clients and
-	// the subprocess itself have no user session, so no server settings.
+	// Settings are resolved here, in the parent process, and forwarded to the
+	// subprocess as flags. A user session fetches them with the session; a
+	// machine client (--id/--secret) fetches them with its olm credentials.
+	// The subprocess doesn't fetch again.
 	orgConfig := cfg.Orgs[orgID]
 	applyOrgConfig(cmd, opts, orgConfig)
 
 	var serverSettings *config.ClientSettings
+	var machineExitNodeSiteIDs []int
 	if credentialsFromKeyring {
 		if activeAccount, err := accountStore.ActiveAccount(); err == nil {
 			serverSettings = utils.RefreshClientSettings(apiClient.GetMyClientSettings, accountStore, activeAccount, orgID)
+		}
+	} else if !isSubprocess {
+		res, err := healthClient.GetOlmClientSettings(olmID, olmSecret, orgID)
+		if err != nil {
+			// Nothing is cached for machine clients, so this connects with
+			// the local settings only.
+			logger.Warning("Could not fetch client settings from the server (%v); using local settings", err)
+		} else {
+			serverSettings = res.Settings
+			machineExitNodeSiteIDs = res.ExitNodeSiteIDs
 		}
 	}
 	applyServerSettings(cmd, opts, serverSettings)
@@ -549,6 +565,14 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 				logger.Error("Error: %v", err)
 				return err
 			}
+		} else if resourceID := config.EffectiveExitNode(serverSettings, 0, orgConfig); !credentialsFromKeyring && serverSettings != nil && resourceID != 0 && resourceID == serverSettings.ExitNodeSiteResourceID {
+			// Machine client: it can't list site resources, so the server
+			// sent the exit node's sites along with the settings.
+			if len(machineExitNodeSiteIDs) > 0 {
+				opts.GatewaySiteResourceID, opts.GatewaySiteIDs = resourceID, machineExitNodeSiteIDs
+			} else {
+				logger.Warning("The exit node set by your organization is disabled or has no sites; not using it")
+			}
 		} else {
 			opts.GatewaySiteResourceID, opts.GatewaySiteIDs = utils.ResolveSavedExitNode(savedResourceID, orgID, list)
 		}
@@ -568,7 +592,6 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// Skip detached mode if we're a subprocess spawned by the parent process
 	// We use an environment variable to detect this, rather than checking if running as root,
 	// because the user might run "sudo pangolin up" directly and still expect the TUI
-	isSubprocess := os.Getenv("PANGOLIN_SUBPROCESS") == "1"
 	if !opts.Attached && !isSubprocess {
 		executable, err := os.Executable()
 		if err != nil {

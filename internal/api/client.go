@@ -571,6 +571,27 @@ func (c *Client) GetMyClientSettings(orgID string) (*config.ClientSettings, erro
 	return response.Settings, nil
 }
 
+// GetOlmClientSettings returns the settings the org manages for the client
+// with these olm credentials, for machine clients that have no user session.
+// It needs no session token, so any client for the endpoint works. orgID may
+// be empty, in which case the server uses the olm's current client. Servers
+// that predate machine client settings answer 404, which means no settings.
+func (c *Client) GetOlmClientSettings(olmID, secret, orgID string) (*OlmClientSettingsResponse, error) {
+	body := map[string]string{"olmId": olmID, "secret": secret}
+	if orgID != "" {
+		body["orgId"] = orgID
+	}
+	var response OlmClientSettingsResponse
+	if err := c.Post("/auth/olm/client-settings", body, &response); err != nil {
+		var errResp *ErrorResponse
+		if errors.As(err, &errResp) && errResp.Status == http.StatusNotFound {
+			return &OlmClientSettingsResponse{}, nil
+		}
+		return nil, err
+	}
+	return &response, nil
+}
+
 // TestConnection tests the connection to the API server
 func (c *Client) TestConnection() (bool, error) {
 	// Create a temporary client with shorter timeout for connection test

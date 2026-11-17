@@ -39,7 +39,12 @@ func platformProvider() Provider {
 	if !desktopAppInstalled() {
 		return nil
 	}
-	return desktopProvider{secrets: newSocketSecretsClient()}
+	return desktopProvider{
+		defaultDataDir: defaultDesktopDataDir(),
+		secrets: func(string) SecretsClient {
+			return newSocketSecretsClient()
+		},
+	}
 }
 
 func desktopAppInstalled() bool {

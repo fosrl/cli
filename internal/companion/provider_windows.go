@@ -9,14 +9,15 @@ import (
 
 const windowsAppName = "Pangolin"
 
-func defaultDesktopDataDir() string {
+func platformProvider() Provider {
 	appData := os.Getenv("LOCALAPPDATA")
 	if appData == "" {
 		appData = os.Getenv("APPDATA")
 	}
-	return filepath.Join(appData, windowsAppName)
-}
-
-func platformProvider() Provider {
-	return desktopProvider{secrets: newPipeSecretsClient()}
+	return desktopProvider{
+		defaultDataDir: filepath.Join(appData, windowsAppName),
+		secrets: func(string) SecretsClient {
+			return newPipeSecretsClient()
+		},
+	}
 }

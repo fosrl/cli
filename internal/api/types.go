@@ -245,6 +245,16 @@ type MyClientSettingsResponse struct {
 	Settings *config.ClientSettings `json:"settings"`
 }
 
+// OlmClientSettingsResponse is the server's POST /auth/olm/client-settings
+// response: the settings for a client that authenticates with its olm ID and
+// secret (a machine client). ExitNodeSiteIDs are the sites behind
+// Settings.ExitNodeSiteResourceID, resolved by the server because a machine
+// client can't list site resources itself.
+type OlmClientSettingsResponse struct {
+	Settings        *config.ClientSettings `json:"settings"`
+	ExitNodeSiteIDs []int                  `json:"exitNodeSiteIds,omitempty"`
+}
+
 // MyDeviceResponse represents the response for getting my device
 type MyDeviceResponse struct {
 	User MyDeviceUser  `json:"user"`

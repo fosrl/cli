@@ -5,10 +5,12 @@ package svcmgr
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/fosrl/cli/internal/api"
 	"github.com/fosrl/cli/internal/olm"
 	versionpkg "github.com/fosrl/cli/internal/version"
 	newtLogger "github.com/fosrl/newt/logger"
@@ -176,6 +178,7 @@ func runOlmClient(ctx context.Context, serviceName string, creds ClientCreds) er
 		OverrideDNS:          true,
 		EnableUAPI:           false,
 	}
+	applyMachineClientSettings(&tunnelConfig, creds)
 	go o.StartTunnel(tunnelConfig)
 
 	select {
@@ -183,5 +186,54 @@ func runOlmClient(ctx context.Context, serviceName string, creds ClientCreds) er
 		return nil
 	case err := <-doneCh:
 		return err
+	}
+}
+
+// applyMachineClientSettings fetches the settings the org manages for this
+// machine client (its roles' client settings) and applies them on top of the
+// service defaults. If the server can't be reached, the defaults apply.
+func applyMachineClientSettings(tc *olmpkg.TunnelConfig, creds ClientCreds) {
+	client, err := api.InitClient(creds.Endpoint, "", "")
+	if err != nil {
+		newtLogger.GetLogger().Warn("Could not create API client for client settings: %v", err)
+		return
+	}
+	res, err := client.GetOlmClientSettings(creds.ID, creds.Secret, creds.OrgID)
+	if err != nil {
+		newtLogger.GetLogger().Warn("Could not fetch client settings from the server (%v); using defaults", err)
+		return
+	}
+	s := res.Settings
+	if s == nil {
+		return
+	}
+
+	if s.TunnelDNS != nil {
+		tc.TunnelDNS = *s.TunnelDNS
+	}
+	if s.OverrideDNS != nil {
+		tc.OverrideDNS = *s.OverrideDNS
+	}
+	if servers := s.UpstreamDNS(); len(servers) > 0 {
+		tc.UpstreamDNS = make([]string, len(servers))
+		for i, server := range servers {
+			tc.UpstreamDNS[i] = net.JoinHostPort(server, "53")
+		}
+	}
+	if len(s.MatchDomains) > 0 {
+		tc.MatchDomains = s.MatchDomains
+	}
+	if s.PreferLocalRoutes != nil {
+		tc.PreferLocalRoutes = *s.PreferLocalRoutes
+	}
+	if s.ExitNodeTakesPrecedence != nil {
+		tc.DisableRoutesAndAliasesOnExitNode = *s.ExitNodeTakesPrecedence
+	}
+	if s.MTU != nil {
+		tc.MTU = *s.MTU
+	}
+	if s.ExitNodeSiteResourceID != 0 && len(res.ExitNodeSiteIDs) > 0 {
+		tc.GatewaySiteResourceId = s.ExitNodeSiteResourceID
+		tc.GatewaySiteIds = res.ExitNodeSiteIDs
 	}
 }

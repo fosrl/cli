@@ -15,6 +15,7 @@ import (
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/utils"
+	"github.com/muesli/cancelreader"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
@@ -117,9 +118,17 @@ func loginWithWeb(hostname string, sessionCookieName string, knownEmail string) 
 	logger.Info("First copy your one-time code: %s", code)
 	logger.Info("Press Enter to open %s in your browser...", baseLoginURL)
 
-	// Wait for Enter in a goroutine (non-blocking) and open browser when pressed
+	// The stdin reader must be cancelled before returning, otherwise it keeps
+	// consuming keystrokes meant for later interactive prompts.
+	stdinReader, err := cancelreader.NewReader(os.Stdin)
+	if err != nil {
+		return "", fmt.Errorf("failed to read from stdin: %w", err)
+	}
+	defer stdinReader.Close()
+	defer stdinReader.Cancel()
+
 	go func() {
-		reader := bufio.NewReader(os.Stdin)
+		reader := bufio.NewReader(stdinReader)
 		_, err := reader.ReadString('\n')
 		if err == nil {
 			// User pressed Enter, open browser

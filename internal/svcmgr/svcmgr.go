@@ -6,6 +6,8 @@
 // the shared Spec type below.
 package svcmgr
 
+import "context"
+
 // Well-known service names shared between the cmd/service package (which
 // builds Specs) and the platform backends (which sometimes need to special-
 // case a specific service - see svcmgr_windows.go's client handling).
@@ -43,3 +45,9 @@ type Spec struct {
 	// they'd be visible to any local user (e.g. via `ps`).
 	EnvVars map[string]string
 }
+
+// RunCLI runs the pangolin CLI with args in this process, as if they had
+// been given on the command line, until it returns or ctx is cancelled. main
+// sets it; the Windows client service uses it to run `up client --attach`
+// inside the service process (svcmgr can't import cmd, which imports it).
+var RunCLI func(ctx context.Context, args []string) error

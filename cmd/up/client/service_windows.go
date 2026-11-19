@@ -3,38 +3,32 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/fosrl/cli/internal/logger"
 	"github.com/fosrl/cli/internal/svcmgr"
+	"golang.org/x/sys/windows/svc"
 )
 
-// runWindowsMachineClient makes `pangolin up client` work on Windows by
-// installing the same background service `pangolin service install client`
-// would, tailing its logs so the command still feels like it's running the
-// tunnel directly, and uninstalling the service again when interrupted
-// (Ctrl+C).
-//
-// This indirection exists because the olm tunnel can't run directly from a
-// plain console process on Windows the way it can on Linux/macOS - it needs
-// to run as a Windows Service (see olmHostedService in internal/svcmgr).
-// PreRunE already guarantees opts has --id/--secret/--endpoint set before
-// this is called (Windows only supports machine clients).
-func runWindowsMachineClient(opts *ClientUpCmdOpts) error {
+// runWindowsMachineClient is `pangolin up client` without --attach on
+// Windows. Instead of a detached subprocess it installs the client service,
+// the same one `pangolin service install client` installs, tails its logs
+// so the command still feels like it runs the tunnel, and removes the
+// service again on Ctrl+C. The service runs `pangolin up client --attach`
+// with upArgs, the settings this run resolved; the credentials go in the
+// service environment so they don't show up in Task Manager.
+func runWindowsMachineClient(id, secret string, upArgs []string) error {
 	envVars := map[string]string{
-		"PANGOLIN_CLIENT_ID":     opts.ID,
-		"PANGOLIN_CLIENT_SECRET": opts.Secret,
-		"PANGOLIN_ENDPOINT":      opts.Endpoint,
-	}
-	if opts.OrgID != "" {
-		envVars["PANGOLIN_ORG"] = opts.OrgID
+		"PANGOLIN_CLIENT_ID":     id,
+		"PANGOLIN_CLIENT_SECRET": secret,
 	}
 
 	spec := svcmgr.Spec{
 		Name:        svcmgr.ClientServiceName,
 		DisplayName: "Pangolin Client",
 		Description: "Runs 'pangolin up client' persistently in the background",
-		Args:        []string{"up", "client", "--attach"},
+		Args:        append([]string{"up", "client", "--attach"}, upArgs...),
 		EnvVars:     envVars,
 	}
 
@@ -59,5 +53,20 @@ func runWindowsMachineClient(opts *ClientUpCmdOpts) error {
 	}
 	logger.Success("Removed the %s service", svcmgr.ClientServiceName)
 
+	return nil
+}
+
+// requireWindowsService fails unless this process is a Windows service:
+// olm only creates its tunnel interface inside one (see newt's
+// clients/permissions). The client service runs `up client --attach`
+// in-process, so this only fails for --attach run from a console.
+func requireWindowsService() error {
+	isService, err := svc.IsWindowsService()
+	if err != nil {
+		return fmt.Errorf("could not check whether this is a Windows service: %w", err)
+	}
+	if !isService {
+		return errors.New("on Windows, --attach only works under the client service; run without --attach, or use 'pangolin service install client'")
+	}
 	return nil
 }

@@ -154,7 +154,30 @@ func commandExemptFromCompanionReady(cmd *cobra.Command) bool {
 		return true
 	}
 
+	// A machine client (`up client` with its own id/secret) never uses the
+	// desktop app's account, so it must not wait for the desktop app to be
+	// ready. This matters under a service, which runs as SYSTEM/root where
+	// the desktop app is never logged in.
+	if cmd.Name() == "client" && commandHasAncestor(cmd, "up") && hasMachineClientCredentials(cmd) {
+		return true
+	}
+
 	return false
+}
+
+// hasMachineClientCredentials reports whether `up client` was given machine
+// client credentials, by flag or by the environment variables its PreRunE
+// falls back to (which the service sets).
+func hasMachineClientCredentials(cmd *cobra.Command) bool {
+	id := os.Getenv("PANGOLIN_CLIENT_ID")
+	secret := os.Getenv("PANGOLIN_CLIENT_SECRET")
+	if f := cmd.Flags().Lookup("id"); f != nil && f.Changed {
+		id = f.Value.String()
+	}
+	if f := cmd.Flags().Lookup("secret"); f != nil && f.Changed {
+		secret = f.Value.String()
+	}
+	return id != "" && secret != ""
 }
 
 func commandHasAncestor(cmd *cobra.Command, name string) bool {
@@ -276,6 +299,24 @@ func ensureRuntimeDirs(cfg *config.Config) {
 }
 
 // Execute is called by main.go
+// ExecuteArgs runs the CLI with args instead of os.Args, stopping it when
+// ctx is cancelled.
+func ExecuteArgs(ctx context.Context, args []string) error {
+	cmd, err := RootCommand(true)
+	if err != nil {
+		return err
+	}
+	// Keep the context RootCommand set up (it carries the config) and only
+	// add ctx's cancellation to it.
+	runCtx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+	stopAfter := context.AfterFunc(ctx, cancel)
+	defer stopAfter()
+
+	cmd.SetArgs(args)
+	return cmd.ExecuteContext(runCtx)
+}
+
 func Execute() {
 	cmd, err := RootCommand(true)
 	if err != nil {

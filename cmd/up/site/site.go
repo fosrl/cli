@@ -91,6 +91,12 @@ func run(ctx context.Context, args []string) error {
 
 	resolvedCfg := n.GetConfig()
 
+	// Prometheus/OTLP exporters and the admin server (/metrics, /healthz,
+	// pprof) - honors --metrics, --metrics-admin-addr, --otlp, --pprof,
+	// --region and their NEWT_*/SITE_* env equivalents, same as newt.
+	stopTelemetry := n.StartTelemetry(sigCtx)
+	defer stopTelemetry()
+
 	startSelfUpdateChecks(sigCtx, resolvedCfg)
 
 	n.Start(sigCtx)
@@ -134,11 +140,13 @@ func startSelfUpdateChecks(ctx context.Context, resolvedCfg newtpkg.Config) {
 
 	doUpdate := func() {
 		newtLogger.Debug("checkAndSelfUpdate: running periodic update check")
+		// The server compares the CLI against CLI releases, so report the
+		// CLI's own version (not the embedded newt version) as current.
 		if err := updates.CheckAndSelfUpdate(updates.SelfUpdateConfig{
 			Endpoint:       resolvedCfg.Endpoint,
 			NewtID:         resolvedCfg.ID,
 			Secret:         resolvedCfg.Secret,
-			CurrentVersion: versionpkg.NewtVersion(),
+			CurrentVersion: versionpkg.Version,
 			TLSConfig:      selfUpdateTLS,
 			Agent:          "cli",
 			Restart:        updateRestart(),

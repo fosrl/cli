@@ -4,7 +4,7 @@ import "runtime"
 
 const (
 	windowsMinDesktopAppVersion = "0.11.0"
-	darwinMinDesktopAppVersion  = ""
+	darwinMinDesktopAppVersion  = "0.14.0"
 	// Every Pangolin Linux client release supports companion mode.
 	linuxMinDesktopAppVersion = ""
 )

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/fosrl/cli/internal/api"
+	"github.com/fosrl/cli/internal/companion"
 	"github.com/fosrl/cli/internal/config"
 	"github.com/fosrl/cli/internal/fingerprint"
 	"github.com/fosrl/cli/internal/logger"
@@ -462,6 +463,15 @@ func clientUpMain(cmd *cobra.Command, opts *ClientUpCmdOpts, extraArgs []string)
 	// can be forwarded to the subprocess unconditionally below.
 	if !cmd.Flags().Changed("match-domains") && cfg.IsSet("up.match_domains_dns") {
 		opts.MatchDomains = cfg.GetStringSlice("up.match_domains_dns")
+	}
+
+	if opts.ID == "" && opts.Secret == "" {
+		if state := companion.StateFromContext(cmd.Context()); state.Enabled {
+			err := fmt.Errorf("companion mode is enabled, so connect from %s", state.ProviderName)
+			logger.Error("Error: %v", err)
+			logger.Info("To run the tunnel from the CLI, pass --id and --secret, or run 'pangolin companion disable'.")
+			return err
+		}
 	}
 
 	// Check if a client is already running

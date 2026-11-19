@@ -1,4 +1,4 @@
-//go:build windows || linux
+//go:build windows || linux || darwin
 
 package companion
 
@@ -9,26 +9,30 @@ import (
 	"io"
 )
 
+// The desktop app serves secrets with a small framed protocol, the same on
+// every platform: the request is a little-endian uint32 length and the
+// Pangolin user id; the reply is a uint32 status, a uint32 length and a
+// payload (secrets JSON, or an error message). Only the transport differs.
+
 const (
 	secretsStatusOK       uint32 = 0
 	secretsStatusNotFound uint32 = 1
 	secretsStatusError    uint32 = 2
 )
 
-// UserSecrets matches the desktop client manager's secret store JSON shape.
+// UserSecrets matches the desktop app's secret store JSON shape.
 type UserSecrets struct {
 	SessionToken string `json:"sessionToken,omitempty"`
 	OlmID        string `json:"olmId,omitempty"`
 	OlmSecret    string `json:"olmSecret,omitempty"`
 }
 
-// SecretsClient fetches user secrets from the desktop client's manager service.
+// SecretsClient fetches user secrets from the desktop app.
 type SecretsClient interface {
 	GetUserSecrets(userID string) (UserSecrets, error)
 }
 
-// requestSecrets sends a secrets request for userID on a connection to the
-// manager and reads the reply. The framing is the same on every platform.
+// requestSecrets sends one secrets request on conn and decodes the reply.
 func requestSecrets(conn io.ReadWriter, userID string) (UserSecrets, error) {
 	userIDBytes := []byte(userID)
 	if err := binary.Write(conn, binary.LittleEndian, uint32(len(userIDBytes))); err != nil {

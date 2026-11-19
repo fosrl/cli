@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	companionModeIntroID      = "companion-mode-intro-windows-v1"
-	companionModeIntroLinuxID = "companion-mode-intro-linux-v1"
-	desktopClientLinuxID      = "desktop-client-available-linux-v1"
+	companionModeIntroID       = "companion-mode-intro-windows-v1"
+	companionModeIntroDarwinID = "companion-mode-intro-darwin-v1"
+	companionModeIntroLinuxID  = "companion-mode-intro-linux-v1"
+	desktopClientLinuxID       = "desktop-client-available-linux-v1"
 )
 
 const downloadsURL = "https://pangolin.net/downloads"
@@ -22,6 +23,15 @@ var registeredNotices = []Notice{
 		MaxVersion: "0.11.0",
 		Condition: func(cfg *config.Config) bool {
 			return runtime.GOOS == "windows" && companion.PlatformAvailable()
+		},
+		Lines: companionModeIntroLines,
+	},
+	{
+		ID:         companionModeIntroDarwinID,
+		MinVersion: "0.23.0",
+		MaxVersion: "0.23.0",
+		Condition: func(cfg *config.Config) bool {
+			return runtime.GOOS == "darwin" && companion.PlatformAvailable()
 		},
 		Lines: companionModeIntroLines,
 	},

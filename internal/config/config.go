@@ -604,6 +604,12 @@ func GetPangolinConfigDir() (string, error) {
 	return pangolinDir, nil
 }
 
+// UserHomeDir returns the home directory of the user who invoked the CLI,
+// even under sudo. See userHomeDir.
+func UserHomeDir() (string, error) {
+	return userHomeDir()
+}
+
 // userHomeDir returns the home directory of the original user
 // (the user who invoked the command, not the effective user when running with sudo).
 // This ensures that config files work both with and without sudo.

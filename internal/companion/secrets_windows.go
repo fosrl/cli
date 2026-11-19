@@ -11,6 +11,8 @@ import (
 
 const cliSecretsPipePath = `\\.\pipe\pangolin-manager-cli-secrets`
 
+// pipeSecretsClient asks the Pangolin Manager service for secrets over its
+// named pipe.
 type pipeSecretsClient struct {
 	pipePath string
 }

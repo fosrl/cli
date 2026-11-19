@@ -1,4 +1,4 @@
-//go:build windows || linux
+//go:build windows || linux || darwin
 
 package companion
 
@@ -14,11 +14,15 @@ import (
 
 const accountsFileName = "accounts.json"
 
-// desktopProvider reads the Pangolin desktop client's session, on Windows and
-// Linux alike: account details from its accounts.json, and secrets from its
-// manager service, which only the manager can read.
+// desktopProvider loads the session of the Pangolin desktop app (Windows,
+// Linux, or macOS). Account details live in an accounts.json of the same
+// shape; secrets use the framed protocol in secrets_desktop.go. Platforms
+// differ only in where the data lives and how secrets are fetched.
 type desktopProvider struct {
-	secrets SecretsClient
+	defaultDataDir string
+	// secrets returns the client that fetches secrets for the app whose
+	// data is in dataDir.
+	secrets func(dataDir string) SecretsClient
 }
 
 type desktopAccountsFile struct {
@@ -39,8 +43,8 @@ func (desktopProvider) Name() string {
 	return olm.CompanionAgentName
 }
 
-func (desktopProvider) DefaultDataDir() string {
-	return defaultDesktopDataDir()
+func (p desktopProvider) DefaultDataDir() string {
+	return p.defaultDataDir
 }
 
 func (p desktopProvider) LoadSession(dataDir string) (*Session, error) {
@@ -65,9 +69,10 @@ func (p desktopProvider) LoadSession(dataDir string) (*Session, error) {
 		return nil, nil
 	}
 
+	secretsClient := p.secrets(dataDir)
 	accounts := make(map[string]config.Account, len(file.Accounts))
-	for userID, appAccount := range file.Accounts {
-		secrets, err := p.secrets.GetUserSecrets(userID)
+	for userID, desktopAccount := range file.Accounts {
+		secrets, err := secretsClient.GetUserSecrets(userID)
 		if err != nil {
 			logger.Debug("companion: failed to load secrets for %s: %v", userID, err)
 			continue
@@ -76,7 +81,7 @@ func (p desktopProvider) LoadSession(dataDir string) (*Session, error) {
 			continue
 		}
 
-		account := mapDesktopAccount(appAccount, secrets)
+		account := mapDesktopAccount(desktopAccount, secrets)
 		accounts[userID] = account
 	}
 
@@ -107,20 +112,20 @@ func (p desktopProvider) LoadSession(dataDir string) (*Session, error) {
 	return session, nil
 }
 
-func mapDesktopAccount(app desktopAccount, secrets UserSecrets) config.Account {
+func mapDesktopAccount(src desktopAccount, secrets UserSecrets) config.Account {
 	account := config.Account{
-		UserID:       app.UserID,
-		Host:         app.Hostname,
-		Email:        app.Email,
-		OrgID:        app.OrgID,
+		UserID:       src.UserID,
+		Host:         src.Hostname,
+		Email:        src.Email,
+		OrgID:        src.OrgID,
 		SessionToken: secrets.SessionToken,
 	}
-	if app.Username != "" {
-		username := app.Username
+	if src.Username != "" {
+		username := src.Username
 		account.Username = &username
 	}
-	if app.Name != "" {
-		name := app.Name
+	if src.Name != "" {
+		name := src.Name
 		account.Name = &name
 	}
 	if secrets.OlmID != "" || secrets.OlmSecret != "" {

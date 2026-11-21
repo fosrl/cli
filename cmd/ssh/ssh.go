@@ -120,8 +120,18 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 				}
 			}
 
+			// Manual authentication (e.g. PAM passthrough): the server issues no
+			// signed certificate, so the JIT key cannot authenticate. Don't force
+			// it; let ssh(1) resolve identities from ~/.ssh/config, default key
+			// paths, and ssh-agent, with password fallback.
+			manualAuth := cert == ""
+			if manualAuth {
+				privPEM = ""
+			}
+
 			runOpts := RunOpts{
 				User:           signData.User,
+				Alias:          opts.ResourceID,
 				Hostname:       signData.Hostname,
 				Port:           opts.Port,
 				PrivateKeyPEM:  privPEM,
@@ -130,6 +140,13 @@ Set PANGOLIN_SSH_BINARY to the full path of ssh(1) to override PATH lookup on al
 			}
 
 			useBuiltin := opts.Builtin
+			if manualAuth && useBuiltin {
+				logger.Error("The built-in SSH client only supports JIT certificate authentication. Omit --builtin to use the system OpenSSH client, which resolves identities from ~/.ssh/config, default key paths, and ssh-agent.")
+				os.Exit(1)
+			}
+			if manualAuth {
+				logger.Info("No SSH certificate was issued for this resource (manual authentication). Using the system OpenSSH client with your configured identities; pass -i <key-file> to choose one explicitly.")
+			}
 			if len(passThrough) > 0 && useBuiltin {
 				logger.Warning("Extra arguments after the resource are ignored by the built-in client (port forwarding, remote commands, and other ssh(1) options). Omit --builtin to use the system OpenSSH client.")
 			}

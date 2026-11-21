@@ -66,7 +66,7 @@ func RunExec(opts RunOpts) (int, error) {
 		defer cleanup()
 	}
 
-	argv := buildExecSSHArgs(sshPath, opts.User, opts.Hostname, opts.Port, keyPath, certPath, opts.SSHPassthrough)
+	argv := buildExecSSHArgs(sshPath, opts.User, opts.Alias, opts.Hostname, opts.Port, keyPath, certPath, opts.SSHPassthrough)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -131,6 +131,9 @@ func setWindowsFileOwnerOnly(path string) error {
 }
 
 func writeExecKeyFilesWindows(opts RunOpts) (keyPath, certPath string, cleanup func(), err error) {
+	if opts.PrivateKeyPEM == "" && opts.Certificate == "" {
+		return "", "", nil, nil
+	}
 	if opts.PrivateKeyPEM == "" {
 		return "", "", nil, errors.New("private key required (JIT flow)")
 	}

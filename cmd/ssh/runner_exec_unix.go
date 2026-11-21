@@ -77,7 +77,7 @@ func RunExec(opts RunOpts) (int, error) {
 		defer cleanup()
 	}
 
-	argv := buildExecSSHArgs(sshPath, opts.User, opts.Hostname, opts.Port, keyPath, certPath, opts.SSHPassthrough)
+	argv := buildExecSSHArgs(sshPath, opts.User, opts.Alias, opts.Hostname, opts.Port, keyPath, certPath, opts.SSHPassthrough)
 	cmd := exec.Command(argv[0], argv[1:]...)
 
 	usePTY := isatty.IsTerminal(os.Stdin.Fd())
@@ -89,8 +89,13 @@ func RunExec(opts RunOpts) (int, error) {
 }
 
 // writeExecKeyFiles writes PrivateKeyPEM and Certificate to temp files for system ssh.
+// When both are empty (manual authentication: no signed certificate was issued), no
+// files are written and ssh(1) resolves identities itself.
 // Returns keyPath, certPath, cleanup func, error.
 func writeExecKeyFiles(opts RunOpts) (keyPath, certPath string, cleanup func(), err error) {
+	if opts.PrivateKeyPEM == "" && opts.Certificate == "" {
+		return "", "", nil, nil
+	}
 	if opts.PrivateKeyPEM == "" {
 		return "", "", nil, errors.New("private key required (JIT flow)")
 	}
